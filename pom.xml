@@ -48,6 +48,11 @@
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <tagBase>http://svn-code.devexperts.com/coderw/aprof/tags</tagBase>
+                    <checkModificationExcludes>
+                        <checkModificationExclude>**/*.ipr</checkModificationExclude>
+                        <checkModificationExclude>**/*.iml</checkModificationExclude>
+                        <checkModificationExclude>**/*.iws</checkModificationExclude>
+                    </checkModificationExcludes>
                 </configuration>
             </plugin>
             <plugin>
