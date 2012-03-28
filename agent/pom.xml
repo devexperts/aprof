@@ -102,23 +102,9 @@
 
             <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>deploy-file</goal>
-                        </goals>
-                        <configuration>
-                            <file>${project.build.directory}/${project.build.finalName}-${project.version}-bin.zip</file>
-                            <url>${project.distributionManagement.repository.url}/</url>
-                            <groupId>/</groupId>
-                            <artifactId>${project.artifactId}</artifactId>
-                            <version>${project.version}</version>
-                            <packaging>zip</packaging>
-                            <uniqueVersion>false</uniqueVersion>
-                        </configuration>
-                    </execution>
-                </executions>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>
