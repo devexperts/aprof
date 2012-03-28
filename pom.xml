@@ -52,9 +52,9 @@
                         <checkModificationExclude>aprof.ipr</checkModificationExclude>
                         <checkModificationExclude>aprof.iml</checkModificationExclude>
                         <checkModificationExclude>aprof.iws</checkModificationExclude>
-                        <checkModificationExclude>agent/agent.iml</checkModificationExclude>
-                        <checkModificationExclude>core/core.iml</checkModificationExclude>
-                        <checkModificationExclude>transformer/transformer.iml</checkModificationExclude>
+                        <checkModificationExclude>agent\agent.iml</checkModificationExclude>
+                        <checkModificationExclude>core\core.iml</checkModificationExclude>
+                        <checkModificationExclude>transformer\transformer.iml</checkModificationExclude>
                     </checkModificationExcludes>
                 </configuration>
             </plugin>
