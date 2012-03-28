@@ -3,7 +3,7 @@
 
     <groupId>com.devexperts.aprof</groupId>
     <artifactId>aprof</artifactId>
-    <version>20-SNAPSHOT</version>
+    <version>19-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Aprof</name>
