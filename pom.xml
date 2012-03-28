@@ -15,8 +15,8 @@
     </properties>
 
     <scm>
-        <connection>scm:svn:https://svn-code.devexperts.com/code/aprof/trunk</connection>
-        <developerConnection>scm:svn:https://svn-code.devexperts.com/coderw/aprof/trunk</developerConnection>
+        <connection>scm:svn:http://svn-code.devexperts.com/code/aprof/trunk</connection>
+        <developerConnection>scm:svn:http://svn-code.devexperts.com/coderw/aprof/trunk</developerConnection>
     </scm>
 
     <modules>
@@ -47,7 +47,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <tagBase>https://svn-code.devexperts.com/coderw/aprof/tags</tagBase>
+                    <tagBase>http://svn-code.devexperts.com/coderw/aprof/tags</tagBase>
                 </configuration>
             </plugin>
             <plugin>
@@ -128,7 +128,7 @@
         <repository>
             <id>remote-repository</id>
             <name>Subversion Repository</name>
-            <url>scm:svn:https://svn-code.devexperts.com/coderw/aprof/releases</url>
+            <url>scm:svn:http://svn-code.devexperts.com/coderw/aprof/releases</url>
         </repository>
     </distributionManagement>
 </project>
