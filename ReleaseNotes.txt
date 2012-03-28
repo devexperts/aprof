@@ -1,0 +1,118 @@
+Release Notes - AProf - Version 19
+
+** Change Request
+    * [APROF-46] - Apply GPLv3 license
+    * [APROF-47] - Core: by default 'fileconfig' parameter shall be zero
+    * [APROF-48] - Core: track boxing methods
+
+** Defect Report
+    * [APROF-49] - Core: incorrect uptime duration is shown in statistics dumps
+
+
+Release Notes - AProf - Version 18
+
+** Change Request
+    * [APROF-38] - Add ASM licence notice
+    * [APROF-40] - Core: transformer shall print notification when any problems arise
+    * [APROF-41] - Core: aprof internal object allocations shall be collected under appropriate location instead of <unknown>
+    * [APROF-43] - Core: remove 'frames' configuration parameter
+    * [APROF-45] - Core: add ability to store multiple snapshot dumps in one file
+
+** Defect Report
+    * [APROF-39] - Core: transformer shall use EXPAND_FRAMES flag when reading classes
+    * [APROF-44] - Core: network dump does not flush its output
+
+
+Release Notes - AProf - Version 17
+
+** Change Request
+    * [APROF-22] - Add AProf sources to release bundle
+    * [APROF-35] - Core: default configuration enhancements
+    * [APROF-37] - Mozilla Public Licence Version 2.0 header
+
+** Defect Report
+    * [APROF-34] - Core: number of classes and locations is not shown
+
+
+Release Notes - AProf - Version 16
+
+** Change Request
+    * [APROF-33] - Core: dumper thread should not die on thrown exceptions
+
+** Defect Report
+    * [APROF-32] - Core: NPE during snapshot generation
+
+
+Release Notes - AProf - Version 15
+
+** Defect Report
+    * [APROF-29] - Core: no allocation statistics is collected
+    * [APROF-30] - Core: memory leak on snapshot generation
+    * [APROF-31] - Core: NPE on checking overflow threshold
+
+
+Release Notes - AProf - Version 14
+
+** Defect Report
+    * [APROF-28] - Core: incorrect statistics is shown
+
+
+Release Notes - AProf - Version 13
+
+** Change Request
+    * [APROF-23] - Mozilla Public Licence Version 1.1 header
+    * [APROF-24] - Core: external configuration file
+    * [APROF-25] - Core: histograms should be supported on per-class basis
+    * [APROF-27] - Core: aggregate statistics for Proxy classes
+
+** Improvement
+    * [APROF-26] - Core: improve tracked classes resolving process
+
+
+Release Notes - AProf - Version 12
+
+** Change Request
+    * [APROF-19] - Core: add transformer configuration
+
+
+Release Notes - AProf - Version 11
+
+** Change Request
+    * [APROF-21] - Core: aggregate statistics for similar class names
+
+** Defect Report
+    * [APROF-20] - Core: out of memory in PermGen space
+
+
+Release Notes - AProf - Version 10
+
+** Change Request
+    * [APROF-18] - Core: add rotation to snapshots file
+
+** Task
+    * [APROF-17] - Migrate to maven for release building
+
+
+Release Notes - AProf - Version build-9
+
+** Change Request
+    * [APROF-16] - Core: array length histograms should be disabled by default
+
+
+Release Notes - AProf - Version build-8
+
+** Change Request
+    * [APROF-11] - Core: all libraries should be loaded in a separate ClassLoader
+    * [APROF-12] - Core: migrate to ASM 3.3
+    * [APROF-14] - Core: add ability to configure usage of ASM parameter COMPUTE_FRAMES
+    * [APROF-15] - Core: add array length histograms
+
+** Defect Report
+    * [APROF-13] - Core: AProf does not work on Java 6
+
+** Improvement
+    * [APROF-9] - Existing code cleanup
+
+** Task
+    * [APROF-8] - Core, GUI: merge core and GUI repositories
+
