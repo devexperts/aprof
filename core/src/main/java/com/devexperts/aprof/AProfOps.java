@@ -145,26 +145,26 @@ public class AProfOps {
 
     //================== LOCATION STACK ===================
     public static void markInvocationPoint(int loc) {
-        getLocationStack().addInvocationPoint(loc);
+        LocationStack.get().addInvocationPoint(loc);
     }
 
     public static void unmarkInvocationPoint() {
-        getLocationStack().removeInvocationPoint();
+        LocationStack.get().removeInvocationPoint();
     }
 
     public static void markInvokedMethod(int loc) {
-        getLocationStack().addInvokedMethod(loc);
+        LocationStack.get().addInvokedMethod(loc);
     }
 
     public static void unmarkInvokedMethod() {
-        getLocationStack().removeInvokedMethod();
+        LocationStack.get().removeInvokedMethod();
     }
 
     public static void markInternalInvokedMethod(int loc) {
-        getLocationStack().addInternalInvokedMethod(loc);
+        LocationStack.get().addInternalInvokedMethod(loc);
     }
 
     public static void unmarkInternalInvokedMethod() {
-        getLocationStack().removeInternalInvokedMethod();
+        LocationStack.get().removeInternalInvokedMethod();
     }
 }

@@ -21,11 +21,14 @@ package com.devexperts.aprof.transformer;
 import com.devexperts.aprof.AProfOps;
 import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
+import com.devexperts.aprof.LocationStack;
 import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
+import org.objectweb.asm.util.CheckClassAdapter;
+import org.objectweb.asm.util.CheckMethodAdapter;
 
 import java.lang.instrument.*;
 import java.security.ProtectionDomain;
@@ -39,6 +42,7 @@ import java.util.List;
 public class AProfTransformer implements ClassFileTransformer {
 	private static final String APROF_OPS = "com/devexperts/aprof/AProfOps";
     private static final String APROF_OPS_INTERNAL = "com/devexperts/aprof/AProfOpsInternal";
+    private static final String LOCATION_STACK = "com/devexperts/aprof/LocationStack";
 
     private static final String OBJECT_CLASS_NAME = "java.lang.Object";
 
@@ -47,7 +51,8 @@ public class AProfTransformer implements ClassFileTransformer {
 	private static final String INIT = "<init>";
 	private static final String CLONE = "clone";
 
-	private static final String NOARG_RETURNS_OBJECT = "()Ljava/lang/Object;";
+    private static final String NOARG_RETURNS_OBJECT = "()Ljava/lang/Object;";
+    private static final String NOARG_RETURNS_LOCATION_STACK = "()Lcom/devexperts/aprof/LocationStack;";
     private static final String NOARG_VOID = "()V";
 	private static final String INT_VOID = "(I)V";
 	private static final String OBJECT_VOID = "(Ljava/lang/Object;)V";
@@ -147,7 +152,7 @@ public class AProfTransformer implements ClassFileTransformer {
         try {
             ClassReader cr = new ClassReader(classfileBuffer);
             ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-            cr.accept(new AClassVisitor(cw, cname), (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES);
+            cr.accept(new CheckClassAdapter(new AClassVisitor(cw, cname)), (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES);
             return cw.toByteArray();
         } catch (Throwable t) {
             synchronized (shared_sb) {
@@ -208,22 +213,29 @@ public class AProfTransformer implements ClassFileTransformer {
 				AProfRegistry.removeDirectCloneClass(cname);
 			}
 			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
-            visitor = new AMethodVisitor(new GeneratorAdapter(visitor, access, mname, desc), cname, mname, desc);
-            visitor = new AdviceMethodVisitor(visitor, access, cname, mname, desc);
-			visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature,  exceptions);
+            visitor = new CheckMethodAdapter(visitor);
+            visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature,  exceptions);
+            GeneratorAdapter adviceVisitor = new GeneratorAdapter(visitor, access, mname, desc);
+            adviceVisitor = new AdviceMethodVisitor(adviceVisitor, access, cname, mname, desc);
+//            visitor = adviceVisitor;
+            visitor = new AMethodVisitor(adviceVisitor, cname, mname, desc);
 			return visitor;
 		}
 	}
 
 
     class AdviceMethodVisitor extends AdviceAdapter {
+        private final GeneratorAdapter mv;
         private final String cname;
         private final String mname;
         private final String invoked_method;
         private final boolean mark;
 
-        protected AdviceMethodVisitor(MethodVisitor mv, int access, String cname, String mname, String desc) {
+        private int location_stack = -1;
+
+        protected AdviceMethodVisitor(GeneratorAdapter mv, int access, String cname, String mname, String desc) {
             super(mv, access, mname, desc);
+            this.mv = mv;
             this.cname = cname;
             this.mname = mname;
             this.invoked_method = getLocationString(cname, mname, desc);
@@ -232,6 +244,9 @@ public class AProfTransformer implements ClassFileTransformer {
 
         @Override
         protected void onMethodEnter() {
+            location_stack = mv.newLocal(Type.getType(LocationStack.class));
+//            mv.visitInsn(Opcodes.NULL);
+//            mv.visitVarInsn(Opcodes.ASTORE, location_stack);
             if (mark) {
                 visitMarkInvokedMethod();
             }

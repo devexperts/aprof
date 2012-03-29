@@ -48,13 +48,6 @@ public class AProfRegistry {
     private static final Object root_indexes_sync = new Object();
     private static volatile IndexMap[] root_indexes = new IndexMap[1024];
 
-    private static final ThreadLocal<LocationStack> location_stack = new ThreadLocal<LocationStack>() {
-        @Override
-        protected LocationStack initialValue() {
-            return new LocationStack();
-        }
-    };
-
     private static final String UNKNOWN = "<unknown>";
     public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
     private static final int MAKE_SNAPSHOT_LOC = registerLocation(AProfRegistry.class.getCanonicalName() + ".makeSnapshot");
@@ -328,7 +321,7 @@ public class AProfRegistry {
     // TODO: can allocate memory during execution
     static IndexMap getDetailedIndex(int index) {
         IndexMap map = getRootIndex(index);
-        LocationStack stack = getLocationStack();
+        LocationStack stack = LocationStack.get();
         if (stack.internal_invoked_method_count > 0) {
             return putLocation(map, stack.internal_invoked_method_loc);
         }
@@ -497,11 +490,6 @@ public class AProfRegistry {
 	public static long incrementTime(long time_period) {
 		return time.addAndGet(time_period);
 	}
-
-    //================== LOCATION STACK ===================
-    static LocationStack getLocationStack() {
-        return location_stack.get();
-    }
 
     //=================== DIRECT CLONE ====================
 

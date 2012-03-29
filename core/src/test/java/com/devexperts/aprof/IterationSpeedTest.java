@@ -41,10 +41,10 @@ public class IterationSpeedTest {
 
         time = System.currentTimeMillis();
         for (int i = 0; i < length; i++)
-            AProfRegistry.getLocationStack();
+            LocationStack.get();
         System.out.printf("stack=%d\n", System.currentTimeMillis() - time);
 
-        LocationStack stack = AProfRegistry.getLocationStack();
+        LocationStack stack = LocationStack.get();
 
         time = System.currentTimeMillis();
         for (int i = 0; i < length; i++)
