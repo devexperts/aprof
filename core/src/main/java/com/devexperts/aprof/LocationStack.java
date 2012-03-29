@@ -30,16 +30,18 @@ final class LocationStack {
     int internal_invoked_method_count = 0;
 
     public void addInvocationPoint(int loc) {
-        if (invocation_point_count <= 0) {
-            invocation_point_count = 0;
+        if (invocation_point_count > 0) {
+            invocation_point_count++;
+        } else {
+            invocation_point_count = 1;
             invocation_point_loc = loc;
         }
-        invocation_point_count++;
     }
 
     public void removeInvocationPoint() {
-        invocation_point_count--;
-        if (invocation_point_count <= 0) {
+        if (invocation_point_count > 1) {
+            invocation_point_count--;
+        } else {
             invocation_point_count = 0;
             invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
             invoked_method_count = 0;
@@ -48,34 +50,38 @@ final class LocationStack {
     }
 
     public void addInvokedMethod(int loc) {
-        if (invoked_method_count <= 0) {
-            invoked_method_count = 0;
+        invocation_point_count++;
+        if (invoked_method_count > 0) {
+            invoked_method_count++;
+        } else {
+            invoked_method_count = 1;
             invoked_method_loc = loc;
         }
-        invocation_point_count++;
-        invoked_method_count++;
     }
 
     public void removeInvokedMethod() {
-        invoked_method_count--;
         invocation_point_count--;
-        if (invoked_method_count <= 0) {
+        if (invoked_method_count > 1) {
+            invoked_method_count--;
+        } else {
             invoked_method_count = 0;
             invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
         }
     }
 
-    public void markInternalInvokedMethod(int loc) {
-        if (internal_invoked_method_count <= 0) {
-            internal_invoked_method_count = 0;
+    public void addInternalInvokedMethod(int loc) {
+        if (internal_invoked_method_count > 0) {
+            internal_invoked_method_count++;
+        } else {
+            internal_invoked_method_count = 1;
             internal_invoked_method_loc = loc;
         }
-        internal_invoked_method_count++;
     }
 
-    public void unmarkInternalInvokedMethod() {
-        internal_invoked_method_count--;
-        if (internal_invoked_method_count <= 0) {
+    public void removeInternalInvokedMethod() {
+        if (internal_invoked_method_count > 1) {
+            internal_invoked_method_count--;
+        } else {
             internal_invoked_method_count = 0;
             internal_invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
         }

@@ -161,10 +161,10 @@ public class AProfOps {
     }
 
     public static void markInternalInvokedMethod(int loc) {
-        getLocationStack().markInternalInvokedMethod(loc);
+        getLocationStack().addInternalInvokedMethod(loc);
     }
 
     public static void unmarkInternalInvokedMethod() {
-        getLocationStack().unmarkInternalInvokedMethod();
+        getLocationStack().removeInternalInvokedMethod();
     }
 }

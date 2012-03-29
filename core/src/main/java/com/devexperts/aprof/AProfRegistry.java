@@ -48,7 +48,12 @@ public class AProfRegistry {
     private static final Object root_indexes_sync = new Object();
     private static volatile IndexMap[] root_indexes = new IndexMap[1024];
 
-    private static final ThreadLocal<LocationStack> location_stack = new ThreadLocal<LocationStack>();
+    private static final ThreadLocal<LocationStack> location_stack = new ThreadLocal<LocationStack>() {
+        @Override
+        protected LocationStack initialValue() {
+            return new LocationStack();
+        }
+    };
 
     private static final String UNKNOWN = "<unknown>";
     public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
@@ -495,12 +500,7 @@ public class AProfRegistry {
 
     //================== LOCATION STACK ===================
     static LocationStack getLocationStack() {
-        LocationStack holder = location_stack.get();
-        if (holder == null) {
-            holder = new LocationStack();
-            location_stack.set(holder);
-        }
-        return holder;
+        return location_stack.get();
     }
 
     //=================== DIRECT CLONE ====================
