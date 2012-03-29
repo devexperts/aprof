@@ -39,14 +39,8 @@ class DumpShutdownThread extends Thread {
 
     @Override
 	public void run() {
-		if (dpt != null) {
-			dpt.interrupt();
-			try {
-				dpt.join();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-				return;
-			}
+		if (dpt != null && !dpt.shutdown()) {
+            return;
 		}
 		dumper.makeDump(true);
 		long treal = System.currentTimeMillis() - finish;
