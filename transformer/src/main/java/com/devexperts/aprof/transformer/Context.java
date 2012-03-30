@@ -101,17 +101,15 @@ class Context {
             return;
         }
 
+        Label done = new Label();
+        mv.loadLocal(location_stack);
+        mv.dup();
+        mv.ifNonNull(done);
+        mv.pop();
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_LOCATION_STACK);
-
-//        Label done = new Label();
-//        mv.loadLocal(location_stack);
-//        mv.dup();
-//        mv.ifNonNull(done);
-//        mv.pop();
-//        mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_LOCATION_STACK);
-//        mv.dup();
-//        mv.storeLocal(location_stack);
-//        mv.visitLabel(done);
+        mv.dup();
+        mv.storeLocal(location_stack);
+        mv.visitLabel(done);
     }
 
     public String getLocationString(String cname, String mname, String desc) {
