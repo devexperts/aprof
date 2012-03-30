@@ -28,12 +28,12 @@ import java.net.Socket;
  * @author Denis Davydov
  */
 public class AProfTools {
-    
-    private static final String STARTUP_NOTICE = Version.get() +
-            "\nThis program comes with ABSOLUTELY NO WARRANTY." +
-            "\nThis is free software, and you are welcome to redistribute it under certain conditions." +
-            "\nSource code and documentation are available at <http://code.devexperts.com/>.";
-    
+
+	private static final String STARTUP_NOTICE = Version.get() +
+			"\nThis program comes with ABSOLUTELY NO WARRANTY." +
+			"\nThis is free software, and you are welcome to redistribute it under certain conditions." +
+			"\nSource code and documentation are available at <http://code.devexperts.com/>.";
+
 	private static final String ENCODING = "UTF-8";
 
 	public static void main(final String[] args) throws IOException, ClassNotFoundException {
@@ -43,9 +43,9 @@ public class AProfTools {
 				runDumpCommand(args);
 				return;
 			} else if ("export".equals(command)) {
-                runExportCommand(args);
-                return;
-            }
+				runExportCommand(args);
+				return;
+			}
 		}
 		help();
 	}
@@ -53,19 +53,19 @@ public class AProfTools {
 	private static void help() throws IOException {
 		PrintWriter out = new PrintWriter(new FastOutputStreamWriter(System.out), true);
 		out.println(STARTUP_NOTICE);
-        out.println();
+		out.println();
 		out.println("Usage: java -javaagent:aprof.jar[=<args>]");
 		out.println("Where <args> is <key>=<value>[:<key>=<value>[:...]]");
 		out.println("Supported keys are:");
 		Configuration def = new Configuration();
 		for (Configuration.Prop p : Configuration.PROPS.values()) {
 			out.println("  " + padr(p.getName(), 11) + " - " + p.getDescription());
-            out.println(padr("", 16) + "Default value is \"" + def.getString(p) + "\".");
+			out.println(padr("", 16) + "Default value is \"" + def.getString(p) + "\".");
 		}
 		def.showNotes(out, true);
 		out.println();
 		out.println("Usage: java -jar aprof.jar dump [<host>:]<port>");
-        out.println("Usage: java -jar aprof.jar export [<file>]");
+		out.println("Usage: java -jar aprof.jar export [<file>]");
 	}
 
 	private static String padr(String s, int len) {
@@ -86,30 +86,30 @@ public class AProfTools {
 		Socket s = new Socket(host, port);
 		OutputStream outputStream = s.getOutputStream();
 		outputStream.write("DUMP\r\n".getBytes(ENCODING));
-        outputStream.flush();
+		outputStream.flush();
 		ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 		Snapshot total_ss = (Snapshot)ois.readObject();
 		DumpFormatter formatter = new DumpFormatter(new Configuration());
-        PrintWriter out = new PrintWriter(System.out);
-        formatter.dumpSection(out, total_ss, 0);
-        out.flush();
+		PrintWriter out = new PrintWriter(System.out);
+		formatter.dumpSection(out, total_ss, 0);
+		out.flush();
 	}
 
-    private static void runExportCommand(String[] args) throws IOException, ClassNotFoundException {
-        if (args.length > 2) {
-            help();
-            return;
-        }
-        PrintWriter out = args.length < 2 ? new PrintWriter(System.out) : new PrintWriter(new File(args[1]));
-        InputStream config_stream = ClassLoader.getSystemResourceAsStream(DetailsConfiguration.RESOURCE);
-        BufferedReader in = new BufferedReader(new InputStreamReader(config_stream));
-        while (true) {
-            String line = in.readLine();
-            if (line == null) {
-                break;
-            }
-            out.println(line);
-        }
-        out.flush();
-    }
+	private static void runExportCommand(String[] args) throws IOException, ClassNotFoundException {
+		if (args.length > 2) {
+			help();
+			return;
+		}
+		PrintWriter out = args.length < 2 ? new PrintWriter(System.out) : new PrintWriter(new File(args[1]));
+		InputStream config_stream = ClassLoader.getSystemResourceAsStream(DetailsConfiguration.RESOURCE);
+		BufferedReader in = new BufferedReader(new InputStreamReader(config_stream));
+		while (true) {
+			String line = in.readLine();
+			if (line == null) {
+				break;
+			}
+			out.println(line);
+		}
+		out.flush();
+	}
 }

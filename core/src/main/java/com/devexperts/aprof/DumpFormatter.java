@@ -113,19 +113,19 @@ class DumpFormatter {
 			out.print(" ");
 			printavg(out, item.getSize(), item.getTotalCount());
 		}
-        long[] counts = item.getCounts();
-        if (counts != null && counts.length > 1) {
+		long[] counts = item.getCounts();
+		if (counts != null && counts.length > 1) {
 			out.print(" [histogram: ");
 			int last_non_zero = counts.length - 1;
 			while (last_non_zero > 0 && counts[last_non_zero] == 0) {
 				last_non_zero--;
 			}
-            long count = item.getCount();
-            if (count != 0) {
-                out.print("(");
-                out.print(count);
-                out.print(") ");
-            }
+			long count = item.getCount();
+			if (count != 0) {
+				out.print("(");
+				out.print(count);
+				out.print(") ");
+			}
 			for (int i = 0; i < last_non_zero; i++) {
 				out.print(counts[i]);
 				out.print(" ");

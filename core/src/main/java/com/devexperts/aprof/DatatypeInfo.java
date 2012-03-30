@@ -26,43 +26,43 @@ import java.util.Comparator;
 * @author Dmitry Paraschenko
 */
 final class DatatypeInfo {
-    private final String name;
-    private final IndexMap index;
-    private volatile int size;
-    private volatile boolean direct_clone;
+	private final String name;
+	private final IndexMap index;
+	private volatile int size;
+	private volatile boolean direct_clone;
 
-    public DatatypeInfo(String name, IndexMap index) {
-        this.name = name;
-        this.index = index;
-    }
+	public DatatypeInfo(String name, IndexMap index) {
+		this.name = name;
+		this.index = index;
+	}
 
-    public String getName() {
-        return name;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public IndexMap getIndex() {
-        return index;
-    }
+	public IndexMap getIndex() {
+		return index;
+	}
 
-    public boolean isDirectClone() {
-        return direct_clone;
-    }
+	public boolean isDirectClone() {
+		return direct_clone;
+	}
 
-    public void setDirectClone(boolean direct_clone) {
-        this.direct_clone = direct_clone;
-    }
+	public void setDirectClone(boolean direct_clone) {
+		this.direct_clone = direct_clone;
+	}
 
-    public int getSize() {
-        return size;
-    }
+	public int getSize() {
+		return size;
+	}
 
-    public void setSize(int size) {
-        this.size = size;
-    }
+	public void setSize(int size) {
+		this.size = size;
+	}
 
-    public static final Comparator<DatatypeInfo> COMPARATOR_NAME = new Comparator<DatatypeInfo>() {
-        public int compare(DatatypeInfo o1, DatatypeInfo o2) {
-            return o1.name.compareTo(o2.name);
-        }
-    };
+	public static final Comparator<DatatypeInfo> COMPARATOR_NAME = new Comparator<DatatypeInfo>() {
+		public int compare(DatatypeInfo o1, DatatypeInfo o2) {
+			return o1.name.compareTo(o2.name);
+		}
+	};
 }

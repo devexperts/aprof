@@ -22,38 +22,38 @@ package com.devexperts.aproftest;
  * @author Dmitry Paraschenko
  */
 public class Test {
-    public static void main(String[] args) {
-        for (int i = 0; i < 10000; i++) {
-            Tracked.a(1);
-            Tracked.a(2);
-            Tracked.a(3);
-            b(1);
-            b(2);
-            b(3);
-            new Entity();
-        }
-    }
+	public static void main(String[] args) {
+		for (int i = 0; i < 10000; i++) {
+			Tracked.a(1);
+			Tracked.a(2);
+			Tracked.a(3);
+			b(1);
+			b(2);
+			b(3);
+			new Entity();
+		}
+	}
 
-    static class Tracked {
-        private static void a(int i) {
-            if (i <= 0) {
-                new Entity();
-            } else {
-                a(i - 1);
-                b(i - 1);
-            }
-        }
-    }
+	static class Tracked {
+		private static void a(int i) {
+			if (i <= 0) {
+				new Entity();
+			} else {
+				a(i - 1);
+				b(i - 1);
+			}
+		}
+	}
 
-    private static void b(int i) {
-        if (i <= 0) {
-            new Entity();
-        } else {
-            Tracked.a(i - 1);
-            b(i - 1);
-        }
-    }
+	private static void b(int i) {
+		if (i <= 0) {
+			new Entity();
+		} else {
+			Tracked.a(i - 1);
+			b(i - 1);
+		}
+	}
 
-    static class Entity {
-    }
+	static class Entity {
+	}
 }

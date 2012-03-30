@@ -43,7 +43,7 @@ public class FastOutputStreamWriter extends Writer {
 	private void write(char c) throws IOException {
 		if (c <= 0x7f)
 			out.write(c);
-	    else {
+		else {
 			out.write('\\');
 			out.write('u');
 			out.write(HEX[(c >> 12) & 0xf]);

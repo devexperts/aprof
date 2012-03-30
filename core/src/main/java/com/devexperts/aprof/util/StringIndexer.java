@@ -33,15 +33,15 @@ public class StringIndexer {
 		final int length;
 		final String[] strings;
 		final int[] ids;
-        final int[] id2pos;
+		final int[] id2pos;
 
 		Core(int shift) {
 			this.shift = shift;
 			length = 1 << (32 - shift);
 			strings = new String[length];
 			ids = new int[length];
-            id2pos = new int[length];
-            Arrays.fill(id2pos, -1);
+			id2pos = new int[length];
+			Arrays.fill(id2pos, -1);
 		}
 	}
 
@@ -50,12 +50,12 @@ public class StringIndexer {
 
 	// does not need external synchronization
 	public int register(String string) {
-        return get(string, true);
+		return get(string, true);
 	}
 
 	// does not need external synchronization
 	public int get(String string) {
-        return get(string, false);
+		return get(string, false);
 	}
 
 	// does not need external synchronization
@@ -65,20 +65,20 @@ public class StringIndexer {
 		String s;
 		while (!string.equals(s = core.strings[i])) {
 			if (s == null) {
-                if (!register) {
-                    return 0;
-                }
-                synchronized (this) {
-                    int id = ++size;
-                    core = this.core;
-                    core.strings[i] = string;
-                    core.ids[i] = id;
-                    core.id2pos[id] = i;
-                    if (size >= (THRESHOLD >>> core.shift))
-				        rehash();
-                    return id;
-                }
-            }
+				if (!register) {
+					return 0;
+				}
+				synchronized (this) {
+					int id = ++size;
+					core = this.core;
+					core.strings[i] = string;
+					core.ids[i] = id;
+					core.id2pos[id] = i;
+					if (size >= (THRESHOLD >>> core.shift))
+						rehash();
+					return id;
+				}
+			}
 
 			if (i == 0)
 				i = core.length;
@@ -90,28 +90,28 @@ public class StringIndexer {
 	// does not need external synchronization
 	public String get(int id) {
 		Core core = this.core; // atomic read;
-        if (id >= core.length) {
-            return null;
-        }
-        int pos = core.id2pos[id];
-        if (pos < 0) {
-            return null;
-        }
-        return core.strings[pos];
+		if (id >= core.length) {
+			return null;
+		}
+		int pos = core.id2pos[id];
+		if (pos < 0) {
+			return null;
+		}
+		return core.strings[pos];
 	}
 
-    public int size() {
-        return size;
-    }
+	public int size() {
+		return size;
+	}
 
-    private boolean putInternal(Core core, String string, int id) {
+	private boolean putInternal(Core core, String string, int id) {
 		int i = (string.hashCode() * MAGIC) >>> core.shift;
 		String k;
 		while (!string.equals(k = core.strings[i])) {
 			if (k == null) {
 				core.strings[i] = string;
 				core.ids[i] = id;
-                core.id2pos[id] = i;
+				core.id2pos[id] = i;
 				return true;
 			}
 			if (i == 0)

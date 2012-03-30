@@ -22,79 +22,79 @@ package com.devexperts.aprof;
 * @author Dmitry Paraschenko
 */
 public final class LocationStack {
-    int invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
-    int invocation_point_count;
-    int invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
-    int invoked_method_count = 0;
-    int internal_invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
-    int internal_invoked_method_count = 0;
+	int invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
+	int invocation_point_count;
+	int invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
+	int invoked_method_count = 0;
+	int internal_invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
+	int internal_invoked_method_count = 0;
 
-    private static final ThreadLocal<LocationStack> location_stack = new ThreadLocal<LocationStack>() {
-        @Override
-        protected LocationStack initialValue() {
-            return new LocationStack();
-        }
-    };
+	private static final ThreadLocal<LocationStack> location_stack = new ThreadLocal<LocationStack>() {
+		@Override
+		protected LocationStack initialValue() {
+			return new LocationStack();
+		}
+	};
 
-    public static LocationStack get() {
-        return location_stack.get();
-    }
+	public static LocationStack get() {
+		return location_stack.get();
+	}
 
-    public void addInvocationPoint(int loc) {
-        if (invocation_point_count > 0) {
-            invocation_point_count++;
-        } else {
-            invocation_point_count = 1;
-            invocation_point_loc = loc;
-        }
-    }
+	public void addInvocationPoint(int loc) {
+		if (invocation_point_count > 0) {
+			invocation_point_count++;
+		} else {
+			invocation_point_count = 1;
+			invocation_point_loc = loc;
+		}
+	}
 
-    public void removeInvocationPoint() {
-        if (invocation_point_count > 1) {
-            invocation_point_count--;
-        } else {
-            invocation_point_count = 0;
-            invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
-            invoked_method_count = 0;
-            invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
-        }
-    }
+	public void removeInvocationPoint() {
+		if (invocation_point_count > 1) {
+			invocation_point_count--;
+		} else {
+			invocation_point_count = 0;
+			invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
+			invoked_method_count = 0;
+			invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
+		}
+	}
 
-    public void addInvokedMethod(int loc) {
-        invocation_point_count++;
-        if (invoked_method_count > 0) {
-            invoked_method_count++;
-        } else {
-            invoked_method_count = 1;
-            invoked_method_loc = loc;
-        }
-    }
+	public void addInvokedMethod(int loc) {
+		invocation_point_count++;
+		if (invoked_method_count > 0) {
+			invoked_method_count++;
+		} else {
+			invoked_method_count = 1;
+			invoked_method_loc = loc;
+		}
+	}
 
-    public void removeInvokedMethod() {
-        invocation_point_count--;
-        if (invoked_method_count > 1) {
-            invoked_method_count--;
-        } else {
-            invoked_method_count = 0;
-            invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
-        }
-    }
+	public void removeInvokedMethod() {
+		invocation_point_count--;
+		if (invoked_method_count > 1) {
+			invoked_method_count--;
+		} else {
+			invoked_method_count = 0;
+			invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
+		}
+	}
 
-    public void addInternalInvokedMethod(int loc) {
-        if (internal_invoked_method_count > 0) {
-            internal_invoked_method_count++;
-        } else {
-            internal_invoked_method_count = 1;
-            internal_invoked_method_loc = loc;
-        }
-    }
+	public void addInternalInvokedMethod(int loc) {
+		if (internal_invoked_method_count > 0) {
+			internal_invoked_method_count++;
+		} else {
+			internal_invoked_method_count = 1;
+			internal_invoked_method_loc = loc;
+		}
+	}
 
-    public void removeInternalInvokedMethod() {
-        if (internal_invoked_method_count > 1) {
-            internal_invoked_method_count--;
-        } else {
-            internal_invoked_method_count = 0;
-            internal_invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
-        }
-    }
+	public void removeInternalInvokedMethod() {
+		if (internal_invoked_method_count > 1) {
+			internal_invoked_method_count--;
+		} else {
+			internal_invoked_method_count = 0;
+			internal_invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
+		}
+	}
 }

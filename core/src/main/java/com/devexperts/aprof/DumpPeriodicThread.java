@@ -29,9 +29,9 @@ class DumpPeriodicThread extends Thread {
 	private final Dumper dumper;
 	private final long time;
 
-    private volatile boolean running = true;
+	private volatile boolean running = true;
 
-    public DumpPeriodicThread(Dumper dumper, long time) {
+	public DumpPeriodicThread(Dumper dumper, long time) {
 		super("AProfDump-Periodic");
 		setDaemon(true);
 		setPriority(Thread.MAX_PRIORITY);
@@ -39,42 +39,42 @@ class DumpPeriodicThread extends Thread {
 		this.time = time;
 	}
 
-    public boolean shutdown() {
-        running = false;
-        this.interrupt();
-        try {
-            this.join();
-            return true;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
+	public boolean shutdown() {
+		running = false;
+		this.interrupt();
+		try {
+			this.join();
+			return true;
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
 
 	@Override
 	public void run() {
-        while (running) {
-            try {
-                long wait_dump = time;
-                //noinspection InfiniteLoopStatement
-                while (running) {
-                    Thread.sleep(SLEEP_TIME);
-                    if (time > 0 && (wait_dump -= SLEEP_TIME) <= 0) {
-                        dumper.makeDump(false);
-                        wait_dump = time;
-                    } else if (AProfRegistry.isOverflowThreshold()) {
-                        dumper.makeOverflowSnapshot();
-                    }
-                }
-            } catch (InterruptedException e) {
-                // thread dies
-                if (running) {
-                    Log.out.println(getName() + " was interrupted");
-                }
-                return;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+		while (running) {
+			try {
+				long wait_dump = time;
+				//noinspection InfiniteLoopStatement
+				while (running) {
+					Thread.sleep(SLEEP_TIME);
+					if (time > 0 && (wait_dump -= SLEEP_TIME) <= 0) {
+						dumper.makeDump(false);
+						wait_dump = time;
+					} else if (AProfRegistry.isOverflowThreshold()) {
+						dumper.makeOverflowSnapshot();
+					}
+				}
+			} catch (InterruptedException e) {
+				// thread dies
+				if (running) {
+					Log.out.println(getName() + " was interrupted");
+				}
+				return;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }

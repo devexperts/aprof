@@ -62,7 +62,7 @@ class Dumper {
 		AProfRegistry.makeSnapshot(last);
 		temp.clearDeep();
 		temp.addAll(total);
-        temp.addAll(last);
+		temp.addAll(last);
 		oos.writeObject(temp);
 	}
 
@@ -70,13 +70,13 @@ class Dumper {
 		String file_name = config.getFile();
 		if (file_name.length() == 0)
 			return; // do not dump
-        boolean file_append = snapshot_count > file_number && config.isFileAppend();
+		boolean file_append = snapshot_count > file_number && config.isFileAppend();
 
 		int mask_end = file_name.lastIndexOf('#');
 		if (mask_end >= 0) {
-            file_number++;
-            if (config.getFilecount() != 0)
-                file_number %= config.getFilecount();
+			file_number++;
+			if (config.getFilecount() != 0)
+				file_number %= config.getFilecount();
 			int mask_start = mask_end;
 			while (mask_start > 0 && file_name.charAt(mask_start - 1) == '#') {
 				mask_start--;
@@ -112,24 +112,24 @@ class Dumper {
 		Log.out.println("Writing dump to file " + file_name + "... done");
 	}
 
-    private String resize(String str, int length) {
-        if (str.length() >= length) {
-            return str.substring(str.length() - length);
-        }
-        StringBuilder sb = new StringBuilder();
-        while (str.length() < length) {
-            sb.append('0');
-            length--;
-        }
-        sb.append(str);
-        return sb.toString();
-    }
+	private String resize(String str, int length) {
+		if (str.length() >= length) {
+			return str.substring(str.length() - length);
+		}
+		StringBuilder sb = new StringBuilder();
+		while (str.length() < length) {
+			sb.append('0');
+			length--;
+		}
+		sb.append(str);
+		return sb.toString();
+	}
 
-    private void dumpAll(PrintWriter out, boolean dump_all) {
+	private void dumpAll(PrintWriter out, boolean dump_all) {
 		long now = System.currentTimeMillis();
 		long uptime = now - start;
-        //------ Line #1
-        out.println("===============================================================================");
+		//------ Line #1
+		out.println("===============================================================================");
 		out.println(Version.get());
 		//------ Line #2
 		out.print("Allocation dump at ");
@@ -182,9 +182,9 @@ class Dumper {
 		DumpFormatter.printnum(out, uptime);
 		out.print(" ms (");
 		DumpFormatter.printtime(out, uptime);
-        out.println(")");
-        formatter.dumpSection(out, total, dump_all ? 0 : config.getThreshold());
-        out.println();
-        out.println();
+		out.println(")");
+		formatter.dumpSection(out, total, dump_all ? 0 : config.getThreshold());
+		out.println();
+		out.println();
 	}
 }

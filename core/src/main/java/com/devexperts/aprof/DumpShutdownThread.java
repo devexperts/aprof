@@ -37,10 +37,10 @@ class DumpShutdownThread extends Thread {
 		this.dpt = dpt;
 	}
 
-    @Override
+	@Override
 	public void run() {
 		if (dpt != null && !dpt.shutdown()) {
-            return;
+			return;
 		}
 		dumper.makeDump(true);
 		long treal = System.currentTimeMillis() - finish;

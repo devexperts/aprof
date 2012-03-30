@@ -32,13 +32,13 @@ import java.util.List;
  */
 public class AProfAgent {
 	private static final List<String> CLASSPATH_JARS = Arrays.asList(
-            "transformer.jar",
-            "asm.jar",
-            "asm-analysis.jar",
-            "asm-commons.jar",
-            "asm-tree.jar",
-            "asm-util.jar"
-    );
+			"transformer.jar",
+			"asm.jar",
+			"asm-analysis.jar",
+			"asm-commons.jar",
+			"asm-tree.jar",
+			"asm-util.jar"
+	);
 	private static final String TRANSFORMER_CLASS = "com.devexperts.aprof.transformer.AProfTransformer";
 	private static final String RESOLVER_CLASS = "com.devexperts.aprof.ClassNameResolverImpl";
 
@@ -60,8 +60,8 @@ public class AProfAgent {
 	public static void premain(String agent_args, Instrumentation inst) throws Exception {
 		getClassLoader();
 		Configuration config = new Configuration(agent_args);
-        File config_file = new File(config.getConfigFile());
-        config = new Configuration(config_file, agent_args);
+		File config_file = new File(config.getConfigFile());
+		config = new Configuration(config_file, agent_args);
 		new AProfAgent(config, inst).go();
 	}
 
@@ -74,7 +74,7 @@ public class AProfAgent {
 	}
 
 	public void go() throws Exception {
-        AProfOps.markInternalInvokedMethod(AProfRegistry.registerLocation(AProfAgent.class.getCanonicalName() + ".go"));
+		AProfOps.markInternalInvokedMethod(AProfRegistry.registerLocation(AProfAgent.class.getCanonicalName() + ".go"));
 		long start = System.currentTimeMillis();
 		StringBuilder sb = new StringBuilder();
 		sb.append("Loading ").append(Version.get()).append("...");
@@ -85,7 +85,7 @@ public class AProfAgent {
 
 		Class<ClassNameResolver> resolver_class = (Class<ClassNameResolver>)class_loader.loadClass(RESOLVER_CLASS);
 
-        ArraySizeHelper.init(inst);
+		ArraySizeHelper.init(inst);
 		AProfRegistry.init(config, resolver_class.newInstance());
 
 		Class<ClassFileTransformer> transformer_class = (Class<ClassFileTransformer>)class_loader.loadClass(TRANSFORMER_CLASS);
@@ -183,7 +183,7 @@ public class AProfAgent {
 		sb.append("Loaded in ").append(finish - start).append(" ms with ").append(trtime).
 			append(" ms in transformer (").append(finish - start - trtime).append(" ms other)");
 		Log.out.println(sb);
-        AProfOps.unmarkInternalInvokedMethod();
+		AProfOps.unmarkInternalInvokedMethod();
 	}
 
 	private void log(Object o) {

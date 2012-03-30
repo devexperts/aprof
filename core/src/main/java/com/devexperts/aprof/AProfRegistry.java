@@ -32,197 +32,197 @@ public class AProfRegistry {
 	public static final String CLONE_SUFFIX = "*";
 
 	private static final int OVERFLOW_THRESHOLD = 1 << 30;
-    private static final String PROXY_SUBSTRING = "$Proxy";
+	private static final String PROXY_SUBSTRING = "$Proxy";
 
-    /* locations are created at transformation time */
-    private static final StringIndexer locations = new StringIndexer();
-    /* datatypes are created at transformation time */
-    private static final StringIndexer datatype_names = new StringIndexer();
+	/* locations are created at transformation time */
+	private static final StringIndexer locations = new StringIndexer();
+	/* datatypes are created at transformation time */
+	private static final StringIndexer datatype_names = new StringIndexer();
 
-    /* datatype infos are created at transformation time */
-    private static final Object datatype_infos_sync = new Object();
-    private static volatile DatatypeInfo[] datatype_infos = new DatatypeInfo[1024];
+	/* datatype infos are created at transformation time */
+	private static final Object datatype_infos_sync = new Object();
+	private static volatile DatatypeInfo[] datatype_infos = new DatatypeInfo[1024];
 
-    /* indexes are created at any time */
-    private static final AtomicInteger last_root_index = new AtomicInteger();
-    private static final Object root_indexes_sync = new Object();
-    private static volatile IndexMap[] root_indexes = new IndexMap[1024];
+	/* indexes are created at any time */
+	private static final AtomicInteger last_root_index = new AtomicInteger();
+	private static final Object root_indexes_sync = new Object();
+	private static volatile IndexMap[] root_indexes = new IndexMap[1024];
 
-    private static final String UNKNOWN = "<unknown>";
-    public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
-    private static final int MAKE_SNAPSHOT_LOC = registerLocation(AProfRegistry.class.getCanonicalName() + ".makeSnapshot");
+	private static final String UNKNOWN = "<unknown>";
+	public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
+	private static final int MAKE_SNAPSHOT_LOC = registerLocation(AProfRegistry.class.getCanonicalName() + ".makeSnapshot");
 
-    private static String normalize(String string) {
-        int pos1 = string.indexOf(PROXY_SUBSTRING);
-        if (pos1 >= 0) {
-            pos1 += PROXY_SUBSTRING.length();
-            int pos2 = pos1;
-            while (pos2 < string.length() && Character.isDigit(string.charAt(pos2))) {
-                pos2++;
-            }
-            string = string.substring(0, pos1) + string.substring(pos2);
-        } else if (config != null) {
-            for (String name : config.getAggregatedClasses()) {
-                if (string.startsWith(name)) {
-                    int pos = name.length();
-                    while (pos < string.length() && Character.isDigit(string.charAt(pos))) {
-                        pos++;
-                    }
-                    string = name + string.substring(pos);
-                    break;
-                }
-            }
-        }
-        return new String(string.toCharArray());
-    }
+	private static String normalize(String string) {
+		int pos1 = string.indexOf(PROXY_SUBSTRING);
+		if (pos1 >= 0) {
+			pos1 += PROXY_SUBSTRING.length();
+			int pos2 = pos1;
+			while (pos2 < string.length() && Character.isDigit(string.charAt(pos2))) {
+				pos2++;
+			}
+			string = string.substring(0, pos1) + string.substring(pos2);
+		} else if (config != null) {
+			for (String name : config.getAggregatedClasses()) {
+				if (string.startsWith(name)) {
+					int pos = name.length();
+					while (pos < string.length() && Character.isDigit(string.charAt(pos))) {
+						pos++;
+					}
+					string = name + string.substring(pos);
+					break;
+				}
+			}
+		}
+		return new String(string.toCharArray());
+	}
 
-    // allocates memory during class transformation only
-    public static int registerLocation(String location) {
-        int loc = locations.get(location);
-        if (loc == 0) {
-            loc = locations.register(normalize(location));
-        }
-        return loc;
-    }
+	// allocates memory during class transformation only
+	public static int registerLocation(String location) {
+		int loc = locations.get(location);
+		if (loc == 0) {
+			loc = locations.register(normalize(location));
+		}
+		return loc;
+	}
 
-    public static void registerDatatypeInfo(String datatype) {
-        getDatatypeInfo(datatype, true);
-    }
+	public static void registerDatatypeInfo(String datatype) {
+		getDatatypeInfo(datatype, true);
+	}
 
-    // allocates memory during class transformation only
-    static DatatypeInfo getDatatypeInfo(String datatype, boolean register) {
-        int id = datatype_names.get(datatype);
-        if (id == 0 && register) {
-            id = datatype_names.register(normalize(datatype));
-        }
-        if (id == 0) {
-            return null;
-        }
-        ensureDatatypeIndexCapacity(id);
-        DatatypeInfo datatype_info = datatype_infos[id];
-        if (datatype_info == null) {
-            synchronized (datatype_infos_sync) {
-                datatype_info = datatype_infos[id];
-                if (datatype_info == null) {
-                    datatype = datatype_names.get(id);
-                    if (datatype.startsWith("[")) {
-                        datatype = resolveClassName(datatype);
-                        IndexMap map = new IndexMap(id, config.getHistogram(datatype));
-                        datatype_info = new DatatypeInfo(datatype, map);
-                    } else {
-                        datatype = resolveClassName(datatype);
-                        IndexMap map = new IndexMap(id, null);
-                        datatype_info = new DatatypeInfo(datatype, map);
-                    }
-                    datatype_infos[id] = datatype_info;
-                }
-            }
-        }
-        return datatype_info;
-    }
+	// allocates memory during class transformation only
+	static DatatypeInfo getDatatypeInfo(String datatype, boolean register) {
+		int id = datatype_names.get(datatype);
+		if (id == 0 && register) {
+			id = datatype_names.register(normalize(datatype));
+		}
+		if (id == 0) {
+			return null;
+		}
+		ensureDatatypeIndexCapacity(id);
+		DatatypeInfo datatype_info = datatype_infos[id];
+		if (datatype_info == null) {
+			synchronized (datatype_infos_sync) {
+				datatype_info = datatype_infos[id];
+				if (datatype_info == null) {
+					datatype = datatype_names.get(id);
+					if (datatype.startsWith("[")) {
+						datatype = resolveClassName(datatype);
+						IndexMap map = new IndexMap(id, config.getHistogram(datatype));
+						datatype_info = new DatatypeInfo(datatype, map);
+					} else {
+						datatype = resolveClassName(datatype);
+						IndexMap map = new IndexMap(id, null);
+						datatype_info = new DatatypeInfo(datatype, map);
+					}
+					datatype_infos[id] = datatype_info;
+				}
+			}
+		}
+		return datatype_info;
+	}
 
-    private static String resolveClassName(String datatype) {
-        return class_name_resolver.resolve(datatype);
-    }
+	private static String resolveClassName(String datatype) {
+		return class_name_resolver.resolve(datatype);
+	}
 
-    private static DatatypeInfo getDatatypeInfo(int id) {
-        DatatypeInfo datatype_info = datatype_infos[id];
-        if (datatype_info == null) {
-            synchronized (datatype_infos_sync) {
-                datatype_info = datatype_infos[id];
-            }
-        }
-        return datatype_info;
-    }
+	private static DatatypeInfo getDatatypeInfo(int id) {
+		DatatypeInfo datatype_info = datatype_infos[id];
+		if (datatype_info == null) {
+			synchronized (datatype_infos_sync) {
+				datatype_info = datatype_infos[id];
+			}
+		}
+		return datatype_info;
+	}
 
-    // allocates memory during class transformation only
-    private static void ensureDatatypeIndexCapacity(int last_id) {
-        if (datatype_infos.length <= last_id) {
-            synchronized (datatype_infos_sync) {
-                int length = datatype_infos.length;
-                if (length <= last_id) {
-                    while (length <= last_id) {
-                        length *= 2;
-                    }
-                    DatatypeInfo[] new_datatype_infos = new DatatypeInfo[length];
-                    System.arraycopy(datatype_infos, 0, new_datatype_infos, 0, datatype_infos.length);
-                    datatype_infos = new_datatype_infos;
-                }
-            }
-        }
-    }
+	// allocates memory during class transformation only
+	private static void ensureDatatypeIndexCapacity(int last_id) {
+		if (datatype_infos.length <= last_id) {
+			synchronized (datatype_infos_sync) {
+				int length = datatype_infos.length;
+				if (length <= last_id) {
+					while (length <= last_id) {
+						length *= 2;
+					}
+					DatatypeInfo[] new_datatype_infos = new DatatypeInfo[length];
+					System.arraycopy(datatype_infos, 0, new_datatype_infos, 0, datatype_infos.length);
+					datatype_infos = new_datatype_infos;
+				}
+			}
+		}
+	}
 
-    static IndexMap getRootIndex(int id) {
-        IndexMap result = id < root_indexes.length ? root_indexes[id] : null;
-        if (result == null) {
-            synchronized (root_indexes_sync) {
-                result = root_indexes[id];
-            }
-        }
-        return result;
-    }
+	static IndexMap getRootIndex(int id) {
+		IndexMap result = id < root_indexes.length ? root_indexes[id] : null;
+		if (result == null) {
+			synchronized (root_indexes_sync) {
+				result = root_indexes[id];
+			}
+		}
+		return result;
+	}
 
-    // allocates memory during class transformation and reflection calls
-    public static int registerRootIndex(String datatype, String location) {
-        DatatypeInfo datatype_info = getDatatypeInfo(datatype, true);
-        int loc = registerLocation(location);
-        IndexMap datatype_map = datatype_info.getIndex();
-        IndexMap root_map = datatype_map.get(loc);
-        if (root_map == null) {
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized (datatype_map) {
-                root_map = datatype_map.get(loc);
-                if (root_map == null) {
-                    int root_index = last_root_index.incrementAndGet();
-                    root_map = new IndexMap(root_index, datatype_map.getHistogram());
-                    datatype_map.put(loc, root_map);
-                    synchronized (root_indexes_sync) {
-                        ensureRootIndexCapacity(root_index);
-                        root_indexes[root_index] = root_map;
-                    }
-                }
-            }
-        }
-        return root_map.getIndex();
-    }
+	// allocates memory during class transformation and reflection calls
+	public static int registerRootIndex(String datatype, String location) {
+		DatatypeInfo datatype_info = getDatatypeInfo(datatype, true);
+		int loc = registerLocation(location);
+		IndexMap datatype_map = datatype_info.getIndex();
+		IndexMap root_map = datatype_map.get(loc);
+		if (root_map == null) {
+			//noinspection SynchronizationOnLocalVariableOrMethodParameter
+			synchronized (datatype_map) {
+				root_map = datatype_map.get(loc);
+				if (root_map == null) {
+					int root_index = last_root_index.incrementAndGet();
+					root_map = new IndexMap(root_index, datatype_map.getHistogram());
+					datatype_map.put(loc, root_map);
+					synchronized (root_indexes_sync) {
+						ensureRootIndexCapacity(root_index);
+						root_indexes[root_index] = root_map;
+					}
+				}
+			}
+		}
+		return root_map.getIndex();
+	}
 
-    // allocates memory during class transformation and reflection calls
-    private static void ensureRootIndexCapacity(int last_id) {
-        if (root_indexes.length <= last_id) {
-            synchronized (root_indexes_sync) {
-                int length = root_indexes.length;
-                if (length <= last_id) {
-                    while (length <= last_id) {
-                        length *= 2;
-                    }
-                    IndexMap[] new_indexes = new IndexMap[length];
-                    System.arraycopy(root_indexes, 0, new_indexes, 0, root_indexes.length);
-                    root_indexes = new_indexes;
-                }
-            }
-        }
-    }
+	// allocates memory during class transformation and reflection calls
+	private static void ensureRootIndexCapacity(int last_id) {
+		if (root_indexes.length <= last_id) {
+			synchronized (root_indexes_sync) {
+				int length = root_indexes.length;
+				if (length <= last_id) {
+					while (length <= last_id) {
+						length *= 2;
+					}
+					IndexMap[] new_indexes = new IndexMap[length];
+					System.arraycopy(root_indexes, 0, new_indexes, 0, root_indexes.length);
+					root_indexes = new_indexes;
+				}
+			}
+		}
+	}
 
-    // allocates memory during class transformation only
-    public static int registerAllocationPoint(String datatype, String location) {
-        return registerRootIndex(datatype, location);
-    }
+	// allocates memory during class transformation only
+	public static int registerAllocationPoint(String datatype, String location) {
+		return registerRootIndex(datatype, location);
+	}
 
-    // TODO: can allocate memory
-    private static IndexMap putLocation(IndexMap map, int loc) {
-        IndexMap result = map.get(loc);
-        if (result == null) {
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized (map) {
-                result = map.get(loc);
-                if (result == null) {
-                    result = new IndexMap(-1, map.getHistogram());
-                    map.put(loc, result);
-                }
-            }
-        }
-        return result;
-    }
+	// TODO: can allocate memory
+	private static IndexMap putLocation(IndexMap map, int loc) {
+		IndexMap result = map.get(loc);
+		if (result == null) {
+			//noinspection SynchronizationOnLocalVariableOrMethodParameter
+			synchronized (map) {
+				result = map.get(loc);
+				if (result == null) {
+					result = new IndexMap(-1, map.getHistogram());
+					map.put(loc, result);
+				}
+			}
+		}
+		return result;
+	}
 
 	private static Configuration config;
 	private static ClassNameResolver class_name_resolver;
@@ -235,54 +235,54 @@ public class AProfRegistry {
 		AProfRegistry.config = config;
 		AProfRegistry.class_name_resolver = resolver;
 
-        getDatatypeInfo(Object.class.getCanonicalName(), true);
-        getDatatypeInfo(IndexMap.class.getCanonicalName(), true);
-        getDatatypeInfo(FastIntObjMap.class.getCanonicalName(), true);
+		getDatatypeInfo(Object.class.getCanonicalName(), true);
+		getDatatypeInfo(IndexMap.class.getCanonicalName(), true);
+		getDatatypeInfo(FastIntObjMap.class.getCanonicalName(), true);
 	}
 
-    public static boolean isInternalClass(String name) {
-        name = name.replace('/', '.');
-        if (name.startsWith("java.lang.ThreadLocal")) {
-            return true;
-        }
-        if (name.startsWith("com.devexperts.aprof.")) {
-            return true;
-        }
-        return false;
-    }
+	public static boolean isInternalClass(String name) {
+		name = name.replace('/', '.');
+		if (name.startsWith("java.lang.ThreadLocal")) {
+			return true;
+		}
+		if (name.startsWith("com.devexperts.aprof.")) {
+			return true;
+		}
+		return false;
+	}
 
-    public static boolean isLocationTracked(String location) {
-        if (isInternalClass(location)) {
-            return false;
-        }
-        if (location.startsWith("java.lang.String.")) {
-            if (location.startsWith("java.lang.String.length")) {
-                return false;
-            }
-            if (location.startsWith("java.lang.String.chatAt")) {
-                return false;
-            }
-            if (location.startsWith("java.lang.String.hashCode")) {
-                return false;
-            }
-            if (location.startsWith("java.lang.String.equals")) {
-                return false;
-            }
-            if (location.startsWith("java.lang.String.indexOf")) {
-                return false;
-            }
-            if (location.startsWith("java.lang.String.lastIndexOf")) {
-                return false;
-            }
-            if (location.startsWith("java.lang.String.startsWith")) {
-                return false;
-            }
-            if (location.startsWith("java.lang.String.endsWith")) {
-                return false;
-            }
-        }
-        return config.isLocationTracked(location);
-    }
+	public static boolean isLocationTracked(String location) {
+		if (isInternalClass(location)) {
+			return false;
+		}
+		if (location.startsWith("java.lang.String.")) {
+			if (location.startsWith("java.lang.String.length")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.chatAt")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.hashCode")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.equals")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.indexOf")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.lastIndexOf")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.startsWith")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.endsWith")) {
+				return false;
+			}
+		}
+		return config.isLocationTracked(location);
+	}
 
 	static int getLocationCount() {
 		return last_root_index.get();
@@ -291,187 +291,187 @@ public class AProfRegistry {
 	static boolean isOverflowThreshold() {
 		int n = getLocationCount();
 		for (int i = 1; i <= n; i++) {
-            IndexMap map = getRootIndex(i);
-            if (map == null) {
-                continue;
-            }
-            AtomicInteger counter = map.getCounter();
-            if (counter.get() >= OVERFLOW_THRESHOLD)
-                return true;
-            AtomicInteger[] counters = map.getCounters();
-            if (counters != null) {
-                for (AtomicInteger cnt : counters)
-                    if (cnt.get() >= OVERFLOW_THRESHOLD)
-                        return true;
-            }
-            AtomicInteger size = map.getSize();
-            if (size != null && size.get() >= OVERFLOW_THRESHOLD)
-                return true;
+			IndexMap map = getRootIndex(i);
+			if (map == null) {
+				continue;
+			}
+			AtomicInteger counter = map.getCounter();
+			if (counter.get() >= OVERFLOW_THRESHOLD)
+				return true;
+			AtomicInteger[] counters = map.getCounters();
+			if (counters != null) {
+				for (AtomicInteger cnt : counters)
+					if (cnt.get() >= OVERFLOW_THRESHOLD)
+						return true;
+			}
+			AtomicInteger size = map.getSize();
+			if (size != null && size.get() >= OVERFLOW_THRESHOLD)
+				return true;
 		}
 		return false;
 	}
 
-    // TODO: can allocate memory during execution: new root because of reflection call
-    // all datatypes should be registered beforehand
-    static IndexMap getDetailedIndex(String datatype, int loc) {
-        int id = registerRootIndex(datatype, locations.get(loc));
-        return getRootIndex(id);
-    }
-
-    // TODO: can allocate memory during execution
-    static IndexMap getDetailedIndex(int index) {
-        IndexMap map = getRootIndex(index);
-        LocationStack stack = LocationStack.get();
-        if (stack.internal_invoked_method_count > 0) {
-            return putLocation(map, stack.internal_invoked_method_loc);
-        }
-        int loc1 = stack.invoked_method_loc;
-        int loc2 = stack.invocation_point_loc;
-        if (loc2 != UNKNOWN_LOC) {
-            map = putLocation(map, loc1);
-            map = putLocation(map, loc2);
-        } else if (loc1 != UNKNOWN_LOC) {
-            map = putLocation(map, loc1);
-        }
-        return map;
-    }
-
-    /**
-     * Adds current snapshot information to <code>ss</code> and clears internal counters.
-     */
-    static void makeSnapshot(Snapshot ss) {
-        AProfOps.markInternalInvokedMethod(MAKE_SNAPSHOT_LOC);
-        try {
-            ss.sort(Snapshot.COMPARATOR_ID);
-            makeSnapshotInternal(ss);
-            compactUnknowns(ss);
-        } finally {
-            AProfOps.unmarkInternalInvokedMethod();
-        }
-    }
-
-	private static synchronized void makeSnapshotInternal(Snapshot ss) {
-        int size = datatype_names.size();
-        DatatypeInfo[] datatypes = new DatatypeInfo[size];
-        int count = 0;
-		for (int i = 0; i < size; i++) {
-            DatatypeInfo datatype_info = getDatatypeInfo(i);
-            if (datatype_info == null) {
-                continue;
-            }
-            datatypes[count++] = datatype_info;
-		}
-        QuickSort.sort(datatypes, 0, count, DatatypeInfo.COMPARATOR_NAME);
-        ss.ensureCapacity(count);
-        int idx = 0;
-        for (int i = 0 ; i < count; i++) {
-            DatatypeInfo datatype_info = datatypes[i];
-            String name = datatype_info.getName();
-            IndexMap map = datatype_info.getIndex();
-            int[] histogram = map.getHistogram();
-            int histo_length = histogram == null ? 0 : histogram.length + 1;
-            Snapshot cs = ss.get(idx = ss.move(idx, name), name, histo_length);
-            makeSnapshotRec(cs, map, datatype_info.getSize(), new Snapshot(null, histo_length), new Snapshot(null, histo_length));
-            ss.add(cs);
-        }
+	// TODO: can allocate memory during execution: new root because of reflection call
+	// all datatypes should be registered beforehand
+	static IndexMap getDetailedIndex(String datatype, int loc) {
+		int id = registerRootIndex(datatype, locations.get(loc));
+		return getRootIndex(id);
 	}
 
-    private static void makeSnapshotRec(Snapshot list, IndexMap map, int class_size, Snapshot unknown, Snapshot total) {
-        list.ensureCapacity(map.size());
-        list.clear();
+	// TODO: can allocate memory during execution
+	static IndexMap getDetailedIndex(int index) {
+		IndexMap map = getRootIndex(index);
+		LocationStack stack = LocationStack.get();
+		if (stack.internal_invoked_method_count > 0) {
+			return putLocation(map, stack.internal_invoked_method_loc);
+		}
+		int loc1 = stack.invoked_method_loc;
+		int loc2 = stack.invocation_point_loc;
+		if (loc2 != UNKNOWN_LOC) {
+			map = putLocation(map, loc1);
+			map = putLocation(map, loc2);
+		} else if (loc1 != UNKNOWN_LOC) {
+			map = putLocation(map, loc1);
+		}
+		return map;
+	}
 
-        Snapshot temp = total != null ? total : unknown;
-        AtomicInteger acounter = map.getCounter();
-        AtomicInteger asize = map.getSize();
-        AtomicInteger[] acounters = map.getCounters();
-        if (acounters == null) {
-            long count = acounter.getAndSet(0);
-            long size = (count * class_size) << ArraySizeHelper.SIZE_SHIFT;
-            temp.add(count, size);
-        } else {
-            long count = acounter.getAndSet(0);
-            long size = asize.getAndSet(0) << ArraySizeHelper.SIZE_SHIFT;
-            long[] counts = new long[acounters.length];
-            for (int i = 0; i < counts.length; i++) {
-                counts[i] = acounters[i].getAndSet(0);
-            }
-            temp.add(count, size, counts);
-        }
-        if (map.size() == 0) {
-            list.add(unknown);
-            unknown.clear();
-        } else {
-            IndexMap unknown_map = map.get(UNKNOWN_LOC);
-            if (unknown_map != null) {
-                Snapshot child_list = list.get(list.move(0, UNKNOWN), UNKNOWN);
-                makeSnapshotRec(child_list, unknown_map, class_size, unknown, null);
-                list.add(child_list);
-                unknown.clear();
-            } else if (!unknown.isEmpty()) {
-                Snapshot child_list = list.get(list.move(0, UNKNOWN), UNKNOWN);
-                child_list.add(unknown);
-                list.add(child_list);
-                unknown.clear();
-            }
-            // unknown is empty now
-            for (int key : map) {
-                if (key == UNKNOWN_LOC) {
-                    continue;
-                }
-                String id = locations.get(key);
-                IndexMap child_map = map.get(key);
-                Snapshot child_list = list.get(list.move(0, id), id);
-                makeSnapshotRec(child_list, child_map, class_size, unknown, null);
-                if (child_list.isEmpty()) {
-                    continue;
-                }
-                if (!id.endsWith(CLONE_SUFFIX)) {
-    				// do not count "clone" calls because they do not invoke constructor
-                    list.add(child_list);
-                }
-            }
-        }
-        if (total != null) {
-            total.sub(list);
-            total.positive();
-            if (!total.isEmpty()) {
-                // now we should add <unknown> node
-                list.add(total);
-                list = list.get(list.move(0, UNKNOWN), UNKNOWN);
-                list.add(total);
-            }
-        }
-    }
+	/**
+	 * Adds current snapshot information to <code>ss</code> and clears internal counters.
+	 */
+	static void makeSnapshot(Snapshot ss) {
+		AProfOps.markInternalInvokedMethod(MAKE_SNAPSHOT_LOC);
+		try {
+			ss.sort(Snapshot.COMPARATOR_ID);
+			makeSnapshotInternal(ss);
+			compactUnknowns(ss);
+		} finally {
+			AProfOps.unmarkInternalInvokedMethod();
+		}
+	}
 
-    /** Returns whether the snapshot contains non-unknown subnode.*/
-    private static boolean compactUnknowns(Snapshot list) {
-        Snapshot unknown = null;
-        boolean unknowns_only = true;
-        for (int i = 0; i < list.getUsed(); i++) {
-            Snapshot item = list.getItem(i);
-            if (item.isEmpty()) {
-                continue;
-            }
-            if (UNKNOWN.equals(item.getId())) {
-                unknown = item;
-            } else {
-                compactUnknowns(item);
-                unknowns_only = false;
-            }
-        }
-        if (unknown == null) {
-            return !unknowns_only;
-        }
-        if (compactUnknowns(unknown)) {
-            return true;
-        }
-        if (unknowns_only) {
-            unknown.clear();
-        }
-        return !unknowns_only;
-    }
+	private static synchronized void makeSnapshotInternal(Snapshot ss) {
+		int size = datatype_names.size();
+		DatatypeInfo[] datatypes = new DatatypeInfo[size];
+		int count = 0;
+		for (int i = 0; i < size; i++) {
+			DatatypeInfo datatype_info = getDatatypeInfo(i);
+			if (datatype_info == null) {
+				continue;
+			}
+			datatypes[count++] = datatype_info;
+		}
+		QuickSort.sort(datatypes, 0, count, DatatypeInfo.COMPARATOR_NAME);
+		ss.ensureCapacity(count);
+		int idx = 0;
+		for (int i = 0 ; i < count; i++) {
+			DatatypeInfo datatype_info = datatypes[i];
+			String name = datatype_info.getName();
+			IndexMap map = datatype_info.getIndex();
+			int[] histogram = map.getHistogram();
+			int histo_length = histogram == null ? 0 : histogram.length + 1;
+			Snapshot cs = ss.get(idx = ss.move(idx, name), name, histo_length);
+			makeSnapshotRec(cs, map, datatype_info.getSize(), new Snapshot(null, histo_length), new Snapshot(null, histo_length));
+			ss.add(cs);
+		}
+	}
 
-    //=================== COUNT & TIME ====================
+	private static void makeSnapshotRec(Snapshot list, IndexMap map, int class_size, Snapshot unknown, Snapshot total) {
+		list.ensureCapacity(map.size());
+		list.clear();
+
+		Snapshot temp = total != null ? total : unknown;
+		AtomicInteger acounter = map.getCounter();
+		AtomicInteger asize = map.getSize();
+		AtomicInteger[] acounters = map.getCounters();
+		if (acounters == null) {
+			long count = acounter.getAndSet(0);
+			long size = (count * class_size) << ArraySizeHelper.SIZE_SHIFT;
+			temp.add(count, size);
+		} else {
+			long count = acounter.getAndSet(0);
+			long size = asize.getAndSet(0) << ArraySizeHelper.SIZE_SHIFT;
+			long[] counts = new long[acounters.length];
+			for (int i = 0; i < counts.length; i++) {
+				counts[i] = acounters[i].getAndSet(0);
+			}
+			temp.add(count, size, counts);
+		}
+		if (map.size() == 0) {
+			list.add(unknown);
+			unknown.clear();
+		} else {
+			IndexMap unknown_map = map.get(UNKNOWN_LOC);
+			if (unknown_map != null) {
+				Snapshot child_list = list.get(list.move(0, UNKNOWN), UNKNOWN);
+				makeSnapshotRec(child_list, unknown_map, class_size, unknown, null);
+				list.add(child_list);
+				unknown.clear();
+			} else if (!unknown.isEmpty()) {
+				Snapshot child_list = list.get(list.move(0, UNKNOWN), UNKNOWN);
+				child_list.add(unknown);
+				list.add(child_list);
+				unknown.clear();
+			}
+			// unknown is empty now
+			for (int key : map) {
+				if (key == UNKNOWN_LOC) {
+					continue;
+				}
+				String id = locations.get(key);
+				IndexMap child_map = map.get(key);
+				Snapshot child_list = list.get(list.move(0, id), id);
+				makeSnapshotRec(child_list, child_map, class_size, unknown, null);
+				if (child_list.isEmpty()) {
+					continue;
+				}
+				if (!id.endsWith(CLONE_SUFFIX)) {
+					// do not count "clone" calls because they do not invoke constructor
+					list.add(child_list);
+				}
+			}
+		}
+		if (total != null) {
+			total.sub(list);
+			total.positive();
+			if (!total.isEmpty()) {
+				// now we should add <unknown> node
+				list.add(total);
+				list = list.get(list.move(0, UNKNOWN), UNKNOWN);
+				list.add(total);
+			}
+		}
+	}
+
+	/** Returns whether the snapshot contains non-unknown subnode.*/
+	private static boolean compactUnknowns(Snapshot list) {
+		Snapshot unknown = null;
+		boolean unknowns_only = true;
+		for (int i = 0; i < list.getUsed(); i++) {
+			Snapshot item = list.getItem(i);
+			if (item.isEmpty()) {
+				continue;
+			}
+			if (UNKNOWN.equals(item.getId())) {
+				unknown = item;
+			} else {
+				compactUnknowns(item);
+				unknowns_only = false;
+			}
+		}
+		if (unknown == null) {
+			return !unknowns_only;
+		}
+		if (compactUnknowns(unknown)) {
+			return true;
+		}
+		if (unknowns_only) {
+			unknown.clear();
+		}
+		return !unknowns_only;
+	}
+
+	//=================== COUNT & TIME ====================
 	private static final AtomicInteger cnt = new AtomicInteger();
 	private static final AtomicLong time = new AtomicLong();
 
@@ -491,20 +491,20 @@ public class AProfRegistry {
 		return time.addAndGet(time_period);
 	}
 
-    //=================== DIRECT CLONE ====================
+	//=================== DIRECT CLONE ====================
 
-    // called during class transformation only
+	// called during class transformation only
 	public static void addDirectCloneClass(String name) {
-        getDatatypeInfo(name, true).setDirectClone(true);
+		getDatatypeInfo(name, true).setDirectClone(true);
 	}
 
-    // called during class transformation only
+	// called during class transformation only
 	public static void removeDirectCloneClass(String name) {
-        getDatatypeInfo(name, false).setDirectClone(false);
+		getDatatypeInfo(name, false).setDirectClone(false);
 	}
 
 	public static boolean isDirectCloneClass(String name) {
-        DatatypeInfo datatype_info = getDatatypeInfo(name, false);
-        return datatype_info != null && datatype_info.isDirectClone();
+		DatatypeInfo datatype_info = getDatatypeInfo(name, false);
+		return datatype_info != null && datatype_info.isDirectClone();
 	}
 }

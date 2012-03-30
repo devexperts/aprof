@@ -24,51 +24,51 @@ import java.util.Comparator;
  * @author Dmitry Paraschenko
  */
 public class QuickSort {
-    public static <V> void sort(V[] items, int l, int r, Comparator<V> comparator) {
-        if (l < r) {
-            qsort(items, l, r - 1, comparator);
-        }
-    }
+	public static <V> void sort(V[] items, int l, int r, Comparator<V> comparator) {
+		if (l < r) {
+			qsort(items, l, r - 1, comparator);
+		}
+	}
 
-    private static <V> void qsort(V[] items, int l, int r, Comparator<V> comparator) {
-        // non-recursive for largest range
-        while (r - l > 4) {
-            V x = items[(l + r) >> 1];
-            int i = l;
-            int j = r;
-            do {
-                while (comparator.compare(items[i], x) < 0)
-                    i++;
-                while (comparator.compare(items[j], x) > 0)
-                    j--;
-                if (i <= j) {
-                    V t = items[i];
-                    items[i] = items[j];
-                    items[j] = t;
-                    i++;
-                    j--;
-                } else {
-                    break;
-                }
-            } while (i <= j);
-            // now we need to sort [l,j] and [i,r]
-            if (j - l < r - i) {
-                qsort(items, l, j, comparator);
-                l = i;
-            } else {
-                qsort(items, i, r, comparator);
-                r = j;
-            }
-        }
-        // simple n^2 sort for the rest
-        for (int i = l; i < r; i++) {
-            for (int j = i + 1; j <= r; j++) {
-                if (comparator.compare(items[i], items[j]) > 0) {
-                    V t = items[i];
-                    items[i] = items[j];
-                    items[j] = t;
-                }
-            }
-        }
-    }
+	private static <V> void qsort(V[] items, int l, int r, Comparator<V> comparator) {
+		// non-recursive for largest range
+		while (r - l > 4) {
+			V x = items[(l + r) >> 1];
+			int i = l;
+			int j = r;
+			do {
+				while (comparator.compare(items[i], x) < 0)
+					i++;
+				while (comparator.compare(items[j], x) > 0)
+					j--;
+				if (i <= j) {
+					V t = items[i];
+					items[i] = items[j];
+					items[j] = t;
+					i++;
+					j--;
+				} else {
+					break;
+				}
+			} while (i <= j);
+			// now we need to sort [l,j] and [i,r]
+			if (j - l < r - i) {
+				qsort(items, l, j, comparator);
+				l = i;
+			} else {
+				qsort(items, i, r, comparator);
+				r = j;
+			}
+		}
+		// simple n^2 sort for the rest
+		for (int i = l; i < r; i++) {
+			for (int j = i + 1; j <= r; j++) {
+				if (comparator.compare(items[i], items[j]) > 0) {
+					V t = items[i];
+					items[i] = items[j];
+					items[j] = t;
+				}
+			}
+		}
+	}
 }

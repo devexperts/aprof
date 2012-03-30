@@ -28,68 +28,68 @@ import static com.devexperts.aprof.ArraySizeHelper.*;
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class AProfOpsInternal {
-    public static void allocate(int index) {
-        IndexMap map = getRootIndex(index);
-        map.increment();
-    }
+	public static void allocate(int index) {
+		IndexMap map = getRootIndex(index);
+		map.increment();
+	}
 
-    public static void allocateArraySize(boolean[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySize(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySize(boolean[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySize(o);
+		map.increment(o.length, size);
+	}
 
-    public static void allocateArraySize(byte[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySize(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySize(byte[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySize(o);
+		map.increment(o.length, size);
+	}
 
-    public static void allocateArraySize(char[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySize(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySize(char[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySize(o);
+		map.increment(o.length, size);
+	}
 
-    public static void allocateArraySize(short[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySize(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySize(short[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySize(o);
+		map.increment(o.length, size);
+	}
 
-    public static void allocateArraySize(int[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySize(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySize(int[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySize(o);
+		map.increment(o.length, size);
+	}
 
-    public static void allocateArraySize(long[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySize(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySize(long[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySize(o);
+		map.increment(o.length, size);
+	}
 
-    public static void allocateArraySize(float[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySize(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySize(float[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySize(o);
+		map.increment(o.length, size);
+	}
 
-    public static void allocateArraySize(double[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySize(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySize(double[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySize(o);
+		map.increment(o.length, size);
+	}
 
-    public static void allocateArraySize(Object[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySize(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySize(Object[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySize(o);
+		map.increment(o.length, size);
+	}
 
-    public static void allocateArraySizeMulti(Object[] o, int index) {
-        IndexMap map = getRootIndex(index);
-        int size = getArraySizeMultiRec(o);
-        map.increment(o.length, size);
-    }
+	public static void allocateArraySizeMulti(Object[] o, int index) {
+		IndexMap map = getRootIndex(index);
+		int size = getArraySizeMultiRec(o);
+		map.increment(o.length, size);
+	}
 }

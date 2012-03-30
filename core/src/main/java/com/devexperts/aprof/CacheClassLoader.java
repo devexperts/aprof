@@ -34,8 +34,8 @@ import java.util.jar.Manifest;
  * @author Dmitry Paraschenko
  */
 class CacheClassLoader extends URLClassLoader {
-    /* The context to be used when loading classes and resources */
-    private final AccessControlContext acc;
+	/* The context to be used when loading classes and resources */
+	private final AccessControlContext acc;
 
 	private boolean initialized;
 	private final List<CachedClass> classes = Collections.synchronizedList(new ArrayList<CachedClass>());

@@ -29,7 +29,7 @@ public class FastIntObjMap<V> {
 	private static final int MAX_SHIFT = 29;
 	private static final int THRESHOLD = (int)((1L << 32) * 0.5); // 50% fill factor for speed
 
-    private static class Core {
+	private static class Core {
 		final int shift;
 		final int length;
 		final int[] keys;
@@ -46,9 +46,9 @@ public class FastIntObjMap<V> {
 	private volatile Core core = new Core(MAX_SHIFT);
 	private volatile int size;
 
-    public int size() {
-        return size;
-    }
+	public int size() {
+		return size;
+	}
 
 	// does not need external synchronization
 	public V get(int key) {
@@ -98,28 +98,28 @@ public class FastIntObjMap<V> {
 		core = new_core;
 	}
 
-    public Iterator<Integer> iterator() {
-        return new Iterator<Integer>() {
-            int i = 0;
-            Core saved_core = core;
+	public Iterator<Integer> iterator() {
+		return new Iterator<Integer>() {
+			int i = 0;
+			Core saved_core = core;
 
-            public boolean hasNext() {
-                while (i < saved_core.length && (saved_core.keys[i] == 0 || saved_core.values[i] == null)) {
-                    i++;
-                }
-                return i < saved_core.length;
-            }
+			public boolean hasNext() {
+				while (i < saved_core.length && (saved_core.keys[i] == 0 || saved_core.values[i] == null)) {
+					i++;
+				}
+				return i < saved_core.length;
+			}
 
-            public Integer next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-                return saved_core.keys[i++];
-            }
+			public Integer next() {
+				if (!hasNext()) {
+					throw new NoSuchElementException();
+				}
+				return saved_core.keys[i++];
+			}
 
-            public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
+			public void remove() {
+				throw new UnsupportedOperationException();
+			}
+		};
+	}
 }

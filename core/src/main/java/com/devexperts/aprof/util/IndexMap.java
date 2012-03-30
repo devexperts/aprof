@@ -25,108 +25,108 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Roman Elizarov
  */
 public final class IndexMap implements Iterable<Integer> {
-    private final int index;
+	private final int index;
 
-    /**
-     * Class histogram configuration.
-     * One object per datatype.
-     * <code>null</code> for non-arrays.
-     */
-    private final int[] histogram;
+	/**
+	 * Class histogram configuration.
+	 * One object per datatype.
+	 * <code>null</code> for non-arrays.
+	 */
+	private final int[] histogram;
 
-    /**
-     * For non-arrays acts as an ordinal instance counter.
-     * For arrays counts instances created via {@link #increment(int size)}.
-     */
-    private final AtomicInteger counter;
+	/**
+	 * For non-arrays acts as an ordinal instance counter.
+	 * For arrays counts instances created via {@link #increment(int size)}.
+	 */
+	private final AtomicInteger counter;
 
-    /**
-     * Total size of all instances.
-     */
-    private final AtomicInteger size;
+	/**
+	 * Total size of all instances.
+	 */
+	private final AtomicInteger size;
 
-    /**
-     * Instance counter for arrays of specific lengths (as specified in {@link #histogram}).
-     * <code>null</code> for non-arrays.
-     */
-    private final AtomicInteger[] counters;
+	/**
+	 * Instance counter for arrays of specific lengths (as specified in {@link #histogram}).
+	 * <code>null</code> for non-arrays.
+	 */
+	private final AtomicInteger[] counters;
 
-    private final FastIntObjMap<IndexMap> items = new FastIntObjMap<IndexMap>();
+	private final FastIntObjMap<IndexMap> items = new FastIntObjMap<IndexMap>();
 
-    public IndexMap(int index, int[] histogram) {
-        this.index = index;
-        this.histogram = histogram;
-        this.counter = new AtomicInteger();
-        if (histogram != null) {
-            this.size = new AtomicInteger();
-            this.counters = new AtomicInteger[histogram.length + 1];
-            for (int i = 0; i < counters.length; i++) {
-                this.counters[i] = new AtomicInteger();
-            }
-        } else {
-            this.size = null;
-            this.counters = null;
-        }
+	public IndexMap(int index, int[] histogram) {
+		this.index = index;
+		this.histogram = histogram;
+		this.counter = new AtomicInteger();
+		if (histogram != null) {
+			this.size = new AtomicInteger();
+			this.counters = new AtomicInteger[histogram.length + 1];
+			for (int i = 0; i < counters.length; i++) {
+				this.counters[i] = new AtomicInteger();
+			}
+		} else {
+			this.size = null;
+			this.counters = null;
+		}
 	}
 
-    public int getIndex() {
-        return index;
-    }
+	public int getIndex() {
+		return index;
+	}
 
-    public int[] getHistogram() {
-        return histogram;
-    }
+	public int[] getHistogram() {
+		return histogram;
+	}
 
-    public IndexMap get(int key) {
+	public IndexMap get(int key) {
 		return items.get(key);
 	}
 
-    /* needs external synchronization */
+	/* needs external synchronization */
 	public void put(int key, IndexMap value) {
-        items.put(key, value);
+		items.put(key, value);
 	}
 
-    public int size() {
-        return items.size();
-    }
+	public int size() {
+		return items.size();
+	}
 
-    public Iterator<Integer> iterator() {
-        return items.iterator();
-    }
+	public Iterator<Integer> iterator() {
+		return items.iterator();
+	}
 
-    public AtomicInteger getCounter() {
-        return counter;
-    }
+	public AtomicInteger getCounter() {
+		return counter;
+	}
 
-    public AtomicInteger[] getCounters() {
-        return counters;
-    }
+	public AtomicInteger[] getCounters() {
+		return counters;
+	}
 
-    public AtomicInteger getSize() {
-        return size;
-    }
+	public AtomicInteger getSize() {
+		return size;
+	}
 
-    public void increment() {
-        this.counter.incrementAndGet();
-    }
+	public void increment() {
+		this.counter.incrementAndGet();
+	}
 
-    public void increment(int size) {
-        this.counter.incrementAndGet();
-        this.size.addAndGet(size);
-    }
+	public void increment(int size) {
+		this.counter.incrementAndGet();
+		this.size.addAndGet(size);
+	}
 
-    public void increment(int length, int size) {
-        int idx = getHistogramIndex(length);
-        this.counters[idx].incrementAndGet();
-        this.size.addAndGet(size);
-    }
+	public void increment(int length, int size) {
+		int idx = getHistogramIndex(length);
+		this.counters[idx].incrementAndGet();
+		this.size.addAndGet(size);
+	}
 
-    private int getHistogramIndex(int length) {
-        for (int i = 0; i < histogram.length; i++) {
-            if (length <= histogram[i]) {
-                return i;
-            }
-        }
-        return histogram.length;
-    }
+	private int getHistogramIndex(int length) {
+		for (int i = 0; i < histogram.length; i++) {
+			if (length <= histogram[i]) {
+				return i;
+			}
+		}
+		return histogram.length;
+	}
 }
