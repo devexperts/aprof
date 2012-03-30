@@ -19,6 +19,7 @@
 package com.devexperts.aproftest;
 
 import com.devexperts.aprof.AProfRegistry;
+import com.devexperts.aprof.DumpFormatter;
 import com.devexperts.aprof.Snapshot;
 import com.devexperts.aprof.Version;
 
@@ -65,7 +66,12 @@ public class Test {
 
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		PrintWriter out = new PrintWriter(bos);
-		AProfRegistry.getDumpFormatter().dumpSection(out, snapshot, 0);
+		DumpFormatter dumpFormatter = AProfRegistry.getDumpFormatter();
+		if (dumpFormatter == null) {
+			System.out.println("Test should be run under Aprof!!!");
+			return;
+		}
+		dumpFormatter.dumpSection(out, snapshot, 0);
 		out.flush();
 		String result = new String(bos.toByteArray());
 		result = result.substring(result.indexOf('\n')).trim();

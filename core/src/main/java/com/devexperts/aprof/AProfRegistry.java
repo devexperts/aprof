@@ -241,6 +241,8 @@ public class AProfRegistry {
 	}
 
 	public static DumpFormatter getDumpFormatter() {
+		if (config == null)
+			return null;
 		return new DumpFormatter(config);
 	}
 
