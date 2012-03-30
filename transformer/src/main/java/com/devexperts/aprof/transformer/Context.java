@@ -38,6 +38,8 @@ class Context {
 
     private final String location;
     private final boolean method_tracked;
+    private final boolean object_init;
+    private final String aprof_ops_impl;
 
     private int location_stack = -1;
 
@@ -50,6 +52,8 @@ class Context {
 
         this.location = getLocationString(cname, mname, desc);
         this.method_tracked = !mname.startsWith(AProfTransformer.ACCESS_METHOD) && !AProfRegistry.isInternalClass(cname) && AProfRegistry.isLocationTracked(location);
+        this.object_init = this.cname.equals(AProfTransformer.OBJECT_CLASS_NAME) && this.mname.equals(AProfTransformer.INIT);
+        this.aprof_ops_impl = AProfRegistry.isInternalClass(this.cname) ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
     }
 
     public Configuration getConfig() {
@@ -81,11 +85,11 @@ class Context {
     }
 
     public boolean isObjectInit() {
-        return cname.equals(AProfTransformer.OBJECT_CLASS_NAME) && mname.equals(AProfTransformer.INIT);
+        return object_init;
     }
 
     public String getAprofOpsImplementation() {
-        return AProfRegistry.isInternalClass(cname) ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
+        return aprof_ops_impl;
     }
 
     public void declareLocationStack(GeneratorAdapter mv) {

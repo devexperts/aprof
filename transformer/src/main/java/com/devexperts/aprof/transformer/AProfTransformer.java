@@ -25,8 +25,6 @@ import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
-import org.objectweb.asm.util.CheckClassAdapter;
-import org.objectweb.asm.util.CheckMethodAdapter;
 
 import java.lang.instrument.*;
 import java.security.ProtectionDomain;
@@ -104,7 +102,9 @@ public class AProfTransformer implements ClassFileTransformer {
         try {
             ClassReader cr = new ClassReader(classfileBuffer);
             ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-            cr.accept(new CheckClassAdapter(new AClassVisitor(cw, cname)), (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES);
+            ClassVisitor classVisitor = new AClassVisitor(cw, cname);
+//            classVisitor = new CheckClassAdapter(classVisitor);
+            cr.accept(classVisitor, (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES);
             return cw.toByteArray();
         } catch (Throwable t) {
             synchronized (shared_sb) {
@@ -151,11 +151,10 @@ public class AProfTransformer implements ClassFileTransformer {
                 AProfRegistry.removeDirectCloneClass(cname);
             }
             MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
-            visitor = new CheckMethodAdapter(visitor);
+//            visitor = new CheckMethodAdapter(visitor);
             visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature, exceptions);
             Context context = new Context(config, cname, mname, desc, access);
             visitor = new InvocationPointTracker(new GeneratorAdapter(visitor, access, mname, desc), context);
-//            visitor = new InvokedMethodTracker(new GeneratorAdapter(visitor, access, mname, desc), context);
             return visitor;
         }
     }

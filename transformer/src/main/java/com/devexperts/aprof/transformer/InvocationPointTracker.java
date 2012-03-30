@@ -63,21 +63,6 @@ class InvocationPointTracker extends MethodAdapter {
         }
     }
 
-    /**
-     * @see com.devexperts.aprof.AProfOps#objectInit(Object)
-     * @see com.devexperts.aprof.AProfOps#objectInitSize(Object)
-     */
-    private void visitObjectInit() {
-        if (context.getConfig().isUnknown()) {
-            mv.loadThis();
-            if (context.getConfig().isSize()) {
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInitSize", AProfTransformer.OBJECT_VOID);
-            } else {
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInit", AProfTransformer.OBJECT_VOID);
-            }
-        }
-    }
-
     public void visitInsn(final int opcode) {
         switch (opcode) {
             case RETURN:
@@ -97,24 +82,6 @@ class InvocationPointTracker extends MethodAdapter {
             }
         }
         mv.visitInsn(opcode);
-    }
-
-
-    /**
-     * @see com.devexperts.aprof.AProfOps#markInvokedMethod(int)
-     */
-    private void visitMarkInvokedMethod() {
-        context.pushLocationStack(mv);
-        mv.push(AProfRegistry.registerLocation(context.getLocation()));
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvokedMethod", AProfTransformer.INT_VOID);
-    }
-
-    /**
-     * @see com.devexperts.aprof.AProfOps#unmarkInvokedMethod()
-     */
-    private void visitUnmarkInvokedMethod() {
-        context.pushLocationStack(mv);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvokedMethod", AProfTransformer.NOARG_VOID);
     }
 
     @Override
@@ -259,6 +226,38 @@ class InvocationPointTracker extends MethodAdapter {
             pushAllocationPoint(desc);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", AProfTransformer.INT_VOID);
         }
+    }
+
+    /**
+     * @see com.devexperts.aprof.AProfOps#objectInit(Object)
+     * @see com.devexperts.aprof.AProfOps#objectInitSize(Object)
+     */
+    private void visitObjectInit() {
+        if (context.getConfig().isUnknown()) {
+            mv.loadThis();
+            if (context.getConfig().isSize()) {
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInitSize", AProfTransformer.OBJECT_VOID);
+            } else {
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInit", AProfTransformer.OBJECT_VOID);
+            }
+        }
+    }
+
+    /**
+     * @see com.devexperts.aprof.AProfOps#markInvokedMethod(int)
+     */
+    private void visitMarkInvokedMethod() {
+        context.pushLocationStack(mv);
+        mv.push(AProfRegistry.registerLocation(context.getLocation()));
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvokedMethod", AProfTransformer.INT_VOID);
+    }
+
+    /**
+     * @see com.devexperts.aprof.AProfOps#unmarkInvokedMethod()
+     */
+    private void visitUnmarkInvokedMethod() {
+        context.pushLocationStack(mv);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvokedMethod", AProfTransformer.NOARG_VOID);
     }
 
     /**
