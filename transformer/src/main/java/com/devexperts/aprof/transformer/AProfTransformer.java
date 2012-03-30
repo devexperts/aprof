@@ -173,19 +173,6 @@ public class AProfTransformer implements ClassFileTransformer {
         }
 	}
 
-    private void pushIntImpl(MethodVisitor mv, int integer) {
-        if (integer < -1)
-            mv.visitLdcInsn(integer);
-        else if (integer <= 5)
-            mv.visitInsn(Opcodes.ICONST_0 + integer);
-        else if (integer <= Byte.MAX_VALUE)
-            mv.visitIntInsn(Opcodes.BIPUSH, integer);
-        else if (integer <= Short.MAX_VALUE)
-            mv.visitIntInsn(Opcodes.SIPUSH, integer);
-        else
-            mv.visitLdcInsn(integer);
-    }
-
 	class AClassVisitor extends ClassAdapter {
 		private final String cname;
 
@@ -215,16 +202,14 @@ public class AProfTransformer implements ClassFileTransformer {
 			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
             visitor = new CheckMethodAdapter(visitor);
             visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature,  exceptions);
-            GeneratorAdapter adviceVisitor = new GeneratorAdapter(visitor, access, mname, desc);
-            adviceVisitor = new AdviceMethodVisitor(adviceVisitor, access, cname, mname, desc);
-//            visitor = adviceVisitor;
-            visitor = new AMethodVisitor(adviceVisitor, cname, mname, desc);
+            visitor = new InvocationPointTracker(new GeneratorAdapter(visitor, access, mname, desc), cname, mname, desc);
+            visitor = new InvokedMethodTracker(new GeneratorAdapter(visitor, access, mname, desc), access, cname, mname, desc);
 			return visitor;
 		}
 	}
 
 
-    class AdviceMethodVisitor extends AdviceAdapter {
+    private class InvokedMethodTracker extends AdviceAdapter {
         private final GeneratorAdapter mv;
         private final String cname;
         private final String mname;
@@ -233,7 +218,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
         private int location_stack = -1;
 
-        protected AdviceMethodVisitor(GeneratorAdapter mv, int access, String cname, String mname, String desc) {
+        protected InvokedMethodTracker(GeneratorAdapter mv, int access, String cname, String mname, String desc) {
             super(mv, access, mname, desc);
             this.mv = mv;
             this.cname = cname;
@@ -245,8 +230,8 @@ public class AProfTransformer implements ClassFileTransformer {
         @Override
         protected void onMethodEnter() {
             location_stack = mv.newLocal(Type.getType(LocationStack.class));
-//            mv.visitInsn(Opcodes.NULL);
-//            mv.visitVarInsn(Opcodes.ASTORE, location_stack);
+            mv.visitInsn(Opcodes.ACONST_NULL);
+            mv.storeLocal(location_stack);
             if (mark) {
                 visitMarkInvokedMethod();
             }
@@ -262,23 +247,38 @@ public class AProfTransformer implements ClassFileTransformer {
             }
         }
 
-        private void pushInt(int integer) {
-            pushIntImpl(mv, integer);
+        private void pushLocationStack() {
+            if (location_stack < 0) {
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, LOCATION_STACK, "get", NOARG_RETURNS_LOCATION_STACK);
+                return;
+            }
+
+            Label done = new Label();
+            mv.loadLocal(location_stack);
+            mv.dup();
+            mv.ifNonNull(done);
+            mv.pop();
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, LOCATION_STACK, "get", NOARG_RETURNS_LOCATION_STACK);
+            mv.dup();
+            mv.storeLocal(location_stack);
+            mv.visitLabel(done);
         }
 
         /**
          * @see com.devexperts.aprof.AProfOps#markInvokedMethod(int)
          */
 		private void visitMarkInvokedMethod() {
-            pushInt(AProfRegistry.registerLocation(invoked_method));
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, APROF_OPS, "markInvokedMethod", INT_VOID);
+            pushLocationStack();
+            mv.push(AProfRegistry.registerLocation(invoked_method));
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, LOCATION_STACK, "addInvokedMethod", INT_VOID);
 		}
 
         /**
          * @see com.devexperts.aprof.AProfOps#unmarkInvokedMethod()
          */
 		private void visitUnmarkInvokedMethod() {
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, APROF_OPS, "unmarkInvokedMethod", NOARG_VOID);
+            pushLocationStack();
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, LOCATION_STACK, "removeInvokedMethod", NOARG_VOID);
     	}
 
         /**
@@ -287,7 +287,7 @@ public class AProfTransformer implements ClassFileTransformer {
          */
 		private void visitObjectInit() {
 			if (config.isUnknown()) {
-				mv.visitVarInsn(Opcodes.ALOAD, 0);
+				mv.loadThis();
 				if (config.isSize()) {
 					mv.visitMethodInsn(Opcodes.INVOKESTATIC, APROF_OPS, "objectInitSize", OBJECT_VOID);
                 } else {
@@ -311,7 +311,7 @@ public class AProfTransformer implements ClassFileTransformer {
         }
     }
 
-	class AMethodVisitor extends MethodAdapter {
+	private class InvocationPointTracker extends MethodAdapter {
         private final GeneratorAdapter mv;
 		private final String cname;
 		private final String mname;
@@ -321,7 +321,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		private String _location;
 
 
-		public AMethodVisitor(GeneratorAdapter mv, String cname, String mname, String desc) {
+		public InvocationPointTracker(GeneratorAdapter mv, String cname, String mname, String desc) {
 			super(mv);
             this.mv = mv;
 			this.cname = cname;
@@ -417,13 +417,13 @@ public class AProfTransformer implements ClassFileTransformer {
                 super.visitMethodInsn(opcode, owner, name, desc);
                 mv.visitLabel(end);
                 visitUnmarkInvocationPoint();
-                mv.visitJumpInsn(Opcodes.GOTO, done);
+                mv.goTo(done);
                 mv.visitLabel(handler);
                 int var = mv.newLocal(Type.getType(Object.class));
-                mv.visitVarInsn(Opcodes.ASTORE, var);
+                mv.storeLocal(var);
                 visitUnmarkInvocationPoint();
-                mv.visitVarInsn(Opcodes.ALOAD, var);
-                mv.visitInsn(Opcodes.ATHROW);
+                mv.loadLocal(var);
+                mv.throwException();
                 mv.visitLabel(done);
             } else {
                 super.visitMethodInsn(opcode, owner, name, desc);
@@ -462,13 +462,9 @@ public class AProfTransformer implements ClassFileTransformer {
             super.visitMaxs(maxStack, maxLocals);
         }
 
-        private void pushInt(int integer) {
-            pushIntImpl(mv, integer);
+        private void pushAllocationPoint(String datatype) {
+            mv.push(AProfRegistry.registerAllocationPoint(datatype, getLocation()));
         }
-
-		private void pushAllocationPoint(String datatype) {
-			pushInt(AProfRegistry.registerAllocationPoint(datatype, getLocation()));
-		}
 
         /**
          * OPS implementation is chosen based on the class doing the allocation.
@@ -490,7 +486,7 @@ public class AProfTransformer implements ClassFileTransformer {
          * @see com.devexperts.aprof.AProfOps#markInvocationPoint(int)
          */
 		private void visitMarkInvocationPoint() {
-            pushInt(AProfRegistry.registerLocation(getLocation()));
+            mv.push(AProfRegistry.registerLocation(getLocation()));
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, APROF_OPS, "markInvocationPoint", INT_VOID);
 		}
 
@@ -536,7 +532,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 				String name = desc.replace('/', '.');
 				if (config.isSize()) {
-					mv.visitInsn(Opcodes.DUP);
+					mv.dup();
 					pushAllocationPoint(name);
 					boolean is_multi = desc.lastIndexOf('[') > 0;
 					boolean is_primitive = desc.length() == 2;
@@ -563,9 +559,9 @@ public class AProfTransformer implements ClassFileTransformer {
          */
 		private void visitAllocateReflect(String suffix) {
 			if (config.isReflect()) {
-                mv.visitInsn(Opcodes.DUP);
+                mv.dup();
                 int loc = AProfRegistry.registerLocation(getLocation() + suffix);
-                pushInt(loc);
+                mv.push(loc);
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, APROF_OPS,
                     config.isSize() ? "allocateReflectSize" : "allocateReflect",
                     OBJECT_INT_VOID);
@@ -578,9 +574,9 @@ public class AProfTransformer implements ClassFileTransformer {
          */
 		private void visitAllocateReflectVClone(String suffix) {
 			if (config.isReflect() && !AProfRegistry.isInternalClass(cname)) {
-                mv.visitInsn(Opcodes.DUP);
+                mv.dup();
                 int loc = AProfRegistry.registerLocation(getLocation() + suffix);
-                pushInt(loc);
+                mv.push(loc);
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, APROF_OPS,
                     config.isSize() ? "allocateReflectVCloneSize" : "allocateReflectVClone",
                     OBJECT_INT_VOID);

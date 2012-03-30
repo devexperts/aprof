@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Dmitry Paraschenko
  */
 public class IterationSpeedTest {
-    private static ThreadLocal<AtomicInteger> integer = new ThreadLocal<AtomicInteger>();
     private static int invPoint;
     private static int invMethod;
     private static int location;
