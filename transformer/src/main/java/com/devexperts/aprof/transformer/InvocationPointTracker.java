@@ -159,8 +159,7 @@ class InvocationPointTracker extends MethodAdapter {
             visitAllocateReflect(AProfRegistry.CLONE_SUFFIX);
         }
         if (opcode == Opcodes.INVOKESTATIC && owner.equals("java/lang/reflect/Array") && name.equals("newInstance")
-                && (desc.equals(AProfTransformer.CLASS_INT_RETURNS_OBJECT) || desc.equals(AProfTransformer.CLASS_INT_ARR_RETURNS_OBJECT)))
-        {
+                && (desc.equals(AProfTransformer.CLASS_INT_RETURNS_OBJECT) || desc.equals(AProfTransformer.CLASS_INT_ARR_RETURNS_OBJECT))) {
             // Array.newInstance
             visitAllocateReflect(AProfRegistry.ARRAY_NEWINSTANCE_SUFFIX);
         }
@@ -201,17 +200,17 @@ class InvocationPointTracker extends MethodAdapter {
      * @see com.devexperts.aprof.AProfOps#markInvocationPoint(int)
      */
     private void visitMarkInvocationPoint() {
-            context.pushLocationStack(mv);
-            mv.push(AProfRegistry.registerLocation(context.getLocation()));
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvocationPoint", AProfTransformer.INT_VOID);
+        context.pushLocationStack(mv);
+        mv.push(AProfRegistry.registerLocation(context.getLocation()));
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvocationPoint", AProfTransformer.INT_VOID);
     }
 
     /**
      * @see com.devexperts.aprof.AProfOps#unmarkInvocationPoint()
      */
     private void visitUnmarkInvocationPoint() {
-            context.pushLocationStack(mv);
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvocationPoint", AProfTransformer.NOARG_VOID);
+        context.pushLocationStack(mv);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvocationPoint", AProfTransformer.NOARG_VOID);
     }
 
     /**

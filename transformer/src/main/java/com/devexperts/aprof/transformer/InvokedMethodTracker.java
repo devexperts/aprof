@@ -40,10 +40,7 @@ class InvokedMethodTracker extends AdviceAdapter {
 
     @Override
     protected void onMethodEnter() {
-        int location_stack = mv.newLocal(Type.getType(LocationStack.class));
-        mv.visitInsn(Opcodes.ACONST_NULL);
-        mv.storeLocal(location_stack);
-        context.setLocationStackVariable(location_stack);
+        context.declareLocationStack(mv);
         if (context.isMethodTracked()) {
             visitMarkInvokedMethod();
         }

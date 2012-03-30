@@ -38,7 +38,7 @@ import java.security.ProtectionDomain;
 public class AProfTransformer implements ClassFileTransformer {
     private static final int TRANSFORM_LOC = AProfRegistry.registerLocation(AProfTransformer.class.getCanonicalName() + ".transform");
 
-	static final String APROF_OPS = "com/devexperts/aprof/AProfOps";
+    static final String APROF_OPS = "com/devexperts/aprof/AProfOps";
     static final String APROF_OPS_INTERNAL = "com/devexperts/aprof/AProfOpsInternal";
     static final String LOCATION_STACK = "com/devexperts/aprof/LocationStack";
 
@@ -46,8 +46,8 @@ public class AProfTransformer implements ClassFileTransformer {
 
     static final String ACCESS_METHOD = "access$";
 
-	static final String INIT = "<init>";
-	static final String CLONE = "clone";
+    static final String INIT = "<init>";
+    static final String CLONE = "clone";
 
     static final String NOARG_RETURNS_OBJECT = "()Ljava/lang/Object;";
     static final String NOARG_RETURNS_LOCATION_STACK = "()Lcom/devexperts/aprof/LocationStack;";
@@ -60,48 +60,47 @@ public class AProfTransformer implements ClassFileTransformer {
 
 
     private final Configuration config;
-	private final StringBuilder shared_sb = new StringBuilder();
+    private final StringBuilder shared_sb = new StringBuilder();
 
-	public AProfTransformer(Configuration config) {
-		this.config = config;
-		AProfRegistry.addDirectCloneClass(OBJECT_CLASS_NAME);
-	}
+    public AProfTransformer(Configuration config) {
+        this.config = config;
+        AProfRegistry.addDirectCloneClass(OBJECT_CLASS_NAME);
+    }
 
-    public byte[] transform(ClassLoader loader,	String className,
-		Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
-		throws IllegalClassFormatException
-	{
+    public byte[] transform(ClassLoader loader, String className,
+                            Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
+            throws IllegalClassFormatException {
         AProfOps.markInternalInvokedMethod(TRANSFORM_LOC);
         config.reloadTrackedClasses();
-		long start = System.currentTimeMillis();
-		String cname = className.replace('/', '.');
-		for (String s : config.getExcludedClasses())
-			if (cname.equals(s))
-				return null;
-		int class_no = AProfRegistry.incrementCount();
-		if (!config.isQuiet()) {
-			synchronized (shared_sb) {
-				shared_sb.setLength(0);
-				shared_sb.append("Transforming class #");
-				shared_sb.append(class_no);
-				shared_sb.append(": ");
-				shared_sb.append(cname);
-				if (loader != null) {
-					shared_sb.append(" [in ");
-					String lcname = loader.getClass().getName();
-					String lstr = loader.toString();
-					if (lstr.startsWith(lcname))
-						shared_sb.append(lstr);
-					else {
-						shared_sb.append(lcname);
-						shared_sb.append(": ");
-						shared_sb.append(lstr);
-					}
-					shared_sb.append("]");
-				}
-				Log.out.println(shared_sb);
-			}
-		}
+        long start = System.currentTimeMillis();
+        String cname = className.replace('/', '.');
+        for (String s : config.getExcludedClasses())
+            if (cname.equals(s))
+                return null;
+        int class_no = AProfRegistry.incrementCount();
+        if (!config.isQuiet()) {
+            synchronized (shared_sb) {
+                shared_sb.setLength(0);
+                shared_sb.append("Transforming class #");
+                shared_sb.append(class_no);
+                shared_sb.append(": ");
+                shared_sb.append(cname);
+                if (loader != null) {
+                    shared_sb.append(" [in ");
+                    String lcname = loader.getClass().getName();
+                    String lstr = loader.toString();
+                    if (lstr.startsWith(lcname))
+                        shared_sb.append(lstr);
+                    else {
+                        shared_sb.append(lcname);
+                        shared_sb.append(": ");
+                        shared_sb.append(lstr);
+                    }
+                    shared_sb.append("]");
+                }
+                Log.out.println(shared_sb);
+            }
+        }
         try {
             ClassReader cr = new ClassReader(classfileBuffer);
             ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
@@ -121,44 +120,43 @@ public class AProfTransformer implements ClassFileTransformer {
             t.printStackTrace();
             return null;
         } finally {
-		    AProfRegistry.incrementTime(System.currentTimeMillis() - start);
+            AProfRegistry.incrementTime(System.currentTimeMillis() - start);
             AProfOps.unmarkInternalInvokedMethod();
         }
-	}
+    }
 
-	class AClassVisitor extends ClassAdapter {
-		private final String cname;
+    class AClassVisitor extends ClassAdapter {
+        private final String cname;
 
-		public AClassVisitor(final ClassVisitor cv, String cname) {
-			super(cv);
-			this.cname = cname;
-		}
+        public AClassVisitor(final ClassVisitor cv, String cname) {
+            super(cv);
+            this.cname = cname;
+        }
 
         @Override
-		public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
-			super.visit(version, access, name, signature, superName, interfaces);
+        public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
+            super.visit(version, access, name, signature, superName, interfaces);
             AProfRegistry.registerDatatypeInfo(cname);
-			if (superName != null && AProfRegistry.isDirectCloneClass(superName.replace('/', '.')))
-				// candidate for direct clone
-				AProfRegistry.addDirectCloneClass(cname);
+            if (superName != null && AProfRegistry.isDirectCloneClass(superName.replace('/', '.')))
+                // candidate for direct clone
+                AProfRegistry.addDirectCloneClass(cname);
 
-		}
+        }
 
         @Override
-		public MethodVisitor visitMethod(final int access, final String mname, final String desc, final String signature, final String[] exceptions) {
-			if (((access & Opcodes.ACC_STATIC) == 0) && !cname.equals(OBJECT_CLASS_NAME) &&
-				mname.equals(CLONE) && desc.equals(NOARG_RETURNS_OBJECT))
-			{
-				// no -- does not implement clone directly
-				AProfRegistry.removeDirectCloneClass(cname);
-			}
-			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
+        public MethodVisitor visitMethod(final int access, final String mname, final String desc, final String signature, final String[] exceptions) {
+            if (((access & Opcodes.ACC_STATIC) == 0) && !cname.equals(OBJECT_CLASS_NAME) &&
+                    mname.equals(CLONE) && desc.equals(NOARG_RETURNS_OBJECT)) {
+                // no -- does not implement clone directly
+                AProfRegistry.removeDirectCloneClass(cname);
+            }
+            MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
             visitor = new CheckMethodAdapter(visitor);
-            visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature,  exceptions);
+            visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature, exceptions);
             Context context = new Context(config, cname, mname, desc, access);
             visitor = new InvocationPointTracker(new GeneratorAdapter(visitor, access, mname, desc), context);
             visitor = new InvokedMethodTracker(new GeneratorAdapter(visitor, access, mname, desc), context);
-			return visitor;
-		}
-	}
+            return visitor;
+        }
+    }
 }

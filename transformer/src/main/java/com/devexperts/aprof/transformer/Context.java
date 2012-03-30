@@ -20,6 +20,7 @@ package com.devexperts.aprof.transformer;
 
 import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
+import com.devexperts.aprof.LocationStack;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -87,11 +88,10 @@ class Context {
         return AProfRegistry.isInternalClass(cname) ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
     }
 
-    public int getLocationStackVariable() {
-        return location_stack;
-    }
-
-    public void setLocationStackVariable(int location_stack) {
+    public void declareLocationStack(GeneratorAdapter mv) {
+        int location_stack = mv.newLocal(Type.getType(LocationStack.class));
+        mv.visitInsn(Opcodes.ACONST_NULL);
+        mv.storeLocal(location_stack);
         this.location_stack = location_stack;
     }
 
