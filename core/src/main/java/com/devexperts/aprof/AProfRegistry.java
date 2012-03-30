@@ -240,6 +240,10 @@ public class AProfRegistry {
 		getDatatypeInfo(FastIntObjMap.class.getCanonicalName(), true);
 	}
 
+	public static DumpFormatter getDumpFormatter() {
+		return new DumpFormatter(config);
+	}
+
 	public static boolean isInternalClass(String name) {
 		name = name.replace('/', '.');
 		if (name.startsWith("java.lang.ThreadLocal")) {
@@ -339,7 +343,7 @@ public class AProfRegistry {
 	/**
 	 * Adds current snapshot information to <code>ss</code> and clears internal counters.
 	 */
-	static void makeSnapshot(Snapshot ss) {
+	public static void makeSnapshot(Snapshot ss) {
 		AProfOps.markInternalInvokedMethod(MAKE_SNAPSHOT_LOC);
 		try {
 			ss.sort(Snapshot.COMPARATOR_ID);

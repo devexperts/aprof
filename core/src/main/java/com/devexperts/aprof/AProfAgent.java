@@ -158,10 +158,12 @@ public class AProfAgent {
 		Dumper dumper = new Dumper(config, start);
 		dumper.makeDump(false);
 
-		DumpPeriodicThread dpt;
-		log("Starting dumper thread...");
-		dpt = new DumpPeriodicThread(dumper, config.getTime());
-		dpt.start();
+		DumpPeriodicThread dpt = null;
+		if (config.getTime() > 0) {
+			log("Starting dumper thread...");
+			dpt = new DumpPeriodicThread(dumper, config.getTime());
+			dpt.start();
+		}
 
 		long finish = System.currentTimeMillis();
 		long trtime = AProfRegistry.getTime();

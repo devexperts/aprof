@@ -26,7 +26,7 @@ import java.util.Comparator;
 /**
  * @author Denis Davydov
  */
-class DumpFormatter {
+public class DumpFormatter {
 	private static final int MAX_DEPTH = 5;
 
 	private final Configuration config;
@@ -34,13 +34,13 @@ class DumpFormatter {
 	private final Snapshot[] rest = new Snapshot[MAX_DEPTH];
 	private final FastObjIntMap<String> class_level = new FastObjIntMap<String>();
 
-	public DumpFormatter(Configuration config) {
+	DumpFormatter(Configuration config) {
 		this.config = config;
 		for (int i = 0; i < MAX_DEPTH; i++)
 			rest[i] = new Snapshot();
 	}
 
-	void dumpSection(PrintWriter out, Snapshot ss, double threshold) {
+	public void dumpSection(PrintWriter out, Snapshot ss, double threshold) {
 		Comparator<Snapshot> comparator = config.isSize() ? Snapshot.COMPARATOR_SIZE : Snapshot.COMPARATOR_COUNT;
 		ss.sort(comparator);
 		printlnSummary(out, ss);
@@ -48,7 +48,7 @@ class DumpFormatter {
 		dumpSnapshot(out, ss, threshold);
 	}
 
-	void printlnSummary(PrintWriter out, Snapshot ss) {
+	private void printlnSummary(PrintWriter out, Snapshot ss) {
 		out.print("Allocated ");
 		if (config.isSize()) {
 			printnum(out, ss.getSize());
@@ -62,7 +62,7 @@ class DumpFormatter {
 		out.println(" classes");
 	}
 
-	void dumpSnapshot(PrintWriter out, Snapshot ss, double threshold) {
+	private void dumpSnapshot(PrintWriter out, Snapshot ss, double threshold) {
 		// compute class levels -- classes of level 0 are classes that exceed threshold
 		class_level.fill(Integer.MAX_VALUE);
 		for (int csi = 0; csi < ss.getUsed(); csi++) {
@@ -136,7 +136,7 @@ class DumpFormatter {
 		out.println();
 	}
 
-	static void printIndent(PrintWriter out, int depth) {
+	private static void printIndent(PrintWriter out, int depth) {
 		for (int j = 0; j < depth; j++)
 			out.print("\t");
 	}
@@ -205,19 +205,19 @@ class DumpFormatter {
 			out.print("0");
 	}
 
-	static void print3(PrintWriter out, int value, boolean fill) {
+	private static void print3(PrintWriter out, int value, boolean fill) {
 		if (fill || value >= 100)
 			out.print((char)(value / 100 + '0'));
 		print2(out, value, fill);
 	}
 
-	static void print2(PrintWriter out, int value, boolean fill) {
+	private static void print2(PrintWriter out, int value, boolean fill) {
 		if (fill || value >= 10)
 			out.print((char)(value / 10 % 10 + '0'));
 		out.print((char)(value % 10 + '0'));
 	}
 
-	static void printavg(PrintWriter out, long size, long count) {
+	private static void printavg(PrintWriter out, long size, long count) {
 		out.print("(avg size ");
 		printnum(out, Math.round((double)size / count));
 		out.print(" bytes)");
