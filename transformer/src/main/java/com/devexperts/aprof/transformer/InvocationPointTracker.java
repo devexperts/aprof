@@ -244,7 +244,7 @@ class InvocationPointTracker extends MethodAdapter {
 	}
 
 	/**
-	 * @see com.devexperts.aprof.AProfOps#markInvokedMethod(int)
+	 * @see com.devexperts.aprof.LocationStack#addInvokedMethod(int)
 	 */
 	private void visitMarkInvokedMethod() {
 		context.pushLocationStack(mv);
@@ -253,7 +253,7 @@ class InvocationPointTracker extends MethodAdapter {
 	}
 
 	/**
-	 * @see com.devexperts.aprof.AProfOps#unmarkInvokedMethod()
+	 * @see com.devexperts.aprof.LocationStack#removeInvokedMethod()
 	 */
 	private void visitUnmarkInvokedMethod() {
 		context.pushLocationStack(mv);
@@ -261,7 +261,7 @@ class InvocationPointTracker extends MethodAdapter {
 	}
 
 	/**
-	 * @see com.devexperts.aprof.AProfOps#markInvocationPoint(int)
+	 * @see com.devexperts.aprof.LocationStack#addInvocationPoint(int)
 	 */
 	private void visitMarkInvocationPoint() {
 		context.pushLocationStack(mv);
@@ -270,7 +270,7 @@ class InvocationPointTracker extends MethodAdapter {
 	}
 
 	/**
-	 * @see com.devexperts.aprof.AProfOps#unmarkInvocationPoint()
+	 * @see com.devexperts.aprof.LocationStack#removeInvocationPoint()
 	 */
 	private void visitUnmarkInvocationPoint() {
 		context.pushLocationStack(mv);
