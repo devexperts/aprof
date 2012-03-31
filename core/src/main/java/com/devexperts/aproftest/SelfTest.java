@@ -57,6 +57,7 @@ public class SelfTest {
 		for (int i = 0; i < snapshot.getUsed(); i++) {
 			Snapshot child = snapshot.getItem(i);
 			if (!child.getId().startsWith("com.devexperts.aproftest.SelfTest$")) {
+				snapshot.sub(child);
 				child.clearDeep();
 			}
 		}
@@ -75,15 +76,11 @@ public class SelfTest {
 		}
 		new DumpFormatter(configuration).dumpSection(out, snapshot, 0);
 		out.flush();
-		String result = new String(bos.toByteArray());
-		if (result.contains("\n"))
-			result = result.substring(result.indexOf('\n')).trim();
-		if (result.contains("\n"))
-			result = result.substring(result.indexOf('\n')).trim();
-
-		String collectedResult = result;
+		String collectedResult = new String(bos.toByteArray());
+		String result = collectedResult;
 		String statistics = STATISTICS.trim();
-		for (int lid = 0; ; lid++) {
+		boolean failed = false;
+		while (true) {
 			if (result.isEmpty() || statistics.isEmpty()) {
 				break;
 			}
@@ -99,26 +96,17 @@ public class SelfTest {
 			statistics = statistics.substring(spos).trim();
 
 			if (!rline.equals(sline)) {
-				System.out.println(lid + ": received: ");
-				System.out.println(rline);
-				System.out.println(lid + ": expected: ");
-				System.out.println(sline);
-			}
-
-			if (result.isEmpty() != statistics.isEmpty()) {
-				System.out.println("end: received: ");
-				System.out.println(result);
-				System.out.println("end: expected: ");
-				System.out.println(statistics);
+				failed = true;
+				break;
 			}
 		}
 		
-		if (result.isEmpty() && statistics.isEmpty()) {
-			System.out.println("SelfTest passed");
-		} else {
+		if (failed || result.isEmpty() != statistics.isEmpty()) {
 			System.err.println("SelfTest failed. Collected allocations:");
 			System.err.println(collectedResult);
 			System.out.println("SelfTest failed. Collected allocations were printed to stderr");
+		} else {
+			System.out.println("SelfTest passed");
 		}
 	}
 
@@ -207,6 +195,8 @@ public class SelfTest {
 	private static String TRACK = SelfTest.class.getCanonicalName() + "$" + Tracked.class.getSimpleName();
 	
 	private static String STATISTICS = "" +
+			"Allocated 592,000,000 bytes in 40,400,000 objects in 60 locations of 6 classes\n" +
+			"-------------------------------------------------------------------------------\n" +
 			"com.devexperts.aproftest.SelfTest$Entity2[]: 268,800,000 (45%) bytes in 2,800,000 (6%) objects (avg size 96 bytes)\n" +
 			"\tcom.devexperts.aproftest.SelfTest$Tracked.a: 134,400,000 (50%) bytes in 1,400,000 (50%) objects (avg size 96 bytes)\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 134,400,000 (100%) bytes in 1,400,000 (100%) objects (avg size 96 bytes)\n" +
@@ -220,7 +210,7 @@ public class SelfTest {
 			"\t\t<unknown>: 28,800,000 (21%) bytes in 300,000 (21%) objects (avg size 96 bytes)\n" +
 			"\tcom.devexperts.aproftest.SelfTest.b*: 134,400,000 (50%) bytes in 1,400,000 (50%) objects (avg size 96 bytes)\n" +
 			"\n" +
-			"com.devexperts.aproftest.SelfTest$Entity4: 161,600,000 (27%) bytes in 20,200,000 (49%) objects (avg size 8 bytes)\n" +
+			"com.devexperts.aproftest.SelfTest$Entity4: 161,600,000 (27%) bytes in 20,200,000 (50%) objects (avg size 8 bytes)\n" +
 			"\tcom.devexperts.aproftest.SelfTest$Entity4.dup*: 115,200,000 (71%) bytes in 14,400,000 (71%) objects\n" +
 			"\tcom.devexperts.aproftest.SelfTest$Entity2.<init>: 46,400,000 (28%) bytes in 5,800,000 (28%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 40,000,000 (86%) bytes in 5,000,000 (86%) objects\n" +
