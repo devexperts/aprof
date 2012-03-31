@@ -18,9 +18,9 @@
 
 package com.devexperts.aprof.transformer;
 
-import com.devexperts.aprof.AProfOps;
 import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
+import com.devexperts.aprof.LocationStack;
 import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -68,7 +68,7 @@ public class AProfTransformer implements ClassFileTransformer {
 	public byte[] transform(ClassLoader loader, String className,
 							Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
 			throws IllegalClassFormatException {
-		AProfOps.markInternalInvokedMethod(TRANSFORM_LOC);
+		LocationStack.markInternalInvokedMethod(TRANSFORM_LOC);
 		config.reloadTrackedClasses();
 		long start = System.currentTimeMillis();
 		String cname = className.replace('/', '.');
@@ -121,7 +121,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			return null;
 		} finally {
 			AProfRegistry.incrementTime(System.currentTimeMillis() - start);
-			AProfOps.unmarkInternalInvokedMethod();
+			LocationStack.unmarkInternalInvokedMethod();
 		}
 	}
 

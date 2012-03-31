@@ -318,7 +318,7 @@ public class Configuration {
 		}
 	}
 
-	String getString(Prop p) {
+	public String getString(Prop p) {
 		Object value = get(p);
 		return formatValue(value, p);
 	}
@@ -397,7 +397,7 @@ public class Configuration {
 	@Retention(RetentionPolicy.RUNTIME)
 	private static @interface TimeIntervalProp {}
 
-	static class Prop {
+	public static class Prop {
 		private final String name;
 		private final String description;
 		private final Field field;

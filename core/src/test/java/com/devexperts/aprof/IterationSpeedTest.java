@@ -91,22 +91,22 @@ public class IterationSpeedTest {
 
 		time = System.currentTimeMillis();
 		for (int i = 0; i < length; i++)
-			AProfOps.markInvocationPoint(invPoint);
+			LocationStack.get().addInvocationPoint(invPoint);
 		System.out.printf("markP=%d\n", System.currentTimeMillis() - time);
 
 		time = System.currentTimeMillis();
 		for (int i = 0; i < length; i++)
-			AProfOps.unmarkInvocationPoint();
+			LocationStack.get().removeInvocationPoint();
 		System.out.printf("unmarkP=%d\n", System.currentTimeMillis() - time);
 
 		time = System.currentTimeMillis();
 		for (int i = 0; i < length; i++)
-			AProfOps.markInvokedMethod(invMethod);
+			LocationStack.get().addInvokedMethod(invMethod);
 		System.out.printf("markM=%d\n", System.currentTimeMillis() - time);
 
 		time = System.currentTimeMillis();
 		for (int i = 0; i < length; i++)
-			AProfOps.unmarkInvokedMethod();
+			LocationStack.get().removeInvokedMethod();
 		System.out.printf("unmarkM=%d\n", System.currentTimeMillis() - time);
 
 		time = System.currentTimeMillis();
@@ -123,14 +123,14 @@ public class IterationSpeedTest {
 
 	private static void testAprof(int length) {
 		for (int i = 0; i < length; i++) {
-			AProfOps.markInvocationPoint(invPoint);
+			LocationStack.get().addInvocationPoint(invPoint);
 			try {
-				AProfOps.markInvokedMethod(invMethod);
+				LocationStack.get().addInvokedMethod(invMethod);
 				Integer.valueOf(i);
 				AProfOps.allocate(location);
-				AProfOps.unmarkInvokedMethod();
+				LocationStack.get().removeInvokedMethod();
 			} finally {
-				AProfOps.unmarkInvocationPoint();
+				LocationStack.get().removeInvocationPoint();
 			}
 		}
 	}

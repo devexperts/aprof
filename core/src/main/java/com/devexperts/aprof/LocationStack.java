@@ -97,4 +97,12 @@ public final class LocationStack {
 			internal_invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
 		}
 	}
+
+	public static void markInternalInvokedMethod(int loc) {
+		LocationStack.get().addInternalInvokedMethod(loc);
+	}
+
+	public static void unmarkInternalInvokedMethod() {
+		LocationStack.get().removeInternalInvokedMethod();
+	}
 }

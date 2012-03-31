@@ -74,7 +74,7 @@ public class AProfAgent {
 	}
 
 	public void go() throws Exception {
-		AProfOps.markInternalInvokedMethod(AProfRegistry.registerLocation(AProfAgent.class.getCanonicalName() + ".go"));
+		LocationStack.markInternalInvokedMethod(AProfRegistry.registerLocation(AProfAgent.class.getCanonicalName() + ".go"));
 		long start = System.currentTimeMillis();
 		StringBuilder sb = new StringBuilder();
 		sb.append("Loading ").append(Version.get()).append("...");
@@ -185,7 +185,7 @@ public class AProfAgent {
 		sb.append("Loaded in ").append(finish - start).append(" ms with ").append(trtime).
 			append(" ms in transformer (").append(finish - start - trtime).append(" ms other)");
 		Log.out.println(sb);
-		AProfOps.unmarkInternalInvokedMethod();
+		LocationStack.unmarkInternalInvokedMethod();
 	}
 
 	private void log(Object o) {

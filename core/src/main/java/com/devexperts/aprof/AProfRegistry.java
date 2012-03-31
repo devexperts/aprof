@@ -346,13 +346,13 @@ public class AProfRegistry {
 	 * Adds current snapshot information to <code>ss</code> and clears internal counters.
 	 */
 	public static void makeSnapshot(Snapshot ss) {
-		AProfOps.markInternalInvokedMethod(MAKE_SNAPSHOT_LOC);
+		LocationStack.markInternalInvokedMethod(MAKE_SNAPSHOT_LOC);
 		try {
 			ss.sort(Snapshot.COMPARATOR_ID);
 			makeSnapshotInternal(ss);
 			compactUnknowns(ss);
 		} finally {
-			AProfOps.unmarkInternalInvokedMethod();
+			LocationStack.unmarkInternalInvokedMethod();
 		}
 	}
 
