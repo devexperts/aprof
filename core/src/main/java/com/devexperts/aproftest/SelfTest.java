@@ -76,8 +76,10 @@ public class SelfTest {
 		new DumpFormatter(configuration).dumpSection(out, snapshot, 0);
 		out.flush();
 		String result = new String(bos.toByteArray());
-		result = result.substring(result.indexOf('\n')).trim();
-		result = result.substring(result.indexOf('\n')).trim();
+		if (result.contains("\n"))
+			result = result.substring(result.indexOf('\n')).trim();
+		if (result.contains("\n"))
+			result = result.substring(result.indexOf('\n')).trim();
 
 		String collectedResult = result;
 		String statistics = STATISTICS.trim();
