@@ -36,7 +36,7 @@ public class SelfTest {
 		long time = System.currentTimeMillis();
 		for (int i = 0; i < 100000; i++) {
 			if (i % 10000 == 0)
-				System.out.println(i);
+				System.out.print('.');
 			Tracked.a(1);
 			Tracked.a(2);
 			Tracked.a(3);
@@ -46,9 +46,9 @@ public class SelfTest {
 			new Entity1();
 			new Entity2();
 			new Entity3();
-			new DupableEntity();
+			new Entity4();
 		}
-		System.out.printf("SelfTest took %d ms\n", System.currentTimeMillis() - time);
+		System.out.printf("\nSelfTest took %d ms\n", System.currentTimeMillis() - time);
 
 		// retrieving STATISTICS
 		Snapshot snapshot = new Snapshot();
@@ -56,7 +56,7 @@ public class SelfTest {
 
 		for (int i = 0; i < snapshot.getUsed(); i++) {
 			Snapshot child = snapshot.getItem(i);
-			if (!child.getId().startsWith("com.devexperts.aproftest.SelfTest$Entity")) {
+			if (!child.getId().startsWith("com.devexperts.aproftest.SelfTest$")) {
 				child.clearDeep();
 			}
 		}
@@ -65,7 +65,7 @@ public class SelfTest {
 		PrintWriter out = new PrintWriter(bos);
 		Configuration configuration = AProfRegistry.getConfiguration();
 		if (configuration == null) {
-			System.out.println("SelfTest should be run under Aprof!!!");
+			System.out.println("SelfTest should be run under Aprof");
 			return;
 		}
 		
@@ -79,7 +79,7 @@ public class SelfTest {
 		result = result.substring(result.indexOf('\n')).trim();
 		result = result.substring(result.indexOf('\n')).trim();
 
-		String receivedResult = result;
+		String collectedResult = result;
 		String statistics = STATISTICS.trim();
 		for (int lid = 0; ; lid++) {
 			if (result.isEmpty() || statistics.isEmpty()) {
@@ -105,28 +105,28 @@ public class SelfTest {
 
 			if (result.isEmpty() != statistics.isEmpty()) {
 				System.out.println("end: received: ");
-				System.out.println(rline);
+				System.out.println(result);
 				System.out.println("end: expected: ");
-				System.out.println(sline);
+				System.out.println(statistics);
 			}
 		}
 		
 		if (result.isEmpty() && statistics.isEmpty()) {
 			System.out.println("SelfTest passed");
 		} else {
-			System.err.println("SelfTest failed");
-			System.err.println("Expected result:");
-			System.err.println(receivedResult);
+			System.err.println("SelfTest failed. Collected allocations:");
+			System.err.println(collectedResult);
 			System.out.println("SelfTest failed. Collected allocations were printed to stderr");
 		}
 	}
 
 	private static void b(int i) {
 		if (i <= 0) {
+			new Tracked().dup();
 			new Entity1();
 			new Entity2();
 			new Entity3();
-			new DupableEntity().dup();
+			new Entity4().dup();
 			Entity2[] arr = new Entity2[20];
 			arr.clone();
 		} else {
@@ -135,17 +135,18 @@ public class SelfTest {
 		}
 	}
 
-	static class Tracked extends Entity1 {
+	static class Tracked extends Entity1 implements Cloneable {
 		public Tracked() {
-			super(new DupableEntity());
+			super(new Entity4());
 		}
 
 		private static void a(int i) {
 			if (i <= 0) {
+				new Tracked().dup();
 				new Entity1();
 				new Entity2();
 				new Entity3();
-				new DupableEntity().dup();
+				new Entity4().dup();
 				Entity2[] arr = new Entity2[20];
 				arr.clone();
 			} else {
@@ -154,10 +155,19 @@ public class SelfTest {
 			}
 		}
 		
-		private static DupableEntity wrap(int value) {
+		private static Entity4 wrap(int value) {
+			new Tracked().dup();
 			new Entity1();
 			new Entity2();
-			return new DupableEntity().dup();
+			return new Entity4().dup();
+		}
+
+		public Tracked dup() {
+			try {
+				return (Tracked)clone();
+			} catch (CloneNotSupportedException e) {
+				throw new InternalError();
+			}
 		}
 	}
 
@@ -165,27 +175,27 @@ public class SelfTest {
 		public Entity1() {
 		}
 
-		public Entity1(DupableEntity e) {
+		public Entity1(Entity4 e) {
 		}
 	}
 
 	private static class Entity2 {
 		private Entity2() {
-			new DupableEntity().dup();
+			new Entity4().dup();
 		}
 	}
 
 	private static class Entity3 extends Entity1 {
 		private Entity3() {
 			super(Tracked.wrap(1));
-			new DupableEntity().dup();
+			new Entity4().dup();
 		}
 	}
 
-	private static class DupableEntity implements Cloneable {
-		public DupableEntity dup() {
+	private static class Entity4 implements Cloneable {
+		public Entity4 dup() {
 			try {
-				return (DupableEntity)clone();
+				return (Entity4)clone();
 			} catch (CloneNotSupportedException e) {
 				throw new InternalError();
 			}
@@ -194,38 +204,60 @@ public class SelfTest {
 	
 	private static String TRACK = SelfTest.class.getCanonicalName() + "$" + Tracked.class.getSimpleName();
 	
-	private static String STATISTICS =
-			"com.devexperts.aproftest.SelfTest$DupableEntity: 116,000,000 (49%) bytes in 14,500,000 (49%) objects (avg size 8 bytes)\n" +
-			"\tcom.devexperts.aproftest.SelfTest$Entity2.<init>: 46,400,000 (40%) bytes in 5,800,000 (40%) objects\n" +
+	private static String STATISTICS = "" +
+			"com.devexperts.aproftest.SelfTest$Entity2[]: 268,800,000 (45%) bytes in 2,800,000 (6%) objects (avg size 96 bytes)\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Tracked.a: 134,400,000 (50%) bytes in 1,400,000 (50%) objects (avg size 96 bytes)\n" +
+			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 134,400,000 (100%) bytes in 1,400,000 (100%) objects (avg size 96 bytes)\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 67,200,000 (50%) bytes in 700,000 (50%) objects (avg size 96 bytes)\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 67,200,000 (50%) bytes in 700,000 (50%) objects (avg size 96 bytes)\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Tracked.a*: 134,400,000 (50%) bytes in 1,400,000 (50%) objects (avg size 96 bytes)\n" +
+			"\tcom.devexperts.aproftest.SelfTest.b: 134,400,000 (50%) bytes in 1,400,000 (50%) objects (avg size 96 bytes)\n" +
+			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 105,600,000 (78%) bytes in 1,100,000 (78%) objects (avg size 96 bytes)\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 67,200,000 (63%) bytes in 700,000 (63%) objects (avg size 96 bytes)\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 38,400,000 (36%) bytes in 400,000 (36%) objects (avg size 96 bytes)\n" +
+			"\t\t<unknown>: 28,800,000 (21%) bytes in 300,000 (21%) objects (avg size 96 bytes)\n" +
+			"\tcom.devexperts.aproftest.SelfTest.b*: 134,400,000 (50%) bytes in 1,400,000 (50%) objects (avg size 96 bytes)\n" +
+			"\n" +
+			"com.devexperts.aproftest.SelfTest$Entity4: 161,600,000 (27%) bytes in 20,200,000 (49%) objects (avg size 8 bytes)\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Entity4.dup*: 115,200,000 (71%) bytes in 14,400,000 (71%) objects\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Entity2.<init>: 46,400,000 (28%) bytes in 5,800,000 (28%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 40,000,000 (86%) bytes in 5,000,000 (86%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 22,400,000 (56%) bytes in 2,800,000 (56%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 17,600,000 (44%) bytes in 2,200,000 (44%) objects\n" +
 			"\t\t<unknown>: 3,200,000 (6%) bytes in 400,000 (6%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.wrap: 3,200,000 (6%) bytes in 400,000 (6%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest$Entity3.<init>: 3,200,000 (100%) bytes in 400,000 (100%) objects\n" +
-			"\tcom.devexperts.aproftest.SelfTest$Entity3.<init>: 23,200,000 (20%) bytes in 2,900,000 (20%) objects\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Tracked.<init>: 45,600,000 (28%) bytes in 5,700,000 (28%) objects\n" +
+			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 40,000,000 (87%) bytes in 5,000,000 (87%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 22,400,000 (56%) bytes in 2,800,000 (56%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 17,600,000 (44%) bytes in 2,200,000 (44%) objects\n" +
+			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.wrap: 3,200,000 (7%) bytes in 400,000 (7%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest$Entity3.<init>: 3,200,000 (100%) bytes in 400,000 (100%) objects\n" +
+			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.<init>: 2,400,000 (5%) bytes in 300,000 (5%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 2,400,000 (100%) bytes in 300,000 (100%) objects\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Entity3.<init>: 23,200,000 (14%) bytes in 2,900,000 (14%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 20,000,000 (86%) bytes in 2,500,000 (86%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 11,200,000 (56%) bytes in 1,400,000 (56%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 8,800,000 (44%) bytes in 1,100,000 (44%) objects\n" +
 			"\t\t<unknown>: 3,200,000 (13%) bytes in 400,000 (13%) objects\n" +
-			"\tcom.devexperts.aproftest.SelfTest$Tracked.wrap: 23,200,000 (20%) bytes in 2,900,000 (20%) objects\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Tracked.wrap: 23,200,000 (14%) bytes in 2,900,000 (14%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 20,000,000 (86%) bytes in 2,500,000 (86%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 11,200,000 (56%) bytes in 1,400,000 (56%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 8,800,000 (44%) bytes in 1,100,000 (44%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.wrap: 3,200,000 (13%) bytes in 400,000 (13%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest$Entity3.<init>: 3,200,000 (100%) bytes in 400,000 (100%) objects\n" +
-			"\tcom.devexperts.aproftest.SelfTest$Tracked.a: 11,200,000 (9%) bytes in 1,400,000 (9%) objects\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Tracked.a: 11,200,000 (6%) bytes in 1,400,000 (6%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 11,200,000 (100%) bytes in 1,400,000 (100%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 5,600,000 (50%) bytes in 700,000 (50%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 5,600,000 (50%) bytes in 700,000 (50%) objects\n" +
-			"\tcom.devexperts.aproftest.SelfTest.b: 11,200,000 (9%) bytes in 1,400,000 (9%) objects\n" +
+			"\tcom.devexperts.aproftest.SelfTest.b: 11,200,000 (6%) bytes in 1,400,000 (6%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 8,800,000 (78%) bytes in 1,100,000 (78%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 5,600,000 (63%) bytes in 700,000 (63%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 3,200,000 (36%) bytes in 400,000 (36%) objects\n" +
 			"\t\t<unknown>: 2,400,000 (21%) bytes in 300,000 (21%) objects\n" +
 			"\tcom.devexperts.aproftest.SelfTest.main: 800,000 (0%) bytes in 100,000 (0%) objects\n" +
 			"\n" +
-			"com.devexperts.aproftest.SelfTest$Entity1: 46,400,000 (19%) bytes in 5,800,000 (19%) objects (avg size 8 bytes)\n" +
+			"com.devexperts.aproftest.SelfTest$Entity1: 46,400,000 (7%) bytes in 5,800,000 (14%) objects (avg size 8 bytes)\n" +
 			"\tcom.devexperts.aproftest.SelfTest$Tracked.wrap: 23,200,000 (50%) bytes in 2,900,000 (50%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 20,000,000 (86%) bytes in 2,500,000 (86%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 11,200,000 (56%) bytes in 1,400,000 (56%) objects\n" +
@@ -243,7 +275,7 @@ public class SelfTest {
 			"\t\t<unknown>: 2,400,000 (21%) bytes in 300,000 (21%) objects\n" +
 			"\tcom.devexperts.aproftest.SelfTest.main: 800,000 (1%) bytes in 100,000 (1%) objects\n" +
 			"\n" +
-			"com.devexperts.aproftest.SelfTest$Entity2: 46,400,000 (19%) bytes in 5,800,000 (19%) objects (avg size 8 bytes)\n" +
+			"com.devexperts.aproftest.SelfTest$Entity2: 46,400,000 (7%) bytes in 5,800,000 (14%) objects (avg size 8 bytes)\n" +
 			"\tcom.devexperts.aproftest.SelfTest$Tracked.wrap: 23,200,000 (50%) bytes in 2,900,000 (50%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 20,000,000 (86%) bytes in 2,500,000 (86%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 11,200,000 (56%) bytes in 1,400,000 (56%) objects\n" +
@@ -261,7 +293,24 @@ public class SelfTest {
 			"\t\t<unknown>: 2,400,000 (21%) bytes in 300,000 (21%) objects\n" +
 			"\tcom.devexperts.aproftest.SelfTest.main: 800,000 (1%) bytes in 100,000 (1%) objects\n" +
 			"\n" +
-			"com.devexperts.aproftest.SelfTest$Entity3: 23,200,000 (9%) bytes in 2,900,000 (9%) objects (avg size 8 bytes)\n" +
+			"com.devexperts.aproftest.SelfTest$Tracked: 45,600,000 (7%) bytes in 5,700,000 (14%) objects (avg size 8 bytes)\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Tracked.wrap: 23,200,000 (50%) bytes in 2,900,000 (50%) objects\n" +
+			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 20,000,000 (86%) bytes in 2,500,000 (86%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 11,200,000 (56%) bytes in 1,400,000 (56%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 8,800,000 (44%) bytes in 1,100,000 (44%) objects\n" +
+			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.wrap: 3,200,000 (13%) bytes in 400,000 (13%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest$Entity3.<init>: 3,200,000 (100%) bytes in 400,000 (100%) objects\n" +
+			"\tcom.devexperts.aproftest.SelfTest$Tracked.a: 11,200,000 (24%) bytes in 1,400,000 (24%) objects\n" +
+			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 11,200,000 (100%) bytes in 1,400,000 (100%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 5,600,000 (50%) bytes in 700,000 (50%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 5,600,000 (50%) bytes in 700,000 (50%) objects\n" +
+			"\tcom.devexperts.aproftest.SelfTest.b: 11,200,000 (24%) bytes in 1,400,000 (24%) objects\n" +
+			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 8,800,000 (78%) bytes in 1,100,000 (78%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 5,600,000 (63%) bytes in 700,000 (63%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 3,200,000 (36%) bytes in 400,000 (36%) objects\n" +
+			"\t\t<unknown>: 2,400,000 (21%) bytes in 300,000 (21%) objects\n" +
+			"\n" +
+			"com.devexperts.aproftest.SelfTest$Entity3: 23,200,000 (3%) bytes in 2,900,000 (7%) objects (avg size 8 bytes)\n" +
 			"\tcom.devexperts.aproftest.SelfTest$Tracked.a: 11,200,000 (48%) bytes in 1,400,000 (48%) objects\n" +
 			"\t\tcom.devexperts.aproftest.SelfTest$Tracked.a: 11,200,000 (100%) bytes in 1,400,000 (100%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 5,600,000 (50%) bytes in 700,000 (50%) objects\n" +
@@ -271,5 +320,6 @@ public class SelfTest {
 			"\t\t\tcom.devexperts.aproftest.SelfTest.main: 5,600,000 (63%) bytes in 700,000 (63%) objects\n" +
 			"\t\t\tcom.devexperts.aproftest.SelfTest.b: 3,200,000 (36%) bytes in 400,000 (36%) objects\n" +
 			"\t\t<unknown>: 2,400,000 (21%) bytes in 300,000 (21%) objects\n" +
-			"\tcom.devexperts.aproftest.SelfTest.main: 800,000 (3%) bytes in 100,000 (3%) objects";
+			"\tcom.devexperts.aproftest.SelfTest.main: 800,000 (3%) bytes in 100,000 (3%) objects\n" +
+			"";
 }
