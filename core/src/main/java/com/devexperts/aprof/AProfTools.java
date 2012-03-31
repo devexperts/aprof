@@ -19,6 +19,7 @@
 package com.devexperts.aprof;
 
 import com.devexperts.aprof.util.FastOutputStreamWriter;
+import com.devexperts.aproftest.SelfTest;
 
 import java.io.*;
 import java.util.Locale;
@@ -45,6 +46,9 @@ public class AProfTools {
 			} else if ("export".equals(command)) {
 				runExportCommand(args);
 				return;
+			} else if ("selftest".equals(command)) {
+				runSelfTest(args);
+				return;
 			}
 		}
 		help();
@@ -66,6 +70,7 @@ public class AProfTools {
 		out.println();
 		out.println("Usage: java -jar aprof.jar dump [<host>:]<port>");
 		out.println("Usage: java -jar aprof.jar export [<file>]");
+		out.println("Usage: java -jar aprof.jar selftest");
 	}
 
 	private static String padr(String s, int len) {
@@ -95,7 +100,7 @@ public class AProfTools {
 		out.flush();
 	}
 
-	private static void runExportCommand(String[] args) throws IOException, ClassNotFoundException {
+	private static void runExportCommand(String[] args) throws IOException {
 		if (args.length > 2) {
 			help();
 			return;
@@ -111,5 +116,13 @@ public class AProfTools {
 			out.println(line);
 		}
 		out.flush();
+	}
+	
+	private static void runSelfTest(String[] args) throws IOException {
+		if (args.length != 1) {
+			help();
+			return;
+		}
+		SelfTest.main(args);
 	}
 }

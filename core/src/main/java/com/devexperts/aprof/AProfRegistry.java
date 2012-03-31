@@ -240,10 +240,8 @@ public class AProfRegistry {
 		getDatatypeInfo(FastIntObjMap.class.getCanonicalName(), true);
 	}
 
-	public static DumpFormatter getDumpFormatter() {
-		if (config == null)
-			return null;
-		return new DumpFormatter(config);
+	public static Configuration getConfiguration() {
+		return config;
 	}
 
 	public static boolean isInternalClass(String name) {

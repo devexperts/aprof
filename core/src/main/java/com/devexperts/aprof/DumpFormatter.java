@@ -34,7 +34,7 @@ public class DumpFormatter {
 	private final Snapshot[] rest = new Snapshot[MAX_DEPTH];
 	private final FastObjIntMap<String> class_level = new FastObjIntMap<String>();
 
-	DumpFormatter(Configuration config) {
+	public DumpFormatter(Configuration config) {
 		this.config = config;
 		for (int i = 0; i < MAX_DEPTH; i++)
 			rest[i] = new Snapshot();
