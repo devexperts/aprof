@@ -48,9 +48,10 @@ public class AProfTransformer implements ClassFileTransformer {
 	static final String CLONE = "clone";
 
 	static final String NOARG_RETURNS_OBJECT = "()Ljava/lang/Object;";
-	static final String NOARG_RETURNS_LOCATION_STACK = "()Lcom/devexperts/aprof/LocationStack;";
+	static final String NOARG_RETURNS_STACK = "()Lcom/devexperts/aprof/LocationStack;";
 	static final String NOARG_VOID = "()V";
 	static final String INT_VOID = "(I)V";
+	static final String STACK_INT_VOID = "(Lcom/devexperts/aprof/LocationStack;I)V";
 	static final String OBJECT_VOID = "(Ljava/lang/Object;)V";
 	static final String OBJECT_INT_VOID = "(Ljava/lang/Object;I)V";
 	static final String CLASS_INT_RETURNS_OBJECT = "(Ljava/lang/Class;I)Ljava/lang/Object;";

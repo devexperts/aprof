@@ -30,7 +30,7 @@ import java.net.Socket;
  */
 public class AProfTools {
 
-	private static final String STARTUP_NOTICE = Version.get() +
+	private static final String STARTUP_NOTICE = Version.full() +
 			"\nThis program comes with ABSOLUTELY NO WARRANTY." +
 			"\nThis is free software, and you are welcome to redistribute it under certain conditions." +
 			"\nSource code and documentation are available at <http://code.devexperts.com/>.";

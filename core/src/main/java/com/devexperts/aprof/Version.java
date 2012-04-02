@@ -22,20 +22,28 @@ package com.devexperts.aprof;
  * @author Roman Elizarov
  */
 public class Version {
-	private static String version = createVersion();
+	private static String compact_version = createVersion(false);
+	private static String full_version = createVersion(true);
 
-	public static String get() {
-		return version;
+	public static String compact() {
+		return compact_version;
 	}
 
-	private static String createVersion() {
+	public static String full() {
+		return full_version;
+	}
+
+	private static String createVersion(boolean with_vendor) {
 		Package p = Package.getPackage("com.devexperts.aprof");
 		String title = p.getImplementationTitle();
 		String version = p.getImplementationVersion();
 		String vendor = p.getImplementationVendor();
-		return
-			(title == null ? "Aprof" : title) + " " +
-			(version == null ? "version unknown" : version) + ", Copyright (C) " +
-			(vendor == null ? "unknown" : vendor);
+		StringBuilder sb = new StringBuilder();
+		sb.append(title == null ? "Aprof" : title).append(" ");
+		sb.append(version == null ? "version unknown" : version);
+		if (with_vendor) {
+			sb.append(", Copyright (C) ").append(vendor == null ? "unknown" : vendor);
+		}
+		return sb.toString();
 	}
 }

@@ -77,7 +77,7 @@ public class AProfAgent {
 		LocationStack.markInternalInvokedMethod(AProfRegistry.registerLocation(AProfAgent.class.getCanonicalName() + ".go"));
 		long start = System.currentTimeMillis();
 		StringBuilder sb = new StringBuilder();
-		sb.append("Loading ").append(Version.get()).append("...");
+		sb.append("Loading ").append(Version.full()).append("...");
 		Log.out.println(sb);
 		config.showNotes(Log.out, false);
 

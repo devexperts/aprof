@@ -130,7 +130,7 @@ class Dumper {
 		long uptime = now - start;
 		//------ Line #1
 		out.println("===============================================================================");
-		out.println(Version.get());
+		out.println(Version.full());
 		//------ Line #2
 		out.print("Allocation dump at ");
 		out.print(new Date(now));

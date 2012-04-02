@@ -75,7 +75,7 @@ class InvocationPointTracker extends MethodAdapter {
 				if (context.isMethodTracked()) {
 					visitUnmarkInvokedMethod();
 				}
-				if (context.isObjectInit()) {
+				if (context.isObjectInit() && context.getConfig().isUnknown()) {
 					visitObjectInit();
 				}
 				break;
@@ -87,11 +87,11 @@ class InvocationPointTracker extends MethodAdapter {
 	@Override
 	public void visitTypeInsn(final int opcode, final String desc) {
 		String name = desc.replace('/', '.');
-		if (opcode == Opcodes.NEW) {
+		if (opcode == Opcodes.NEW && context.getConfig().isLocation()) {
 			visitAllocate(desc);
 		}
 		mv.visitTypeInsn(opcode, desc);
-		if (opcode == Opcodes.ANEWARRAY) {
+		if (opcode == Opcodes.ANEWARRAY && context.getConfig().isArrays()) {
 			String array_name = name.startsWith("[") ? "[" + name : "[L" + name + ";";
 			visitAllocateArray(array_name);
 		}
@@ -100,7 +100,7 @@ class InvocationPointTracker extends MethodAdapter {
 	@Override
 	public void visitIntInsn(final int opcode, final int operand) {
 		mv.visitIntInsn(opcode, operand);
-		if (opcode == Opcodes.NEWARRAY) {
+		if (opcode == Opcodes.NEWARRAY && context.getConfig().isArrays()) {
 			Type type;
 			switch (operand) {
 				case Opcodes.T_BOOLEAN:
@@ -137,7 +137,9 @@ class InvocationPointTracker extends MethodAdapter {
 	@Override
 	public void visitMultiANewArrayInsn(final String desc, final int dims) {
 		mv.visitMultiANewArrayInsn(desc, dims);
-		visitAllocateArray(desc);
+		if (context.getConfig().isArrays()) {
+			visitAllocateArray(desc);
+		}
 	}
 
 	@Override
@@ -176,6 +178,10 @@ class InvocationPointTracker extends MethodAdapter {
 			mv.visitLabel(done);
 		} else {
 			mv.visitMethodInsn(opcode, owner, name, desc);
+		}
+
+		if (!context.getConfig().isReflect()) {
+			return;
 		}
 
 		if (opcode == Opcodes.INVOKEVIRTUAL && is_object_clone) {
@@ -222,10 +228,10 @@ class InvocationPointTracker extends MethodAdapter {
 	 * @see com.devexperts.aprof.AProfOpsInternal#allocate(int)
 	 */
 	private void visitAllocate(String desc) {
-		if (context.getConfig().isLocation()) {
-			pushAllocationPoint(desc);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", AProfTransformer.INT_VOID);
-		}
+		assert context.getConfig().isLocation();
+		context.pushLocationStack(mv);
+		pushAllocationPoint(desc);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", AProfTransformer.STACK_INT_VOID);
 	}
 
 	/**
@@ -233,13 +239,11 @@ class InvocationPointTracker extends MethodAdapter {
 	 * @see com.devexperts.aprof.AProfOps#objectInitSize(Object)
 	 */
 	private void visitObjectInit() {
-		if (context.getConfig().isUnknown()) {
-			mv.loadThis();
-			if (context.getConfig().isSize()) {
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInitSize", AProfTransformer.OBJECT_VOID);
-			} else {
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInit", AProfTransformer.OBJECT_VOID);
-			}
+		mv.loadThis();
+		if (context.getConfig().isSize()) {
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInitSize", AProfTransformer.OBJECT_VOID);
+		} else {
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInit", AProfTransformer.OBJECT_VOID);
 		}
 	}
 
@@ -304,29 +308,26 @@ class InvocationPointTracker extends MethodAdapter {
 	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySizeMulti(Object[], int)
 	 */
 	private void visitAllocateArray(String desc) {
-		if (context.getConfig().isArrays()) {
-			if (AProfRegistry.isInternalClass(context.getClassName())) {
-				return;
-			}
-			if (context.getConfig().isSize()) {
-				mv.dup();
-				pushAllocationPoint(desc);
-				boolean is_multi = desc.lastIndexOf('[') > 0;
-				boolean is_primitive = desc.length() == 2;
-				StringBuilder sb = new StringBuilder();
-				sb.append("(");
-				if (is_primitive) {
-					sb.append(desc);
-				} else {
-					sb.append("[Ljava/lang/Object;");
-				}
-				sb.append("I)V");
-				String mname = is_multi ? "allocateArraySizeMulti" : "allocateArraySize";
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), mname, sb.toString());
+		assert context.getConfig().isArrays();
+		if (context.getConfig().isSize()) {
+			mv.dup();
+			pushAllocationPoint(desc);
+			boolean is_multi = desc.lastIndexOf('[') > 0;
+			boolean is_primitive = desc.length() == 2;
+			StringBuilder sb = new StringBuilder();
+			sb.append("(");
+			if (is_primitive) {
+				sb.append(desc);
 			} else {
-				pushAllocationPoint(desc);
-				mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", AProfTransformer.INT_VOID);
+				sb.append("[Ljava/lang/Object;");
 			}
+			sb.append("I)V");
+			String mname = is_multi ? "allocateArraySizeMulti" : "allocateArraySize";
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), mname, sb.toString());
+		} else {
+			context.pushLocationStack(mv);
+			pushAllocationPoint(desc);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", AProfTransformer.STACK_INT_VOID);
 		}
 	}
 
@@ -336,14 +337,13 @@ class InvocationPointTracker extends MethodAdapter {
 	 */
 	private void visitAllocateReflect(String suffix) {
 		assert !AProfRegistry.isInternalClass(context.getClassName());
-		if (context.getConfig().isReflect()) {
-			mv.dup();
-			int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
-			mv.push(loc);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS,
-					context.getConfig().isSize() ? "allocateReflectSize" : "allocateReflect",
-					AProfTransformer.OBJECT_INT_VOID);
-		}
+		assert context.getConfig().isReflect();
+		mv.dup();
+		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
+		mv.push(loc);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS,
+				context.getConfig().isSize() ? "allocateReflectSize" : "allocateReflect",
+				AProfTransformer.OBJECT_INT_VOID);
 	}
 
 	/**
@@ -352,14 +352,13 @@ class InvocationPointTracker extends MethodAdapter {
 	 */
 	private void visitAllocateReflectVClone(String suffix) {
 		assert !AProfRegistry.isInternalClass(context.getClassName());
-		if (context.getConfig().isReflect()) {
-			mv.dup();
-			int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
-			mv.push(loc);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS,
-					context.getConfig().isSize() ? "allocateReflectVCloneSize" : "allocateReflectVClone",
-					AProfTransformer.OBJECT_INT_VOID);
-		}
+		assert context.getConfig().isReflect();
+		mv.dup();
+		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
+		mv.push(loc);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS,
+				context.getConfig().isSize() ? "allocateReflectVCloneSize" : "allocateReflectVClone",
+				AProfTransformer.OBJECT_INT_VOID);
 	}
 
 	private static class CatchBlock {

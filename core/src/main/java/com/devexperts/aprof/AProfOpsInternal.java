@@ -33,6 +33,11 @@ public class AProfOpsInternal {
 		map.increment();
 	}
 
+	public static void allocate(LocationStack stack, int index) {
+		IndexMap map = getRootIndex(index);
+		map.increment();
+	}
+
 	public static void allocateArraySize(boolean[] o, int index) {
 		IndexMap map = getRootIndex(index);
 		int size = getArraySize(o);

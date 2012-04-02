@@ -101,7 +101,7 @@ class Context {
 
 	public void pushLocationStack(GeneratorAdapter mv) {
 		if (location_stack < 0) {
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_LOCATION_STACK);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_STACK);
 			return;
 		}
 
@@ -110,7 +110,7 @@ class Context {
 		mv.dup();
 		mv.ifNonNull(done);
 		mv.pop();
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_LOCATION_STACK);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_STACK);
 		mv.dup();
 		mv.storeLocal(location_stack);
 		mv.visitLabel(done);

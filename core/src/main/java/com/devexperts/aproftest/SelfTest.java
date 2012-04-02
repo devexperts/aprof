@@ -28,7 +28,7 @@ import java.io.PrintWriter;
  */
 public class SelfTest {
 	public static void main(String[] args) {
-		System.out.println("Testing " + Version.get());
+		System.out.println("Testing " + Version.compact());
 
 		// clearing STATISTICS
 		AProfRegistry.makeSnapshot(new Snapshot());
