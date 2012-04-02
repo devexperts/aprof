@@ -30,7 +30,7 @@ public class SelfTest {
 	public static void main(String[] args) {
 		System.out.println("Testing " + Version.compact());
 		
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 5; i++) {
 			// clearing STATISTICS
 			AProfRegistry.makeSnapshot(new Snapshot());
 			doTest();
