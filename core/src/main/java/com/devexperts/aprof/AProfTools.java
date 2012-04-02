@@ -76,7 +76,7 @@ public class AProfTools {
 		out.println("Usage: java -jar aprof.jar selftest <test>");
 		out.println("Where <test> is one of test cases:");
 		for (TestCase test : TestSuite.getTestCases()) {
-			out.println("    " + test.name());
+			out.println("\t" + test.name());
 		}
 	}
 
@@ -131,10 +131,15 @@ public class AProfTools {
 			return;
 		}
 		String test_name = args[1].trim().toLowerCase(Locale.US);
+		boolean done = false;
 		for (TestCase test : TestSuite.getTestCases()) {
 			if (test.name().equals(test_name)) {
 				TestSuite.testSingleCase(test);
+				done = true;
 			}
+		}
+		if (!done) {
+			help();
 		}
 	}
 }

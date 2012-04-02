@@ -31,7 +31,12 @@ import java.util.StringTokenizer;
  * @author Dmitry Paraschenko
  */
 public class TestSuite {
-	private static final List<TestCase> TEST_CASES = Arrays.<TestCase>asList(new GenericTest());
+	private static final List<TestCase> TEST_CASES = Arrays.<TestCase>asList(
+			new GenericTest(),
+			new NewTest(),
+			new ReflectionTest(),
+			new CloneTest()
+	);
 
 	public static Collection<TestCase> getTestCases() {
 		return TEST_CASES;
@@ -79,19 +84,21 @@ public class TestSuite {
 		if (!compareStatistics(received, test.getExpectedStatistics())) {
 			System.err.printf("Test '%s' failed. Collected allocations:\n", test.name());
 			System.err.println(received);
-			System.out.printf("Test '%s' failed. Collected allocations were printed to stderr", test.name());
+			System.out.printf("Test '%s' failed. Collected allocations were printed to stderr\n", test.name());
 		} else {
-			System.out.println("Test passed");
+			System.out.printf("Test '%s' passed\n", test.name());
 		}
 	}
 	
 	public static boolean compareStatistics(String received, String expected) {
+		if (expected == null)
+			return true;
 		StringTokenizer out = new StringTokenizer(received, "\n\r");
 		StringTokenizer ans = new StringTokenizer(expected, "\n\r");
 		while (out.hasMoreTokens() && ans.hasMoreTokens()) {
-			String outLine = out.nextToken();
-			String ansLine = ans.nextToken();
-			if (!outLine.equals(ansLine)) {
+			String outToken = out.nextToken();
+			String ansToken = ans.nextToken();
+			if (!outToken.equals(ansToken)) {
 				return false;
 			}
 		}
