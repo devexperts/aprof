@@ -25,12 +25,14 @@ import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
+import org.objectweb.asm.commons.TryCatchBlockSorter;
 
 import java.lang.instrument.*;
 import java.security.ProtectionDomain;
 
 /**
  * @author Roman Elizarov
+ * @author Dmitry Paraschenko
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class AProfTransformer implements ClassFileTransformer {
@@ -103,7 +105,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		try {
 			ClassReader cr = new ClassReader(classfileBuffer);
 			ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-			ClassVisitor classVisitor = new AClassVisitor(cw, cname);
+			ClassVisitor classVisitor = new AProfClassVisitor(cw, cname);
 //			classVisitor = new CheckClassAdapter(classVisitor);
 			cr.accept(classVisitor, (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES);
 			return cw.toByteArray();
@@ -126,10 +128,10 @@ public class AProfTransformer implements ClassFileTransformer {
 		}
 	}
 
-	class AClassVisitor extends ClassAdapter {
+	class AProfClassVisitor extends ClassAdapter {
 		private final String cname;
 
-		public AClassVisitor(final ClassVisitor cv, String cname) {
+		public AProfClassVisitor(final ClassVisitor cv, String cname) {
 			super(cv);
 			this.cname = cname;
 		}
@@ -154,6 +156,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
 //			visitor = new CheckMethodAdapter(visitor);
 			visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature, exceptions);
+            visitor = new TryCatchBlockSorter(visitor, access, mname, desc, signature, exceptions);
 			Context context = new Context(config, cname, mname, desc, access);
 			visitor = new MethodTransformer(new GeneratorAdapter(visitor, access, mname, desc), context);
 			return visitor;

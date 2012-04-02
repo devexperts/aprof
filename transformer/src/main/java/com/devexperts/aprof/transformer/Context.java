@@ -42,8 +42,9 @@ class Context {
 	private final String aprof_ops_impl;
 
 	private int location_stack = -1;
+    private boolean location_stack_needed = true;
 
-	public Context(Configuration config, String cname, String mname, String desc, int access) {
+    public Context(Configuration config, String cname, String mname, String desc, int access) {
 		this.config = config;
 		this.cname = cname;
 		this.mname = mname;
@@ -91,6 +92,14 @@ class Context {
 	public String getAprofOpsImplementation() {
 		return aprof_ops_impl;
 	}
+
+    public boolean isLocationStackNeeded() {
+        return location_stack_needed;
+    }
+
+    public void setLocationStackNeeded(boolean location_stack_needed) {
+        this.location_stack_needed = location_stack_needed;
+    }
 
     public int getLocationStack() {
         return location_stack;

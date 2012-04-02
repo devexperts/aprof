@@ -25,9 +25,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.objectweb.asm.Opcodes.*;
 
 /**
@@ -45,8 +42,6 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 
 	protected final GeneratorAdapter mv;
 	protected final Context context;
-
-	private final List<CatchBlock> blocks = new ArrayList<CatchBlock>();
 
 	public AbstractMethodVisitor(GeneratorAdapter mv, Context context) {
 		super(mv);
@@ -83,6 +78,7 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 		}
 	}
 
+    @Override
     public void visitInsn(final int opcode) {
 		switch (opcode) {
 			case RETURN:
@@ -220,33 +216,6 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 				&& (desc.equals(AProfTransformer.CLASS_INT_RETURNS_OBJECT) || desc.equals(AProfTransformer.CLASS_INT_ARR_RETURNS_OBJECT))) {
 			// Array.newInstance
 			visitAllocateReflect(AProfRegistry.ARRAY_NEWINSTANCE_SUFFIX);
-		}
-	}
-
-    @Override
-	public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
-		blocks.add(new CatchBlock(start, end, handler, type));
-	}
-
-	@Override
-	public void visitMaxs(int maxStack, int maxLocals) {
-		for (CatchBlock block : blocks) {
-			mv.visitTryCatchBlock(block.start, block.end, block.handler, block.type);
-		}
-		mv.visitMaxs(maxStack, maxLocals);
-	}
-
-	private static class CatchBlock {
-		private final Label start;
-		private final Label end;
-		private final Label handler;
-		private final String type;
-
-		public CatchBlock(Label start, Label end, Label handler, String type) {
-			this.start = start;
-			this.end = end;
-			this.handler = handler;
-			this.type = type;
 		}
 	}
 }
