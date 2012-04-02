@@ -27,68 +27,68 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * @author Dmitry Paraschenko
  */
 class MethodAnalyzer extends AbstractMethodVisitor {
-    public MethodAnalyzer(GeneratorAdapter mv, Context context) {
-        super(mv, context);
-    }
+	public MethodAnalyzer(GeneratorAdapter mv, Context context) {
+		super(mv, context);
+	}
 
-    protected void pushAllocationPoint(String datatype) {
-        datatype = datatype.replace('/', '.');
-        mv.push(AProfRegistry.registerAllocationPoint(datatype, context.getLocation()));
-    }
+	protected void pushAllocationPoint(String datatype) {
+		datatype = datatype.replace('/', '.');
+		mv.push(AProfRegistry.registerAllocationPoint(datatype, context.getLocation()));
+	}
 
-    @Override
-    protected void visitMarkDeclareLocationStack() {
-        // do nothing
-    }
+	@Override
+	protected void visitMarkDeclareLocationStack() {
+		// do nothing
+	}
 
-    public void requestLocationStack() {
-        context.setLocationStackNeeded(true);
-    }
+	public void requestLocationStack() {
+		context.setLocationStackNeeded(true);
+	}
 
-    @Override
-    protected void visitMarkInvokedMethod() {
-        requestLocationStack();
-        mv.push(AProfRegistry.registerLocation(context.getLocation()));
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvokedMethod", AProfTransformer.INT_VOID);
-    }
+	@Override
+	protected void visitMarkInvokedMethod() {
+		requestLocationStack();
+		mv.push(AProfRegistry.registerLocation(context.getLocation()));
+		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvokedMethod", AProfTransformer.INT_VOID);
+	}
 
-    @Override
-    protected void visitUnmarkInvokedMethod() {
-        requestLocationStack();
-    }
+	@Override
+	protected void visitUnmarkInvokedMethod() {
+		requestLocationStack();
+	}
 
-    @Override
-    protected void visitMarkInvocationPoint() {
-        requestLocationStack();
-    }
+	@Override
+	protected void visitMarkInvocationPoint() {
+		requestLocationStack();
+	}
 
-    @Override
-    protected void visitUnmarkInvocationPoint() {
-        requestLocationStack();
-    }
+	@Override
+	protected void visitUnmarkInvocationPoint() {
+		requestLocationStack();
+	}
 
-    @Override
-    protected void visitObjectInit() {
-        // do nothing
-    }
+	@Override
+	protected void visitObjectInit() {
+		// do nothing
+	}
 
-    @Override
-    protected void visitAllocate(String desc) {
-        requestLocationStack();
-    }
+	@Override
+	protected void visitAllocate(String desc) {
+		requestLocationStack();
+	}
 
-    @Override
-    protected void visitAllocateArray(String desc) {
-        requestLocationStack();
-    }
+	@Override
+	protected void visitAllocateArray(String desc) {
+		requestLocationStack();
+	}
 
-    @Override
-    protected void visitAllocateReflect(String suffix) {
-        // do nothing
-    }
+	@Override
+	protected void visitAllocateReflect(String suffix) {
+		// do nothing
+	}
 
-    @Override
-    protected void visitAllocateReflectVClone(String suffix) {
-        // do nothing
-    }
+	@Override
+	protected void visitAllocateReflectVClone(String suffix) {
+		// do nothing
+	}
 }

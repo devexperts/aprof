@@ -49,37 +49,37 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 		this.context = context;
 	}
 
-    protected abstract void visitMarkDeclareLocationStack();
+	protected abstract void visitMarkDeclareLocationStack();
 
-    protected abstract void visitMarkInvokedMethod();
+	protected abstract void visitMarkInvokedMethod();
 
-    protected abstract void visitUnmarkInvokedMethod();
+	protected abstract void visitUnmarkInvokedMethod();
 
-    protected abstract void visitMarkInvocationPoint();
+	protected abstract void visitMarkInvocationPoint();
 
-    protected abstract void visitUnmarkInvocationPoint();
+	protected abstract void visitUnmarkInvocationPoint();
 
-    protected abstract void visitObjectInit();
+	protected abstract void visitObjectInit();
 
-    protected abstract void visitAllocate(String desc);
+	protected abstract void visitAllocate(String desc);
 
-    protected abstract void visitAllocateArray(String array_name);
+	protected abstract void visitAllocateArray(String array_name);
 
-    protected abstract void visitAllocateReflect(String arrayNewinstanceSuffix);
+	protected abstract void visitAllocateReflect(String arrayNewinstanceSuffix);
 
-    protected abstract void visitAllocateReflectVClone(String cloneSuffix);
+	protected abstract void visitAllocateReflectVClone(String cloneSuffix);
 
 	@Override
 	public void visitCode() {
 		mv.visitCode();
-        visitMarkDeclareLocationStack();
+		visitMarkDeclareLocationStack();
 		if (context.isMethodTracked()) {
 			visitMarkInvokedMethod();
 		}
 	}
 
-    @Override
-    public void visitInsn(final int opcode) {
+	@Override
+	public void visitInsn(final int opcode) {
 		switch (opcode) {
 			case RETURN:
 			case IRETURN:
@@ -100,7 +100,7 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 		mv.visitInsn(opcode);
 	}
 
-    @Override
+	@Override
 	public void visitTypeInsn(final int opcode, final String desc) {
 		String name = desc.replace('/', '.');
 		if (opcode == Opcodes.NEW && context.getConfig().isLocation()) {
@@ -113,7 +113,7 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 		}
 	}
 
-    @Override
+	@Override
 	public void visitIntInsn(final int opcode, final int operand) {
 		mv.visitIntInsn(opcode, operand);
 		if (opcode == Opcodes.NEWARRAY && context.getConfig().isArrays()) {

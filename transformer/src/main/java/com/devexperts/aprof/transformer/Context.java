@@ -20,11 +20,7 @@ package com.devexperts.aprof.transformer;
 
 import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
-import com.devexperts.aprof.LocationStack;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 /**
  * @author Dmitry Paraschenko
@@ -41,10 +37,11 @@ class Context {
 	private final boolean object_init;
 	private final String aprof_ops_impl;
 
-	private int location_stack = -1;
-    private boolean location_stack_needed = true;
+	private boolean location_stack_needed = false;
 
-    public Context(Configuration config, String cname, String mname, String desc, int access) {
+	private int location_stack = -1;
+
+	public Context(Configuration config, String cname, String mname, String desc, int access) {
 		this.config = config;
 		this.cname = cname;
 		this.mname = mname;
@@ -93,21 +90,21 @@ class Context {
 		return aprof_ops_impl;
 	}
 
-    public boolean isLocationStackNeeded() {
-        return location_stack_needed;
-    }
+	public boolean isLocationStackNeeded() {
+		return location_stack_needed;
+	}
 
-    public void setLocationStackNeeded(boolean location_stack_needed) {
-        this.location_stack_needed = location_stack_needed;
-    }
+	public void setLocationStackNeeded(boolean location_stack_needed) {
+		this.location_stack_needed = location_stack_needed;
+	}
 
-    public int getLocationStack() {
-        return location_stack;
-    }
+	public int getLocationStack() {
+		return location_stack;
+	}
 
-    public void setLocationStack(int location_stack) {
-        this.location_stack = location_stack;
-    }
+	public void setLocationStack(int location_stack) {
+		this.location_stack = location_stack;
+	}
 
 	public String getLocationString(String cname, String mname, String desc) {
 		cname = cname.replace('/', '.'); // to make sure it can be called both on cname and owner descs.

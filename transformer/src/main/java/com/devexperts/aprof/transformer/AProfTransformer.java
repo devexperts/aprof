@@ -23,12 +23,16 @@ import com.devexperts.aprof.Configuration;
 import com.devexperts.aprof.LocationStack;
 import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.*;
+import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.commons.TryCatchBlockSorter;
 
 import java.lang.instrument.*;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author Roman Elizarov
@@ -103,11 +107,18 @@ public class AProfTransformer implements ClassFileTransformer {
 			}
 		}
 		try {
+			int flags = (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES;
+
 			ClassReader cr = new ClassReader(classfileBuffer);
 			ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
-			ClassVisitor classVisitor = new AProfClassVisitor(cw, cname);
-//			classVisitor = new CheckClassAdapter(classVisitor);
-			cr.accept(classVisitor, (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES);
+
+			List<Context> method_contexts = new ArrayList<Context>();
+			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyVisitor(), cname, method_contexts);
+			cr.accept(classAnalyzer, flags);
+
+			ClassVisitor classTransformer = new ClassTransformer(cw, cname, method_contexts);
+//			classTransformer = new CheckClassAdapter(classTransformer);
+			cr.accept(classTransformer, flags);
 			return cw.toByteArray();
 		} catch (Throwable t) {
 			synchronized (shared_sb) {
@@ -128,12 +139,32 @@ public class AProfTransformer implements ClassFileTransformer {
 		}
 	}
 
-	class AProfClassVisitor extends ClassAdapter {
+	private class ClassAnalyzer extends ClassAdapter {
 		private final String cname;
+		private final List<Context> contexts;
 
-		public AProfClassVisitor(final ClassVisitor cv, String cname) {
+		public ClassAnalyzer(final ClassVisitor cv, String cname, List<Context> contexts) {
 			super(cv);
 			this.cname = cname;
+			this.contexts = contexts;
+		}
+
+		@Override
+		public MethodVisitor visitMethod(final int access, final String mname, final String desc, final String signature, final String[] exceptions) {
+			Context context = new Context(config, cname, mname, desc, access);
+			contexts.add(context);
+			return new MethodAnalyzer(new GeneratorAdapter(new EmptyVisitor(), access, mname, desc), context);
+		}
+	}
+
+	private class ClassTransformer extends ClassAdapter {
+		private final String cname;
+		private final Iterator<Context> context_iterator;
+
+		public ClassTransformer(final ClassVisitor cv, String cname, List<Context> contexts) {
+			super(cv);
+			this.cname = cname;
+			this.context_iterator = contexts.iterator();
 		}
 
 		@Override
@@ -156,10 +187,16 @@ public class AProfTransformer implements ClassFileTransformer {
 			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
 //			visitor = new CheckMethodAdapter(visitor);
 			visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature, exceptions);
-            visitor = new TryCatchBlockSorter(visitor, access, mname, desc, signature, exceptions);
-			Context context = new Context(config, cname, mname, desc, access);
+			visitor = new TryCatchBlockSorter(visitor, access, mname, desc, signature, exceptions);
+			Context context = context_iterator.next();
 			visitor = new MethodTransformer(new GeneratorAdapter(visitor, access, mname, desc), context);
 			return visitor;
+		}
+
+		@Override
+		public void visitEnd() {
+			super.visitEnd();
+			assert !context_iterator.hasNext();
 		}
 	}
 }
