@@ -19,7 +19,8 @@
 package com.devexperts.aprof;
 
 import com.devexperts.aprof.util.FastOutputStreamWriter;
-import com.devexperts.aproftest.SelfTest;
+import com.devexperts.aproftest.TestCase;
+import com.devexperts.aproftest.TestSuite;
 
 import java.io.*;
 import java.util.Locale;
@@ -69,8 +70,14 @@ public class AProfTools {
 		def.showNotes(out, true);
 		out.println();
 		out.println("Usage: java -jar aprof.jar dump [<host>:]<port>");
+		out.println();
 		out.println("Usage: java -jar aprof.jar export [<file>]");
-		out.println("Usage: java -jar aprof.jar selftest");
+		out.println();
+		out.println("Usage: java -jar aprof.jar selftest <test>");
+		out.println("Where <test> is one of test cases:");
+		for (TestCase test : TestSuite.getTestCases()) {
+			out.println("    " + test.name());
+		}
 	}
 
 	private static String padr(String s, int len) {
@@ -119,10 +126,15 @@ public class AProfTools {
 	}
 	
 	private static void runSelfTest(String[] args) throws IOException {
-		if (args.length != 1) {
+		if (args.length != 2) {
 			help();
 			return;
 		}
-		SelfTest.main(args);
+		String test_name = args[1].trim().toLowerCase(Locale.US);
+		for (TestCase test : TestSuite.getTestCases()) {
+			if (test.name().equals(test_name)) {
+				TestSuite.testSingleCase(test);
+			}
+		}
 	}
 }
