@@ -155,7 +155,7 @@ public class AProfTransformer implements ClassFileTransformer {
 //			visitor = new CheckMethodAdapter(visitor);
 			visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature, exceptions);
 			Context context = new Context(config, cname, mname, desc, access);
-			visitor = new InvocationPointTracker(new GeneratorAdapter(visitor, access, mname, desc), context);
+			visitor = new MethodTransformer(new GeneratorAdapter(visitor, access, mname, desc), context);
 			return visitor;
 		}
 	}

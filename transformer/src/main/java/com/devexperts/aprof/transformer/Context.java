@@ -92,29 +92,13 @@ class Context {
 		return aprof_ops_impl;
 	}
 
-	public void declareLocationStack(GeneratorAdapter mv) {
-		int location_stack = mv.newLocal(Type.getType(LocationStack.class));
-		mv.visitInsn(Opcodes.ACONST_NULL);
-		mv.storeLocal(location_stack);
-		this.location_stack = location_stack;
-	}
+    public int getLocationStack() {
+        return location_stack;
+    }
 
-	public void pushLocationStack(GeneratorAdapter mv) {
-		if (location_stack < 0) {
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_STACK);
-			return;
-		}
-
-		Label done = new Label();
-		mv.loadLocal(location_stack);
-		mv.dup();
-		mv.ifNonNull(done);
-		mv.pop();
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_STACK);
-		mv.dup();
-		mv.storeLocal(location_stack);
-		mv.visitLabel(done);
-	}
+    public void setLocationStack(int location_stack) {
+        this.location_stack = location_stack;
+    }
 
 	public String getLocationString(String cname, String mname, String desc) {
 		cname = cname.replace('/', '.'); // to make sure it can be called both on cname and owner descs.

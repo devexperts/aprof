@@ -33,7 +33,7 @@ import static org.objectweb.asm.Opcodes.*;
 /**
  * @author Dmitry Paraschenko
  */
-class InvocationPointTracker extends MethodAdapter {
+abstract class AbstractMethodVisitor extends MethodAdapter {
 	private static final Type BOOLEAN_ARR_T = Type.getType(boolean[].class);
 	private static final Type CHAR_ARR_T = Type.getType(char[].class);
 	private static final Type FLOAT_ARR_T = Type.getType(float[].class);
@@ -43,27 +43,47 @@ class InvocationPointTracker extends MethodAdapter {
 	private static final Type INT_ARR_T = Type.getType(int[].class);
 	private static final Type LONG_ARR_T = Type.getType(long[].class);
 
-	private final GeneratorAdapter mv;
-	private final Context context;
+	protected final GeneratorAdapter mv;
+	protected final Context context;
 
 	private final List<CatchBlock> blocks = new ArrayList<CatchBlock>();
 
-	public InvocationPointTracker(GeneratorAdapter mv, Context context) {
+	public AbstractMethodVisitor(GeneratorAdapter mv, Context context) {
 		super(mv);
 		this.mv = mv;
 		this.context = context;
 	}
 
+    protected abstract void visitMarkDeclareLocationStack();
+
+    protected abstract void visitMarkInvokedMethod();
+
+    protected abstract void visitUnmarkInvokedMethod();
+
+    protected abstract void visitMarkInvocationPoint();
+
+    protected abstract void visitUnmarkInvocationPoint();
+
+    protected abstract void visitObjectInit();
+
+    protected abstract void visitAllocate(String desc);
+
+    protected abstract void visitAllocateArray(String array_name);
+
+    protected abstract void visitAllocateReflect(String arrayNewinstanceSuffix);
+
+    protected abstract void visitAllocateReflectVClone(String cloneSuffix);
+
 	@Override
 	public void visitCode() {
 		mv.visitCode();
-		context.declareLocationStack(mv);
+        visitMarkDeclareLocationStack();
 		if (context.isMethodTracked()) {
 			visitMarkInvokedMethod();
 		}
 	}
 
-	public void visitInsn(final int opcode) {
+    public void visitInsn(final int opcode) {
 		switch (opcode) {
 			case RETURN:
 			case IRETURN:
@@ -84,7 +104,7 @@ class InvocationPointTracker extends MethodAdapter {
 		mv.visitInsn(opcode);
 	}
 
-	@Override
+    @Override
 	public void visitTypeInsn(final int opcode, final String desc) {
 		String name = desc.replace('/', '.');
 		if (opcode == Opcodes.NEW && context.getConfig().isLocation()) {
@@ -97,7 +117,7 @@ class InvocationPointTracker extends MethodAdapter {
 		}
 	}
 
-	@Override
+    @Override
 	public void visitIntInsn(final int opcode, final int operand) {
 		mv.visitIntInsn(opcode, operand);
 		if (opcode == Opcodes.NEWARRAY && context.getConfig().isArrays()) {
@@ -203,7 +223,7 @@ class InvocationPointTracker extends MethodAdapter {
 		}
 	}
 
-	@Override
+    @Override
 	public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
 		blocks.add(new CatchBlock(start, end, handler, type));
 	}
@@ -214,151 +234,6 @@ class InvocationPointTracker extends MethodAdapter {
 			mv.visitTryCatchBlock(block.start, block.end, block.handler, block.type);
 		}
 		mv.visitMaxs(maxStack, maxLocals);
-	}
-
-	private void pushAllocationPoint(String datatype) {
-		datatype = datatype.replace('/', '.');
-		mv.push(AProfRegistry.registerAllocationPoint(datatype, context.getLocation()));
-	}
-
-	/**
-	 * OPS implementation is chosen based on the class doing the allocation.
-	 *
-	 * @see com.devexperts.aprof.AProfOps#allocate(int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocate(int)
-	 */
-	private void visitAllocate(String desc) {
-		assert context.getConfig().isLocation();
-		context.pushLocationStack(mv);
-		pushAllocationPoint(desc);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", AProfTransformer.STACK_INT_VOID);
-	}
-
-	/**
-	 * @see com.devexperts.aprof.AProfOps#objectInit(Object)
-	 * @see com.devexperts.aprof.AProfOps#objectInitSize(Object)
-	 */
-	private void visitObjectInit() {
-		mv.loadThis();
-		if (context.getConfig().isSize()) {
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInitSize", AProfTransformer.OBJECT_VOID);
-		} else {
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS, "objectInit", AProfTransformer.OBJECT_VOID);
-		}
-	}
-
-	/**
-	 * @see com.devexperts.aprof.LocationStack#addInvokedMethod(int)
-	 */
-	private void visitMarkInvokedMethod() {
-		context.pushLocationStack(mv);
-		mv.push(AProfRegistry.registerLocation(context.getLocation()));
-		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvokedMethod", AProfTransformer.INT_VOID);
-	}
-
-	/**
-	 * @see com.devexperts.aprof.LocationStack#removeInvokedMethod()
-	 */
-	private void visitUnmarkInvokedMethod() {
-		context.pushLocationStack(mv);
-		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvokedMethod", AProfTransformer.NOARG_VOID);
-	}
-
-	/**
-	 * @see com.devexperts.aprof.LocationStack#addInvocationPoint(int)
-	 */
-	private void visitMarkInvocationPoint() {
-		context.pushLocationStack(mv);
-		mv.push(AProfRegistry.registerLocation(context.getLocation()));
-		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvocationPoint", AProfTransformer.INT_VOID);
-	}
-
-	/**
-	 * @see com.devexperts.aprof.LocationStack#removeInvocationPoint()
-	 */
-	private void visitUnmarkInvocationPoint() {
-		context.pushLocationStack(mv);
-		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvocationPoint", AProfTransformer.NOARG_VOID);
-	}
-
-	/**
-	 * OPS implementation is chosen based on the class doing the allocation.
-	 *
-	 * @see com.devexperts.aprof.AProfOps#allocate(int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(boolean[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(byte[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(char[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(short[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(int[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(long[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(float[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(double[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(Object[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySizeMulti(Object[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocate(int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(boolean[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(byte[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(char[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(short[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(int[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(long[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(float[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(double[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(Object[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySizeMulti(Object[], int)
-	 */
-	private void visitAllocateArray(String desc) {
-		assert context.getConfig().isArrays();
-		if (context.getConfig().isSize()) {
-			mv.dup();
-			pushAllocationPoint(desc);
-			boolean is_multi = desc.lastIndexOf('[') > 0;
-			boolean is_primitive = desc.length() == 2;
-			StringBuilder sb = new StringBuilder();
-			sb.append("(");
-			if (is_primitive) {
-				sb.append(desc);
-			} else {
-				sb.append("[Ljava/lang/Object;");
-			}
-			sb.append("I)V");
-			String mname = is_multi ? "allocateArraySizeMulti" : "allocateArraySize";
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), mname, sb.toString());
-		} else {
-			context.pushLocationStack(mv);
-			pushAllocationPoint(desc);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", AProfTransformer.STACK_INT_VOID);
-		}
-	}
-
-	/**
-	 * @see com.devexperts.aprof.AProfOps#allocateReflect(Object, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateReflectSize(Object, int)
-	 */
-	private void visitAllocateReflect(String suffix) {
-		assert !AProfRegistry.isInternalClass(context.getClassName());
-		assert context.getConfig().isReflect();
-		mv.dup();
-		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
-		mv.push(loc);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS,
-				context.getConfig().isSize() ? "allocateReflectSize" : "allocateReflect",
-				AProfTransformer.OBJECT_INT_VOID);
-	}
-
-	/**
-	 * @see com.devexperts.aprof.AProfOps#allocateReflectVClone(Object, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateReflectVCloneSize(Object, int)
-	 */
-	private void visitAllocateReflectVClone(String suffix) {
-		assert !AProfRegistry.isInternalClass(context.getClassName());
-		assert context.getConfig().isReflect();
-		mv.dup();
-		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
-		mv.push(loc);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS,
-				context.getConfig().isSize() ? "allocateReflectVCloneSize" : "allocateReflectVClone",
-				AProfTransformer.OBJECT_INT_VOID);
 	}
 
 	private static class CatchBlock {
