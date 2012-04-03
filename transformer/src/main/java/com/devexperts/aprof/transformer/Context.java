@@ -18,7 +18,6 @@
 
 package com.devexperts.aprof.transformer;
 
-import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
 import org.objectweb.asm.Type;
 
@@ -49,9 +48,9 @@ class Context {
 		this.access = access;
 
 		this.location = getLocationString(cname, mname, desc);
-		this.method_tracked = !mname.startsWith(AProfTransformer.ACCESS_METHOD) && !AProfRegistry.isInternalClass(cname) && AProfRegistry.isLocationTracked(location);
+		this.method_tracked = !mname.startsWith(AProfTransformer.ACCESS_METHOD) && !isInternalLocation(cname) && isLocationTracked(location);
 		this.object_init = this.cname.equals(AProfTransformer.OBJECT_CLASS_NAME) && this.mname.equals(AProfTransformer.INIT);
-		this.aprof_ops_impl = AProfRegistry.isInternalClass(this.cname) ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
+		this.aprof_ops_impl = isInternalLocation(this.cname) ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
 	}
 
 	public Configuration getConfig() {
@@ -64,14 +63,6 @@ class Context {
 
 	public String getMethodName() {
 		return mname;
-	}
-
-	public String getDescription() {
-		return desc;
-	}
-
-	public int getAccess() {
-		return access;
 	}
 
 	public String getLocation() {
@@ -108,6 +99,7 @@ class Context {
 
 	public String getLocationString(String cname, String mname, String desc) {
 		cname = cname.replace('/', '.'); // to make sure it can be called both on cname and owner descs.
+		cname = AProfTransformer.normalize(config, cname);
 		StringBuilder sb = new StringBuilder(cname.length() + 1 + mname.length());
 		sb.append(cname).append(".").append(mname);
 		String location = sb.toString();
@@ -137,5 +129,49 @@ class Context {
 			return;
 		String s = type.getClassName();
 		sb.append(s, s.lastIndexOf('.') + 1, s.length());
+	}
+
+	public static boolean isInternalLocation(String name) {
+		name = name.replace('/', '.');
+		if (name.startsWith("java.lang.ThreadLocal")) {
+			return true;
+		}
+		if (name.startsWith("com.devexperts.aprof.")) {
+			return true;
+		}
+		return false;
+	}
+
+	public boolean isLocationTracked(String location) {
+		if (isInternalLocation(location)) {
+			return false;
+		}
+		if (location.startsWith("java.lang.String.")) {
+			if (location.startsWith("java.lang.String.length")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.chatAt")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.hashCode")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.equals")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.indexOf")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.lastIndexOf")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.startsWith")) {
+				return false;
+			}
+			if (location.startsWith("java.lang.String.endsWith")) {
+				return false;
+			}
+		}
+		return config.isLocationTracked(location);
 	}
 }

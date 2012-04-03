@@ -30,7 +30,7 @@ class ConnectionListenerThread extends Thread {
 	private final Dumper dumper;
 
 	public ConnectionListenerThread(int port, Dumper dumper) {
-		super("AProf-ConnectionListener");
+		super("Aprof-ConnectionListener");
 		setDaemon(true);
 		this.port = port;
 		this.dumper = dumper;

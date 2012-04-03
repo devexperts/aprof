@@ -160,7 +160,7 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 
 	@Override
 	public void visitMethodInsn(final int opcode, final String owner, final String name, final String desc) {
-		if (AProfRegistry.isInternalClass(context.getClassName())) {
+		if (Context.isInternalLocation(context.getClassName())) {
 			mv.visitMethodInsn(opcode, owner, name, desc);
 			return;
 		}
@@ -171,7 +171,7 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 		boolean is_object_clone = is_clone && AProfRegistry.isDirectCloneClass(owner.replace('/', '.'));
 
 		String invoked_method = context.getLocationString(owner, name, desc);
-		boolean is_method_tracked = AProfRegistry.isLocationTracked(invoked_method) && !context.getMethodName().startsWith(AProfTransformer.ACCESS_METHOD);
+		boolean is_method_tracked = context.isLocationTracked(invoked_method) && !context.getMethodName().startsWith(AProfTransformer.ACCESS_METHOD);
 
 		if (is_method_tracked) {
 			Label start = new Label();

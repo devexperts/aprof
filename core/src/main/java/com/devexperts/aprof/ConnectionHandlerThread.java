@@ -37,7 +37,7 @@ class ConnectionHandlerThread extends Thread {
 	}
 
 	private ConnectionHandlerThread(Socket s, Dumper dumper, String address) {
-		super("AProf-Connection-" + address);
+		super("Aprof-Connection-" + address);
 		setDaemon(true);
 		this.s = s;
 		this.dumper = dumper;

@@ -30,7 +30,7 @@ class DumpShutdownThread extends Thread {
 	private final DumpPeriodicThread dpt;
 
 	public DumpShutdownThread(Dumper dumper, long finish, long trtime, DumpPeriodicThread dpt) {
-		super("AProfDump-Shutdown");
+		super("AprofDump-Shutdown");
 		this.dumper = dumper;
 		this.finish = finish;
 		this.trtime = trtime;

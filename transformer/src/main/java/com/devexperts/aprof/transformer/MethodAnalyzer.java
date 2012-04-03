@@ -31,11 +31,6 @@ class MethodAnalyzer extends AbstractMethodVisitor {
 		super(mv, context);
 	}
 
-	protected void pushAllocationPoint(String datatype) {
-		datatype = datatype.replace('/', '.');
-		mv.push(AProfRegistry.registerAllocationPoint(datatype, context.getLocation()));
-	}
-
 	@Override
 	protected void visitMarkDeclareLocationStack() {
 		// do nothing

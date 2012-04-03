@@ -34,7 +34,7 @@ public class IterationSpeedTest {
 				return id;
 			}
 		});
-		invPoint = AProfRegistry.registerLocation(IterationSpeedTest.class.getCanonicalName() + ".testAProf");
+		invPoint = AProfRegistry.registerLocation(IterationSpeedTest.class.getCanonicalName() + ".testAprof");
 		invMethod = AProfRegistry.registerLocation(Integer.class.getCanonicalName() + ".valueOf");
 		location = AProfRegistry.registerAllocationPoint(Integer.class.getCanonicalName(), Integer.class.getCanonicalName() + ".valueOf");
 

@@ -32,7 +32,7 @@ class DumpPeriodicThread extends Thread {
 	private volatile boolean running = true;
 
 	public DumpPeriodicThread(Dumper dumper, long time) {
-		super("AProfDump-Periodic");
+		super("AprofDump-Periodic");
 		setDaemon(true);
 		setPriority(Thread.MAX_PRIORITY);
 		this.dumper = dumper;

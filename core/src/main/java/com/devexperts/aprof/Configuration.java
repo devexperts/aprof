@@ -37,23 +37,23 @@ public class Configuration {
 	@Description("Configuration file.")
 	private String config_file = "aprof.config";
 
-	@Description("File location for AProf dump, empty to work without file. Sharps (##) are used to specify file number.")
+	@Description("File location for Aprof dump, empty to work without file. Sharps (##) are used to specify file number.")
 	private String file = "aprof.txt";
 
-	@Description("Whether AProf dump shall be appended to the file instead of rewriting it.")
+	@Description("Whether Aprof dump shall be appended to the file instead of rewriting it.")
 	private boolean file_append = false;
 
-	@Description(value="Number of files to be used to write AProf dumps. Zero means no limit on file number.")
+	@Description(value="Number of files to be used to write Aprof dumps. Zero means no limit on file number.")
 	private int filecount = 0;
 
-	@Description("Threshold for entries in AProf dump in (%).")
+	@Description("Threshold for entries in Aprof dump in (%).")
 	private double threshold = 0.1;
 
 	@Description("Expand shown classes (even below threshold) up to specified level (0 -- do not expand).")
 	private int level = 2;
 
 	@TimeIntervalProp
-	@Description("Time period to write AProf dump file.")
+	@Description("Time period to write Aprof dump file.")
 	private long time = MIN;
 
 	@Description("Be quiet in stdout (do not log every transformation).")

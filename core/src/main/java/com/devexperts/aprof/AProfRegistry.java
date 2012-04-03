@@ -32,7 +32,6 @@ public class AProfRegistry {
 	public static final String CLONE_SUFFIX = "*";
 
 	private static final int OVERFLOW_THRESHOLD = 1 << 30;
-	private static final String PROXY_SUBSTRING = "$Proxy";
 
 	/* locations are created at transformation time */
 	private static final StringIndexer locations = new StringIndexer();
@@ -56,35 +55,11 @@ public class AProfRegistry {
 		return class_name_resolver.resolve(datatype);
 	}
 
-	private static String normalize(String string) {
-		int pos1 = string.indexOf(PROXY_SUBSTRING);
-		if (pos1 >= 0) {
-			pos1 += PROXY_SUBSTRING.length();
-			int pos2 = pos1;
-			while (pos2 < string.length() && Character.isDigit(string.charAt(pos2))) {
-				pos2++;
-			}
-			string = string.substring(0, pos1) + string.substring(pos2);
-		} else if (config != null) {
-			for (String name : config.getAggregatedClasses()) {
-				if (string.startsWith(name)) {
-					int pos = name.length();
-					while (pos < string.length() && Character.isDigit(string.charAt(pos))) {
-						pos++;
-					}
-					string = name + string.substring(pos);
-					break;
-				}
-			}
-		}
-		return new String(string.toCharArray());
-	}
-
 	// allocates memory during class transformation only
 	public static int registerLocation(String location) {
 		int loc = locations.get(location);
 		if (loc == 0) {
-			loc = locations.register(normalize(location));
+			loc = locations.register(location);
 		}
 		return loc;
 	}
@@ -97,7 +72,7 @@ public class AProfRegistry {
 		}
 		DatatypeInfo datatype_info = datatype_infos[id];
 		if (datatype_info == null) {
-			return getDatatypeInfo(id);
+			return getDatatypeInfoImpl(id);
 		}
 		return datatype_info;
 	}
@@ -106,12 +81,13 @@ public class AProfRegistry {
 	public static DatatypeInfo registerDatatypeInfo(String datatype) {
 		int id = datatype_names.get(datatype);
 		if (id == 0) {
-			id = datatype_names.register(normalize(datatype));
+			id = datatype_names.register(datatype);
 			ensureDatatypeIndexCapacity(id);
+			return createDatatypeInfo(id);
 		}
 		DatatypeInfo datatype_info = datatype_infos[id];
 		if (datatype_info == null) {
-			return createDatatypeInfo(id);
+			return getDatatypeInfoImpl(id);
 		}
 		return datatype_info;
 	}
@@ -119,15 +95,20 @@ public class AProfRegistry {
 	private static DatatypeInfo getDatatypeInfo(int id) {
 		DatatypeInfo datatype_info = datatype_infos[id];
 		if (datatype_info == null) {
-			synchronized (datatype_infos_sync) {
-				datatype_info = datatype_infos[id];
-			}
+			return getDatatypeInfoImpl(id);
 		}
 		return datatype_info;
 	}
 
+	private static DatatypeInfo getDatatypeInfoImpl(int id) {
+		synchronized (datatype_infos_sync) {
+			return datatype_infos[id];
+		}
+	}
+
 	private static DatatypeInfo createDatatypeInfo(int id) {
 		synchronized (datatype_infos_sync) {
+			ensureDatatypeIndexCapacity(id);
 			DatatypeInfo datatype_info = datatype_infos[id];
 			if (datatype_info == null) {
 				String datatype = datatype_names.get(id);
@@ -147,30 +128,31 @@ public class AProfRegistry {
 	}
 
 	// allocates memory during class transformation only
+	// requires synchronization on datatype_infos
 	private static void ensureDatatypeIndexCapacity(int last_id) {
-		if (datatype_infos.length <= last_id) {
-			synchronized (datatype_infos_sync) {
-				int length = datatype_infos.length;
-				if (length <= last_id) {
-					while (length <= last_id) {
-						length *= 2;
-					}
-					DatatypeInfo[] new_datatype_infos = new DatatypeInfo[length];
-					System.arraycopy(datatype_infos, 0, new_datatype_infos, 0, datatype_infos.length);
-					datatype_infos = new_datatype_infos;
-				}
+		int length = datatype_infos.length;
+		if (length <= last_id) {
+			while (length <= last_id) {
+				length *= 2;
 			}
+			DatatypeInfo[] new_datatype_infos = new DatatypeInfo[length];
+			System.arraycopy(datatype_infos, 0, new_datatype_infos, 0, datatype_infos.length);
+			datatype_infos = new_datatype_infos;
 		}
 	}
 
 	static IndexMap getRootIndex(int id) {
 		IndexMap result = id < root_indexes.length ? root_indexes[id] : null;
 		if (result == null) {
-			synchronized (root_indexes_sync) {
-				result = root_indexes[id];
-			}
+			result = getRootIndexImpl(id);
 		}
 		return result;
+	}
+
+	private static IndexMap getRootIndexImpl(int id) {
+		synchronized (root_indexes_sync) {
+			return root_indexes[id];
+		}
 	}
 
 	// allocates memory during class transformation and reflection calls
@@ -240,7 +222,7 @@ public class AProfRegistry {
 
 	static void init(Configuration config, ClassNameResolver resolver) {
 		if (config == null)
-			throw new IllegalArgumentException("AProf arguments must be specified");
+			throw new IllegalArgumentException("Aprof arguments must be specified");
 		if (resolver == null)
 			throw new IllegalArgumentException("Class-name resolver must be specified");
 		AProfRegistry.config = config;
@@ -253,50 +235,6 @@ public class AProfRegistry {
 
 	public static Configuration getConfiguration() {
 		return config;
-	}
-
-	public static boolean isInternalClass(String name) {
-		name = name.replace('/', '.');
-		if (name.startsWith("java.lang.ThreadLocal")) {
-			return true;
-		}
-		if (name.startsWith("com.devexperts.aprof.")) {
-			return true;
-		}
-		return false;
-	}
-
-	public static boolean isLocationTracked(String location) {
-		if (isInternalClass(location)) {
-			return false;
-		}
-		if (location.startsWith("java.lang.String.")) {
-			if (location.startsWith("java.lang.String.length")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.chatAt")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.hashCode")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.equals")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.indexOf")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.lastIndexOf")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.startsWith")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.endsWith")) {
-				return false;
-			}
-		}
-		return config.isLocationTracked(location);
 	}
 
 	static int getLocationCount() {
@@ -327,15 +265,10 @@ public class AProfRegistry {
 	}
 
 	// TODO: can allocate memory during execution: new root because of reflection call
-	// all datatypes should be registered beforehand
+	// all data-types should be registered beforehand
 	static IndexMap getDetailedIndex(String datatype, int loc) {
 		int id = registerRootIndex(datatype, locations.get(loc));
 		return getRootIndex(id);
-	}
-
-	// TODO: can allocate memory during execution
-	static IndexMap getDetailedIndex(int index) {
-		return getDetailedIndex(LocationStack.get(), index);
 	}
 
 	// TODO: can allocate memory during execution

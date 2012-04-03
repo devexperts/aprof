@@ -40,6 +40,8 @@ import java.util.List;
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class AProfTransformer implements ClassFileTransformer {
+	private static final String PROXY_CLASS_TOKEN = "$Proxy";
+
 	private static final int TRANSFORM_LOC = AProfRegistry.registerLocation(AProfTransformer.class.getCanonicalName() + ".transform");
 
 	static final String APROF_OPS = "com/devexperts/aprof/AProfOps";
@@ -163,7 +165,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 		public ClassTransformer(final ClassVisitor cv, String cname, List<Context> contexts) {
 			super(cv);
-			this.cname = cname;
+			this.cname = normalize(config, cname);
 			this.context_iterator = contexts.iterator();
 		}
 
@@ -198,5 +200,29 @@ public class AProfTransformer implements ClassFileTransformer {
 			super.visitEnd();
 			assert !context_iterator.hasNext();
 		}
+	}
+
+	static String normalize(Configuration config, String string) {
+		int pos1 = string.indexOf(PROXY_CLASS_TOKEN);
+		if (pos1 >= 0) {
+			pos1 += PROXY_CLASS_TOKEN.length();
+			int pos2 = pos1;
+			while (pos2 < string.length() && Character.isDigit(string.charAt(pos2))) {
+				pos2++;
+			}
+			string = string.substring(0, pos1) + string.substring(pos2);
+		} else {
+			for (String name : config.getAggregatedClasses()) {
+				if (string.startsWith(name)) {
+					int pos = name.length();
+					while (pos < string.length() && Character.isDigit(string.charAt(pos))) {
+						pos++;
+					}
+					string = name + string.substring(pos);
+					break;
+				}
+			}
+		}
+		return new String(string.toCharArray());
 	}
 }
