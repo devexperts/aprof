@@ -160,7 +160,7 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 
 	@Override
 	public void visitMethodInsn(final int opcode, final String owner, final String name, final String desc) {
-		if (Context.isInternalLocation(context.getClassName())) {
+		if (AProfRegistry.isInternalLocation(context.getClassName())) {
 			mv.visitMethodInsn(opcode, owner, name, desc);
 			return;
 		}

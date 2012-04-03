@@ -32,6 +32,10 @@ class NewTest implements TestCase {
 		return null;
 	}
 
+	public String[] getCheckedClasses() {
+		return null;
+	}
+
 	public String getExpectedStatistics() {
 		return STATISTICS;
 	}

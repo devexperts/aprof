@@ -199,7 +199,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitAllocateReflect(String suffix) {
-		assert !Context.isInternalLocation(context.getClassName());
+		assert !AProfRegistry.isInternalLocation(context.getClassName());
 		assert context.getConfig().isReflect();
 		mv.dup();
 		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
@@ -215,7 +215,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitAllocateReflectVClone(String suffix) {
-		assert !Context.isInternalLocation(context.getClassName());
+		assert !AProfRegistry.isInternalLocation(context.getClassName());
 		assert context.getConfig().isReflect();
 		mv.dup();
 		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);

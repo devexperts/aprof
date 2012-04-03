@@ -20,8 +20,7 @@ package com.devexperts.aproftest;
 
 import com.devexperts.aprof.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -34,6 +33,7 @@ public class TestSuite {
 	private static final List<TestCase> TEST_CASES = Arrays.<TestCase>asList(
 			new GenericTest(),
 			new NewTest(),
+			new BoxingTest(),
 			new ReflectionTest(),
 			new CloneTest()
 	);
@@ -43,7 +43,7 @@ public class TestSuite {
 	}
 
 	public static void testSingleCase(TestCase test) {
-		System.out.printf("Testing %s on test case '%s'\n", Version.compact(), test.name());
+		System.out.printf("Testing %s on test '%s'\n", Version.compact(), test.name());
 
 		Snapshot snapshot = new Snapshot();
 		// clearing STATISTICS
@@ -55,14 +55,27 @@ public class TestSuite {
 				AProfRegistry.makeSnapshot(snapshot);
 			}
 		}
-
+		String[] prefixes = test.getCheckedClasses();
+		if (prefixes == null) {
+			prefixes = new String[] {test.getClass().getCanonicalName() + "$"};
+		}
+		
 		for (int i = 0; i < snapshot.getUsed(); i++) {
 			Snapshot child = snapshot.getItem(i);
-			if (!child.getId().startsWith(test.getClass().getCanonicalName() + "$")) {
+			boolean tracked = false;
+			for (String prefix : prefixes) {
+				if (child.getId().startsWith(prefix)) {
+					tracked = true;
+					break;
+				}
+			}
+			if (!tracked) {
 				snapshot.sub(child);
 				child.clearDeep();
 			}
 		}
+
+		compact(snapshot);
 
 		Configuration configuration = AProfRegistry.getConfiguration();
 		if (configuration == null) {
@@ -90,7 +103,22 @@ public class TestSuite {
 			System.out.printf("Test '%s' passed\n", test.name());
 		}
 	}
-	
+
+	private static Snapshot compact(Snapshot snapshot) {
+		Snapshot result = new Snapshot(snapshot.getId(), snapshot.getCounts().length);
+		for (int i = 0; i < snapshot.getUsed(); i++) {
+			Snapshot child = snapshot.getItem(i);
+			if (AProfRegistry.isInternalLocation(child.getId())) {
+				result.add(child);
+				child.clearDeep();
+			} else {
+				result.add(compact(child));
+			}
+		}
+		snapshot.sub(result);
+		return result;
+	}
+
 	public static boolean compareStatistics(String received, String expected) {
 		if (expected == null)
 			return true;

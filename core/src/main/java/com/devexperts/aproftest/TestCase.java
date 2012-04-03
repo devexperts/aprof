@@ -33,6 +33,9 @@ public interface TestCase {
 	/** Verifies AProf configuration and returns <code>null</code> if it's valid or the reason otherwise. */
 	public String verifyConfiguration(Configuration configuration);
 
+	/** Returns prefixes of classes to be checked. */
+	public String[] getCheckedClasses();
+
 	/** Returns expected memory usage statistics for single invocation of the {@link #doTest()} method. */
 	public String getExpectedStatistics();
 }

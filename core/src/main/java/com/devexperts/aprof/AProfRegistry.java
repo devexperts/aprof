@@ -28,6 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Dmitry Paraschenko
  */
 public class AProfRegistry {
+	private static final String PROXY_CLASS_TOKEN = "$Proxy";
+
 	public static final String ARRAY_NEWINSTANCE_SUFFIX = "#";
 	public static final String CLONE_SUFFIX = "*";
 
@@ -51,6 +53,65 @@ public class AProfRegistry {
 	public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
 	private static final int MAKE_SNAPSHOT_LOC = registerLocation(AProfRegistry.class.getCanonicalName() + ".makeSnapshot");
 
+	private static Configuration config;
+	private static ClassNameResolver class_name_resolver;
+
+	static void init(Configuration config, ClassNameResolver resolver) {
+		if (config == null)
+			throw new IllegalArgumentException("Aprof arguments must be specified");
+		if (resolver == null)
+			throw new IllegalArgumentException("Class-name resolver must be specified");
+		AProfRegistry.config = config;
+		AProfRegistry.class_name_resolver = resolver;
+
+		registerDatatypeInfo(Object.class.getCanonicalName());
+		registerDatatypeInfo(IndexMap.class.getCanonicalName());
+		registerDatatypeInfo(FastIntObjMap.class.getCanonicalName());
+	}
+
+	public static boolean isInternalLocation(String name) {
+		name = name.replace('/', '.');
+		if (name.startsWith("java.lang.ThreadLocal")) {
+			return true;
+		}
+		if (name.startsWith("com.devexperts.aprof.")) {
+			return true;
+		}
+		return false;
+	}
+
+	public static String normalize(String string) {
+		int pos1 = string.indexOf(PROXY_CLASS_TOKEN);
+		if (pos1 >= 0) {
+			pos1 += PROXY_CLASS_TOKEN.length();
+			int pos2 = pos1;
+			while (pos2 < string.length() && Character.isDigit(string.charAt(pos2))) {
+				pos2++;
+			}
+			string = string.substring(0, pos1) + string.substring(pos2);
+		} else if (config != null) {
+			for (String name : config.getAggregatedClasses()) {
+				if (string.startsWith(name)) {
+					int pos = name.length();
+					while (pos < string.length() && Character.isDigit(string.charAt(pos))) {
+						pos++;
+					}
+					string = name + string.substring(pos);
+					break;
+				}
+			}
+		}
+		return new String(string.toCharArray());
+	}
+
+	public static Configuration getConfiguration() {
+		return config;
+	}
+
+	static int getLocationCount() {
+		return last_root_index.get();
+	}
+
 	private static String resolveClassName(String datatype) {
 		return class_name_resolver.resolve(datatype);
 	}
@@ -59,7 +120,7 @@ public class AProfRegistry {
 	public static int registerLocation(String location) {
 		int loc = locations.get(location);
 		if (loc == 0) {
-			loc = locations.register(location);
+			loc = locations.register(normalize(location));
 		}
 		return loc;
 	}
@@ -81,7 +142,7 @@ public class AProfRegistry {
 	public static DatatypeInfo registerDatatypeInfo(String datatype) {
 		int id = datatype_names.get(datatype);
 		if (id == 0) {
-			id = datatype_names.register(datatype);
+			id = datatype_names.register(normalize(datatype));
 			ensureDatatypeIndexCapacity(id);
 			return createDatatypeInfo(id);
 		}
@@ -156,9 +217,7 @@ public class AProfRegistry {
 	}
 
 	// allocates memory during class transformation and reflection calls
-	public static int registerRootIndex(String datatype, String location) {
-		DatatypeInfo datatype_info = registerDatatypeInfo(datatype);
-		int loc = registerLocation(location);
+	public static IndexMap registerRootIndex(DatatypeInfo datatype_info, int loc) {
 		IndexMap datatype_map = datatype_info.getIndex();
 		IndexMap root_map = datatype_map.get(loc);
 		if (root_map == null) {
@@ -176,7 +235,7 @@ public class AProfRegistry {
 				}
 			}
 		}
-		return root_map.getIndex();
+		return root_map;
 	}
 
 	// allocates memory during class transformation and reflection calls
@@ -198,7 +257,9 @@ public class AProfRegistry {
 
 	// allocates memory during class transformation only
 	public static int registerAllocationPoint(String datatype, String location) {
-		return registerRootIndex(datatype, location);
+		DatatypeInfo datatype_info = registerDatatypeInfo(datatype);
+		int loc = registerLocation(location);
+		return registerRootIndex(datatype_info, loc).getIndex();
 	}
 
 	// TODO: can allocate memory
@@ -215,30 +276,6 @@ public class AProfRegistry {
 			}
 		}
 		return result;
-	}
-
-	private static Configuration config;
-	private static ClassNameResolver class_name_resolver;
-
-	static void init(Configuration config, ClassNameResolver resolver) {
-		if (config == null)
-			throw new IllegalArgumentException("Aprof arguments must be specified");
-		if (resolver == null)
-			throw new IllegalArgumentException("Class-name resolver must be specified");
-		AProfRegistry.config = config;
-		AProfRegistry.class_name_resolver = resolver;
-
-		registerDatatypeInfo(Object.class.getCanonicalName());
-		registerDatatypeInfo(IndexMap.class.getCanonicalName());
-		registerDatatypeInfo(FastIntObjMap.class.getCanonicalName());
-	}
-
-	public static Configuration getConfiguration() {
-		return config;
-	}
-
-	static int getLocationCount() {
-		return last_root_index.get();
 	}
 
 	static boolean isOverflowThreshold() {
@@ -267,11 +304,11 @@ public class AProfRegistry {
 	// TODO: can allocate memory during execution: new root because of reflection call
 	// all data-types should be registered beforehand
 	static IndexMap getDetailedIndex(String datatype, int loc) {
-		int id = registerRootIndex(datatype, locations.get(loc));
-		return getRootIndex(id);
+		DatatypeInfo datatype_info = registerDatatypeInfo(datatype);
+		return registerRootIndex(datatype_info, loc);
 	}
 
-	// TODO: can allocate memory during execution
+	// can allocate memory during execution
 	static IndexMap getDetailedIndex(LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
 		if (stack.internal_invoked_method_count > 0) {
@@ -288,9 +325,10 @@ public class AProfRegistry {
 		return map;
 	}
 
-	/**
-	 * Adds current snapshot information to <code>ss</code> and clears internal counters.
-	 */
+
+	//==================== SNAPSHOTS ======================
+
+	/** Adds current snapshot information to <code>ss</code> and clears internal counters. */
 	public static void makeSnapshot(Snapshot ss) {
 		LocationStack.markInternalInvokedMethod(MAKE_SNAPSHOT_LOC);
 		try {
@@ -423,7 +461,9 @@ public class AProfRegistry {
 		return !unknowns_only;
 	}
 
+
 	//=================== COUNT & TIME ====================
+
 	private static final AtomicInteger cnt = new AtomicInteger();
 	private static final AtomicLong time = new AtomicLong();
 

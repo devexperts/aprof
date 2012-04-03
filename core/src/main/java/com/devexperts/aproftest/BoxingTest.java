@@ -20,14 +20,12 @@ package com.devexperts.aproftest;
 
 import com.devexperts.aprof.Configuration;
 
-import java.lang.reflect.Constructor;
-
 /**
  * @author Dmitry Paraschenko
  */
-class ReflectionTest implements TestCase {
+class BoxingTest implements TestCase {
 	public String name() {
-		return "reflection";
+		return "boxing";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -35,7 +33,7 @@ class ReflectionTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return null;
+		return new String[] {Integer.class.getCanonicalName()};
 	}
 
 	public String getExpectedStatistics() {
@@ -44,29 +42,20 @@ class ReflectionTest implements TestCase {
 
 	public void doTest() {
 		long time = System.currentTimeMillis();
-		try {
-			Constructor<Entity> constructor = Entity.class.getConstructor();
-			for (int i = 0; i < 1000000; i++) {
-				if (i % 100000 == 0)
-					System.out.print('.');
-				constructor.newInstance();
-			}
-			System.out.printf(" Test took %d ms\n", System.currentTimeMillis() - time);
-		} catch (Exception e) {
-			System.out.printf(" Test failed in %d ms\n", System.currentTimeMillis() - time);
-			e.printStackTrace();
+		for (int i = 0; i < 1000000; i++) {
+			if (i % 100000 == 0)
+				System.out.print('.');
+			Integer.valueOf(10000 + i);
 		}
-	}
-
-	private static class Entity {
-		public Entity() {
-		}
+		System.out.printf(" Test took %d ms\n", System.currentTimeMillis() - time);
 	}
 
 	private static String STATISTICS = "" +
-			"Allocated 8,000,000 bytes in 1,000,000 objects in 1 locations of 1 classes\n" +
+			"Allocated 16,000,000 bytes in 1,000,000 objects in 1 locations of 1 classes\n" +
 			"-------------------------------------------------------------------------------\n" +
-			"com.devexperts.aproftest.ReflectionTest$Entity: 8,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 8 bytes)\n" +
-			"\tsun.reflect.GeneratedConstructorAccessor.newInstance: 8,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"java.lang.Integer: 16,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 16 bytes)\n" +
+			"\tjava.lang.Integer.valueOf: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"\t\tjava.lang.Integer.valueOf: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.BoxingTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
 			"";
 }

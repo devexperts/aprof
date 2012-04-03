@@ -74,7 +74,7 @@ public class AProfTools {
 		out.println("Usage: java -jar aprof.jar export [<file>]");
 		out.println();
 		out.println("Usage: java -jar aprof.jar selftest <test>");
-		out.println("Where <test> is one of test cases:");
+		out.println("Where <test> is one of tests:");
 		for (TestCase test : TestSuite.getTestCases()) {
 			out.println("\t" + test.name());
 		}
