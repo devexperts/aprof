@@ -45,8 +45,8 @@ class CloneTest implements TestCase {
 	public void doTest() {
 		long time = System.currentTimeMillis();
 		Entity entity = new Entity();
-		for (int i = 0; i < 1000000; i++) {
-			if (i % 100000 == 0)
+		for (int i = 0; i < 10000000; i++) {
+			if (i % 1000000 == 0)
 				System.out.print('.');
 			entity.dup();
 		}
@@ -67,7 +67,7 @@ class CloneTest implements TestCase {
 			"Allocated 8 bytes in 1 objects in 2 locations of 1 classes\n" +
 			"-------------------------------------------------------------------------------\n" +
 			"com.devexperts.aproftest.CloneTest$Entity: 8 (100%) bytes in 1 (100%) objects (avg size 8 bytes)\n" +
-			"\tcom.devexperts.aproftest.CloneTest$Entity.dup*: 8,000,000 (100,000,000%) bytes in 1,000,000 (100,000,000%) objects\n" +
+			"\tcom.devexperts.aproftest.CloneTest$Entity.dup*: 80,000,000 (1,000,000,000%) bytes in 10,000,000 (1,000,000,000%) objects\n" +
 			"\tcom.devexperts.aproftest.CloneTest.doTest: 8 (100%) bytes in 1 (100%) objects\n" +
 			"";
 }

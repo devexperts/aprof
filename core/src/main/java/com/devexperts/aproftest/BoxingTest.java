@@ -42,8 +42,8 @@ class BoxingTest implements TestCase {
 
 	public void doTest() {
 		long time = System.currentTimeMillis();
-		for (int i = 0; i < 1000000; i++) {
-			if (i % 100000 == 0)
+		for (int i = 0; i < 10000000; i++) {
+			if (i % 1000000 == 0)
 				System.out.print('.');
 			Double.valueOf(10000 + i);
 		}
@@ -51,11 +51,11 @@ class BoxingTest implements TestCase {
 	}
 
 	private static String STATISTICS = "" +
-			"Allocated 16,000,000 bytes in 1,000,000 objects in 1 locations of 1 classes\n" +
+			"Allocated 160,000,000 bytes in 10,000,000 objects in 1 locations of 1 classes\n" +
 			"-------------------------------------------------------------------------------\n" +
-			"java.lang.Double: 16,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 16 bytes)\n" +
-			"\tjava.lang.Double.valueOf: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"\t\tjava.lang.Double.valueOf: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"\t\t\tcom.devexperts.aproftest.BoxingTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"java.lang.Double: 160,000,000 (100%) bytes in 10,000,000 (100%) objects (avg size 16 bytes)\n" +
+			"\tjava.lang.Double.valueOf: 160,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
+			"\t\tjava.lang.Double.valueOf: 160,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.BoxingTest.doTest: 160,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
 			"";
 }

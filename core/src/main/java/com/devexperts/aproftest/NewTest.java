@@ -42,8 +42,8 @@ class NewTest implements TestCase {
 
 	public void doTest() {
 		long time = System.currentTimeMillis();
-		for (int i = 0; i < 1000000; i++) {
-			if (i % 100000 == 0)
+		for (int i = 0; i < 10000000; i++) {
+			if (i % 1000000 == 0)
 				System.out.print('.');
 			new Entity();
 		}
@@ -54,9 +54,9 @@ class NewTest implements TestCase {
 	}
 
 	private static String STATISTICS = "" +
-			"Allocated 8,000,000 bytes in 1,000,000 objects in 1 locations of 1 classes\n" +
+			"Allocated 80,000,000 bytes in 10,000,000 objects in 1 locations of 1 classes\n" +
 			"-------------------------------------------------------------------------------\n" +
-			"com.devexperts.aproftest.NewTest$Entity: 8,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 8 bytes)\n" +
-			"\tcom.devexperts.aproftest.NewTest.doTest: 8,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"com.devexperts.aproftest.NewTest$Entity: 80,000,000 (100%) bytes in 10,000,000 (100%) objects (avg size 8 bytes)\n" +
+			"\tcom.devexperts.aproftest.NewTest.doTest: 80,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
 			"";
 }

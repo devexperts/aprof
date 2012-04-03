@@ -42,23 +42,25 @@ class MethodAnalyzer extends AbstractMethodVisitor {
 
 	@Override
 	protected void visitMarkInvokedMethod() {
+		assert !context.isInternalLocation();
 		requestLocationStack();
-		mv.push(AProfRegistry.registerLocation(context.getLocation()));
-		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvokedMethod", AProfTransformer.INT_VOID);
 	}
 
 	@Override
 	protected void visitUnmarkInvokedMethod() {
+		assert !context.isInternalLocation();
 		requestLocationStack();
 	}
 
 	@Override
 	protected void visitMarkInvocationPoint() {
+		assert !context.isInternalLocation();
 		requestLocationStack();
 	}
 
 	@Override
 	protected void visitUnmarkInvocationPoint() {
+		assert !context.isInternalLocation();
 		requestLocationStack();
 	}
 

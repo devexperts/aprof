@@ -40,6 +40,10 @@ class MethodTransformer extends AbstractMethodVisitor {
 
 	public void pushLocationStack() {
 		assert context.isLocationStackNeeded();
+		if (context.isInternalLocation()) {
+			mv.visitInsn(Opcodes.ACONST_NULL);
+			return;
+		}
 		int location_stack = context.getLocationStack();
 		if (context.isMethodTracked()) {
 			assert location_stack >= 0;
@@ -81,6 +85,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitMarkInvokedMethod() {
+		assert !context.isInternalLocation();
 		pushLocationStack();
 		mv.push(AProfRegistry.registerLocation(context.getLocation()));
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvokedMethod", AProfTransformer.INT_VOID);
@@ -91,6 +96,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitUnmarkInvokedMethod() {
+		assert !context.isInternalLocation();
 		pushLocationStack();
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvokedMethod", AProfTransformer.NOARG_VOID);
 	}
@@ -100,6 +106,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitMarkInvocationPoint() {
+		assert !context.isInternalLocation();
 		pushLocationStack();
 		mv.push(AProfRegistry.registerLocation(context.getLocation()));
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvocationPoint", AProfTransformer.INT_VOID);
@@ -110,6 +117,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitUnmarkInvocationPoint() {
+		assert !context.isInternalLocation();
 		pushLocationStack();
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvocationPoint", AProfTransformer.NOARG_VOID);
 	}
@@ -146,33 +154,34 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 * OPS implementation is chosen based on the class doing the allocation.
 	 *
 	 * @see com.devexperts.aprof.AProfOps#allocate(int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(boolean[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(byte[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(char[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(short[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(int[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(long[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(float[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(double[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(Object[], int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySizeMulti(Object[], int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(boolean[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(byte[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(char[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(short[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(int[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(long[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(float[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(double[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(Object[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateArraySizeMulti(Object[], LocationStack, int)
 	 * @see com.devexperts.aprof.AProfOpsInternal#allocate(int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(boolean[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(byte[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(char[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(short[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(int[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(long[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(float[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(double[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(Object[], int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySizeMulti(Object[], int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(boolean[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(byte[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(char[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(short[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(int[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(long[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(float[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(double[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(Object[], LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySizeMulti(Object[], LocationStack, int)
 	 */
 	@Override
 	protected void visitAllocateArray(String desc) {
 		assert context.getConfig().isArrays();
 		if (context.getConfig().isSize()) {
 			mv.dup();
+			pushLocationStack();
 			pushAllocationPoint(desc);
 			boolean is_multi = desc.lastIndexOf('[') > 0;
 			boolean is_primitive = desc.length() == 2;
@@ -183,7 +192,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 			} else {
 				sb.append("[Ljava/lang/Object;");
 			}
-			sb.append("I)V");
+			sb.append("Lcom/devexperts/aprof/LocationStack;I)V");
 			String mname = is_multi ? "allocateArraySizeMulti" : "allocateArraySize";
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), mname, sb.toString());
 		} else {

@@ -49,9 +49,13 @@ class Context {
 		this.access = access;
 
 		this.location = getLocationString(cname, mname, desc);
-		this.method_tracked = !mname.startsWith(AProfTransformer.ACCESS_METHOD) && !AProfRegistry.isInternalLocation(cname) && isLocationTracked(location);
+		this.method_tracked = !isInternalLocation() && !mname.startsWith(AProfTransformer.ACCESS_METHOD) && isLocationTracked(location);
 		this.object_init = this.cname.equals(AProfTransformer.OBJECT_CLASS_NAME) && this.mname.equals(AProfTransformer.INIT);
-		this.aprof_ops_impl = AProfRegistry.isInternalLocation(this.cname) ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
+		this.aprof_ops_impl = isInternalLocation() ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
+	}
+
+	public boolean isInternalLocation() {
+		return AProfRegistry.isInternalLocation(cname);
 	}
 
 	public Configuration getConfig() {

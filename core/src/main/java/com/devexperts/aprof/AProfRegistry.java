@@ -309,6 +309,7 @@ public class AProfRegistry {
 
 	// can allocate memory during execution
 	static IndexMap getDetailedIndex(LocationStack stack, int index) {
+		assert stack != null;
 		IndexMap map = getRootIndex(index);
 		if (stack.internal_invoked_method_count > 0) {
 			return putLocation(map, stack.internal_invoked_method_loc);

@@ -46,8 +46,8 @@ class ReflectionTest implements TestCase {
 		long time = System.currentTimeMillis();
 		try {
 			Constructor<Entity> constructor = Entity.class.getConstructor();
-			for (int i = 0; i < 1000000; i++) {
-				if (i % 100000 == 0)
+			for (int i = 0; i < 10000000; i++) {
+				if (i % 1000000 == 0)
 					System.out.print('.');
 				constructor.newInstance();
 			}
@@ -64,11 +64,11 @@ class ReflectionTest implements TestCase {
 	}
 
 	private static String STATISTICS = "" +
-			"Allocated 8,000,000 bytes in 1,000,000 objects in 1 locations of 1 classes\n" +
+			"Allocated 80,000,000 bytes in 10,000,000 objects in 1 locations of 1 classes\n" +
 			"-------------------------------------------------------------------------------\n" +
-			"com.devexperts.aproftest.ReflectionTest$Entity: 8,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 8 bytes)\n" +
-			"\tsun.reflect.GeneratedConstructorAccessor.newInstance: 8,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"\t\tjava.lang.reflect.Constructor.newInstance: 8,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"\t\t\tcom.devexperts.aproftest.ReflectionTest.doTest: 8,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"com.devexperts.aproftest.ReflectionTest$Entity: 80,000,000 (100%) bytes in 10,000,000 (100%) objects (avg size 8 bytes)\n" +
+			"\tsun.reflect.GeneratedConstructorAccessor.newInstance: 80,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
+			"\t\tjava.lang.reflect.Constructor.newInstance: 80,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.ReflectionTest.doTest: 80,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
 			"";
 }

@@ -39,6 +39,7 @@ class DumpShutdownThread extends Thread {
 
 	@Override
 	public void run() {
+		Log.out.println("Shutting down...");
 		if (dpt != null && !dpt.shutdown()) {
 			return;
 		}
