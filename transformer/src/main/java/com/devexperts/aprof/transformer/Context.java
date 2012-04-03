@@ -162,8 +162,6 @@ class Context {
 				return false;
 			}
 		}
-		if (location.startsWith("sun.reflect.Constructor.newInstance"))
-			return true;
 		return config.isLocationTracked(location);
 	}
 }
