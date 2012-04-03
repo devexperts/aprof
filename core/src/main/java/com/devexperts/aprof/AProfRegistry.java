@@ -143,7 +143,6 @@ public class AProfRegistry {
 		int id = datatype_names.get(datatype);
 		if (id == 0) {
 			id = datatype_names.register(normalize(datatype));
-			ensureDatatypeIndexCapacity(id);
 			return createDatatypeInfo(id);
 		}
 		DatatypeInfo datatype_info = datatype_infos[id];
