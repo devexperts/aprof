@@ -129,7 +129,7 @@ public class AProfOps {
 
 	public static void objectInit(Object o) {
 		String name = o.getClass().getName();
-		DatatypeInfo datatype_info = getDatatypeInfo(name, false);
+		DatatypeInfo datatype_info = getDatatypeInfo(name);
 		if (datatype_info == null) {
 			return;
 		}
@@ -138,7 +138,7 @@ public class AProfOps {
 
 	public static void objectInitSize(Object o) {
 		String name = o.getClass().getName();
-		DatatypeInfo datatype_info = getDatatypeInfo(name, false);
+		DatatypeInfo datatype_info = getDatatypeInfo(name);
 		if (datatype_info == null) {
 			return;
 		}

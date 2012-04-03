@@ -18,116 +18,114 @@
 
 package com.devexperts.aprof.util;
 
-import java.util.Arrays;
-
 /**
  * @author Dmitry Paraschenko
  */
 public class StringIndexer {
-	private static final int MAGIC = 0xB46394CD;
-	private static final int MAX_SHIFT = 29;
-	private static final int THRESHOLD = (int)((1L << 32) * 0.5); // 50% fill factor for speed
+	private static final int MIN_LENGTH = 8;
 
-	private static class Core {
-		final int shift;
-		final int length;
-		final String[] strings;
-		final int[] ids;
-		final int[] id2pos;
-
-		Core(int shift) {
-			this.shift = shift;
-			length = 1 << (32 - shift);
-			strings = new String[length];
-			ids = new int[length];
-			id2pos = new int[length];
-			Arrays.fill(id2pos, -1);
-		}
-	}
-
-	private volatile Core core = new Core(MAX_SHIFT);
+	private volatile Core core = new Core(MIN_LENGTH);
 	private volatile int size;
-
-	// does not need external synchronization
-	public int register(String string) {
-		return get(string, true);
-	}
-
-	// does not need external synchronization
-	public int get(String string) {
-		return get(string, false);
-	}
-
-	// does not need external synchronization
-	private int get(String string, boolean register) {
-		Core core = this.core; // atomic read;
-		int i = (string.hashCode() * MAGIC) >>> core.shift;
-		String s;
-		while (!string.equals(s = core.strings[i])) {
-			if (s == null) {
-				if (!register) {
-					return 0;
-				}
-				synchronized (this) {
-					int id = ++size;
-					core = this.core;
-					core.strings[i] = string;
-					core.ids[i] = id;
-					core.id2pos[id] = i;
-					if (size >= (THRESHOLD >>> core.shift))
-						rehash();
-					return id;
-				}
-			}
-
-			if (i == 0)
-				i = core.length;
-			i--;
-		}
-		return core.ids[i];
-	}
-
-	// does not need external synchronization
-	public String get(int id) {
-		Core core = this.core; // atomic read;
-		if (id >= core.length) {
-			return null;
-		}
-		int pos = core.id2pos[id];
-		if (pos < 0) {
-			return null;
-		}
-		return core.strings[pos];
-	}
 
 	public int size() {
 		return size;
 	}
 
-	private boolean putInternal(Core core, String string, int id) {
-		int i = (string.hashCode() * MAGIC) >>> core.shift;
-		String k;
-		while (!string.equals(k = core.strings[i])) {
-			if (k == null) {
-				core.strings[i] = string;
-				core.ids[i] = id;
-				core.id2pos[id] = i;
-				return true;
-			}
-			if (i == 0)
-				i = core.length;
-			i--;
+	// does not need external synchronization
+	public String get(int id) {
+		return core.get(id);
+	}
+
+	// does not need external synchronization
+	public int get(String string) {
+		return core.get(string);
+	}
+
+	// does not need external synchronization
+	public int register(String string) {
+		int id = core.get(string);
+		if (id == 0) {
+			return registerImpl(string);
 		}
-		core.ids[i] = id;
-		return false;
+		return id;
+	}
+
+	private synchronized int registerImpl(String string) {
+		int id = core.get(string);
+		if (id == 0) {
+			id = ++size;
+			core.register(string, id);
+			if (size >= core.length / 2) // 50% fill factor for speed
+				rehash();
+		}
+		return id;
 	}
 
 	private void rehash() {
 		Core old_core = core;
-		Core new_core = new Core(old_core.shift - 1);
+		Core new_core = new Core(2 * old_core.length);
 		for (int i = 0; i < old_core.length; i++)
 			if (old_core.strings[i] != null)
-				putInternal(new_core, old_core.strings[i], old_core.ids[i]);
+				new_core.register(old_core.strings[i], old_core.ids[i]);
 		core = new_core;
+	}
+
+	private static class Core {
+		final int mask;
+		final int length;
+		final String[] strings;
+		final int[] ids;
+		final String[] id2string;
+
+		Core(int length) {
+			this.length = length;
+			mask = length - 1;
+			strings = new String[length];
+			ids = new int[length];
+			id2string = new String[length];
+		}
+
+		// does not need external synchronization
+		public String get(int id) {
+			if (id >= length) {
+				return null;
+			}
+			return id2string[id];
+		}
+
+		// does not need external synchronization
+		private int get(String string) {
+			int i = string.hashCode() & mask;
+			String s;
+			while (!string.equals(s = strings[i])) {
+				if (s == null) {
+					return 0;
+				}
+
+				if (i == 0)
+					i = length;
+				i--;
+			}
+			return ids[i];
+		}
+
+		// needs external synchronization
+		private void register(String string, int id) {
+			int i = string.hashCode() & mask;
+			String s;
+			while (!string.equals(s = strings[i])) {
+				if (s == null) {
+					ids[i] = id;
+					strings[i] = string;
+					id2string[id] = string;
+					return;
+				}
+
+				if (i == 0)
+					i = length;
+				i--;
+			}
+			throw new IllegalStateException();
+		}
 	}
 }

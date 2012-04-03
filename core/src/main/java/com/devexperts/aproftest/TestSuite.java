@@ -45,15 +45,16 @@ public class TestSuite {
 	public static void testSingleCase(TestCase test) {
 		System.out.printf("Testing %s on test case '%s'\n", Version.compact(), test.name());
 
-		for (int i = 0; i < 5; i++) {
-			// clearing STATISTICS
-			AProfRegistry.makeSnapshot(new Snapshot());
-			test.doTest();
-		}
-
-		// retrieving STATISTICS
 		Snapshot snapshot = new Snapshot();
-		AProfRegistry.makeSnapshot(snapshot);
+		// clearing STATISTICS
+		AProfRegistry.makeSnapshot(new Snapshot());
+		for (int i = 0; i < 5; i++) {
+			test.doTest();
+			if (i == 0) {
+				// retrieving STATISTICS
+				AProfRegistry.makeSnapshot(snapshot);
+			}
+		}
 
 		for (int i = 0; i < snapshot.getUsed(); i++) {
 			Snapshot child = snapshot.getItem(i);

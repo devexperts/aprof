@@ -52,6 +52,10 @@ public class AProfRegistry {
 	public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
 	private static final int MAKE_SNAPSHOT_LOC = registerLocation(AProfRegistry.class.getCanonicalName() + ".makeSnapshot");
 
+	private static String resolveClassName(String datatype) {
+		return class_name_resolver.resolve(datatype);
+	}
+
 	private static String normalize(String string) {
 		int pos1 = string.indexOf(PROXY_SUBSTRING);
 		if (pos1 >= 0) {
@@ -85,44 +89,31 @@ public class AProfRegistry {
 		return loc;
 	}
 
-	public static void registerDatatypeInfo(String datatype) {
-		getDatatypeInfo(datatype, true);
-	}
-
-	// allocates memory during class transformation only
-	static DatatypeInfo getDatatypeInfo(String datatype, boolean register) {
+	// allocates memory during class transformation only???
+	public static DatatypeInfo getDatatypeInfo(String datatype) {
 		int id = datatype_names.get(datatype);
-		if (id == 0 && register) {
-			id = datatype_names.register(normalize(datatype));
-		}
 		if (id == 0) {
 			return null;
 		}
-		ensureDatatypeIndexCapacity(id);
 		DatatypeInfo datatype_info = datatype_infos[id];
 		if (datatype_info == null) {
-			synchronized (datatype_infos_sync) {
-				datatype_info = datatype_infos[id];
-				if (datatype_info == null) {
-					datatype = datatype_names.get(id);
-					if (datatype.startsWith("[")) {
-						datatype = resolveClassName(datatype);
-						IndexMap map = new IndexMap(id, config.getHistogram(datatype));
-						datatype_info = new DatatypeInfo(datatype, map);
-					} else {
-						datatype = resolveClassName(datatype);
-						IndexMap map = new IndexMap(id, null);
-						datatype_info = new DatatypeInfo(datatype, map);
-					}
-					datatype_infos[id] = datatype_info;
-				}
-			}
+			return getDatatypeInfo(id);
 		}
 		return datatype_info;
 	}
 
-	private static String resolveClassName(String datatype) {
-		return class_name_resolver.resolve(datatype);
+	// allocates memory during class transformation only
+	public static DatatypeInfo registerDatatypeInfo(String datatype) {
+		int id = datatype_names.get(datatype);
+		if (id == 0) {
+			id = datatype_names.register(normalize(datatype));
+			ensureDatatypeIndexCapacity(id);
+		}
+		DatatypeInfo datatype_info = datatype_infos[id];
+		if (datatype_info == null) {
+			return createDatatypeInfo(id);
+		}
+		return datatype_info;
 	}
 
 	private static DatatypeInfo getDatatypeInfo(int id) {
@@ -133,6 +124,26 @@ public class AProfRegistry {
 			}
 		}
 		return datatype_info;
+	}
+
+	private static DatatypeInfo createDatatypeInfo(int id) {
+		synchronized (datatype_infos_sync) {
+			DatatypeInfo datatype_info = datatype_infos[id];
+			if (datatype_info == null) {
+				String datatype = datatype_names.get(id);
+				if (datatype.startsWith("[")) {
+					datatype = resolveClassName(datatype);
+					IndexMap map = new IndexMap(id, config.getHistogram(datatype));
+					datatype_info = new DatatypeInfo(datatype, map);
+				} else {
+					datatype = resolveClassName(datatype);
+					IndexMap map = new IndexMap(id, null);
+					datatype_info = new DatatypeInfo(datatype, map);
+				}
+				datatype_infos[id] = datatype_info;
+			}
+			return datatype_info;
+		}
 	}
 
 	// allocates memory during class transformation only
@@ -164,7 +175,7 @@ public class AProfRegistry {
 
 	// allocates memory during class transformation and reflection calls
 	public static int registerRootIndex(String datatype, String location) {
-		DatatypeInfo datatype_info = getDatatypeInfo(datatype, true);
+		DatatypeInfo datatype_info = registerDatatypeInfo(datatype);
 		int loc = registerLocation(location);
 		IndexMap datatype_map = datatype_info.getIndex();
 		IndexMap root_map = datatype_map.get(loc);
@@ -235,9 +246,9 @@ public class AProfRegistry {
 		AProfRegistry.config = config;
 		AProfRegistry.class_name_resolver = resolver;
 
-		getDatatypeInfo(Object.class.getCanonicalName(), true);
-		getDatatypeInfo(IndexMap.class.getCanonicalName(), true);
-		getDatatypeInfo(FastIntObjMap.class.getCanonicalName(), true);
+		registerDatatypeInfo(Object.class.getCanonicalName());
+		registerDatatypeInfo(IndexMap.class.getCanonicalName());
+		registerDatatypeInfo(FastIntObjMap.class.getCanonicalName());
 	}
 
 	public static Configuration getConfiguration() {
@@ -503,16 +514,16 @@ public class AProfRegistry {
 
 	// called during class transformation only
 	public static void addDirectCloneClass(String name) {
-		getDatatypeInfo(name, true).setDirectClone(true);
+		registerDatatypeInfo(name).setDirectClone(true);
 	}
 
 	// called during class transformation only
 	public static void removeDirectCloneClass(String name) {
-		getDatatypeInfo(name, false).setDirectClone(false);
+		getDatatypeInfo(name).setDirectClone(false);
 	}
 
 	public static boolean isDirectCloneClass(String name) {
-		DatatypeInfo datatype_info = getDatatypeInfo(name, false);
+		DatatypeInfo datatype_info = getDatatypeInfo(name);
 		return datatype_info != null && datatype_info.isDirectClone();
 	}
 }

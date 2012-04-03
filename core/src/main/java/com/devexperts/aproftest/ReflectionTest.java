@@ -55,6 +55,8 @@ class ReflectionTest implements TestCase {
 	}
 
 	private static class Entity {
+		public Entity() {
+		}
 	}
 
 	private static String STATISTICS = "" +
