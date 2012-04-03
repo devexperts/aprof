@@ -74,7 +74,7 @@ public class AProfTools {
 		out.println("Usage: java -jar aprof.jar export [<file>]");
 		out.println();
 		out.println("Usage: java -jar aprof.jar selftest <test>");
-		out.println("Where <test> is one of tests:");
+		out.println("Where <test> is 'all' or one of tests:");
 		for (TestCase test : TestSuite.getTestCases()) {
 			out.println("\t" + test.name());
 		}
@@ -131,6 +131,10 @@ public class AProfTools {
 			return;
 		}
 		String test_name = args[1].trim().toLowerCase(Locale.US);
+		if ("all".equals(test_name)) {
+			TestSuite.testAllApplicableCases();
+			return;
+		}
 		boolean done = false;
 		for (TestCase test : TestSuite.getTestCases()) {
 			if (test.name().equals(test_name)) {

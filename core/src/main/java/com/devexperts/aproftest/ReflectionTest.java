@@ -68,5 +68,7 @@ class ReflectionTest implements TestCase {
 			"-------------------------------------------------------------------------------\n" +
 			"com.devexperts.aproftest.ReflectionTest$Entity: 8,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 8 bytes)\n" +
 			"\tsun.reflect.GeneratedConstructorAccessor.newInstance: 8,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"\t\tjava.lang.reflect.Constructor.newInstance: 8,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"\t\t\tcom.devexperts.aproftest.ReflectionTest.doTest: 8,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
 			"";
 }

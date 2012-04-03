@@ -28,6 +28,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.commons.TryCatchBlockSorter;
 
+import java.io.FileOutputStream;
 import java.lang.instrument.*;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -119,7 +120,13 @@ public class AProfTransformer implements ClassFileTransformer {
 			ClassVisitor classTransformer = new ClassTransformer(cw, cname, method_contexts);
 //			classTransformer = new CheckClassAdapter(classTransformer);
 			cr.accept(classTransformer, flags);
-			return cw.toByteArray();
+			byte[] bytes = cw.toByteArray();
+			if (cname.startsWith("com.devexperts.aproftest.") && !cname.contains("$")) {
+				FileOutputStream fos = new FileOutputStream(cname.substring(cname.lastIndexOf('.') + 1) + ".class");
+				fos.write(bytes);
+				fos.close();
+			}
+			return bytes;
 		} catch (Throwable t) {
 			synchronized (shared_sb) {
 				shared_sb.setLength(0);

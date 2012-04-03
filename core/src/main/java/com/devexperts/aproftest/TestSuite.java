@@ -42,17 +42,32 @@ public class TestSuite {
 		return TEST_CASES;
 	}
 
+	public static void testAllApplicableCases() {
+		Configuration configuration = AProfRegistry.getConfiguration();
+		if (configuration == null) {
+			System.out.println("Tests should be run under Aprof: -javaagent:aprof.jar");
+			return;
+		}
+		for (TestCase test : getTestCases()) {
+			if (test.verifyConfiguration(configuration) == null) {
+				testSingleCase(test);
+			}
+		}
+	}
+
 	public static void testSingleCase(TestCase test) {
 		System.out.printf("Testing %s on test '%s'\n", Version.compact(), test.name());
 
 		Snapshot snapshot = new Snapshot();
-		// clearing STATISTICS
-		AProfRegistry.makeSnapshot(new Snapshot());
 		for (int i = 0; i < 5; i++) {
-			test.doTest();
-			if (i == 0) {
+			if (i == 1) {
+				// clearing STATISTICS
+				AProfRegistry.makeSnapshot(new Snapshot());
+				test.doTest();
 				// retrieving STATISTICS
 				AProfRegistry.makeSnapshot(snapshot);
+			} else {
+				test.doTest();
 			}
 		}
 		String[] prefixes = test.getCheckedClasses();
@@ -74,8 +89,6 @@ public class TestSuite {
 				child.clearDeep();
 			}
 		}
-
-		compact(snapshot);
 
 		Configuration configuration = AProfRegistry.getConfiguration();
 		if (configuration == null) {
@@ -102,21 +115,6 @@ public class TestSuite {
 		} else {
 			System.out.printf("Test '%s' passed\n", test.name());
 		}
-	}
-
-	private static Snapshot compact(Snapshot snapshot) {
-		Snapshot result = new Snapshot(snapshot.getId(), snapshot.getCounts().length);
-		for (int i = 0; i < snapshot.getUsed(); i++) {
-			Snapshot child = snapshot.getItem(i);
-			if (AProfRegistry.isInternalLocation(child.getId())) {
-				result.add(child);
-				child.clearDeep();
-			} else {
-				result.add(compact(child));
-			}
-		}
-		snapshot.sub(result);
-		return result;
 	}
 
 	public static boolean compareStatistics(String received, String expected) {
