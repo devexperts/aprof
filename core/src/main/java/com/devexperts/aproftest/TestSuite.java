@@ -33,6 +33,7 @@ public class TestSuite {
 	private static final List<TestCase> TEST_CASES = Arrays.<TestCase>asList(
 			new GenericTest(),
 			new NewTest(),
+			new TryTest(),
 			new BoxingTest(),
 			new ReflectionTest(),
 			new CloneTest()
@@ -46,7 +47,6 @@ public class TestSuite {
 		Configuration configuration = AProfRegistry.getConfiguration();
 		if (configuration == null) {
 			System.out.println("Tests should be run under Aprof: -javaagent:aprof.jar");
-			return;
 		}
 		for (TestCase test : getTestCases()) {
 			if (test.verifyConfiguration(configuration) == null) {
