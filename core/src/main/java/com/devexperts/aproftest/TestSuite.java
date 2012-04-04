@@ -30,13 +30,13 @@ import java.util.StringTokenizer;
  * @author Dmitry Paraschenko
  */
 public class TestSuite {
-	private static final List<TestCase> TEST_CASES = Arrays.<TestCase>asList(
+	private static final List<TestCase> TEST_CASES = Arrays.asList(
 			new GenericTest(),
 			new NewTest(),
-			new TryTest(),
 			new BoxingTest(),
 			new ReflectionTest(),
-			new CloneTest()
+			new CloneTest(),
+			new TryTest()
 	);
 
 	public static Collection<TestCase> getTestCases() {
