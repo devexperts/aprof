@@ -106,7 +106,10 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 			Label endFinally = new Label();
 			mv.visitTryCatchBlock(startFinally, endFinally, endFinally, null);
 			mv.visitLabel(endFinally);
+			int var = mv.newLocal(Type.getType(Object.class));
+			mv.storeLocal(var);
 			visitUnmarkInvokedMethod();
+			mv.loadLocal(var);
 			mv.throwException();
 		}
 		mv.visitMaxs(maxStack, maxLocals);
