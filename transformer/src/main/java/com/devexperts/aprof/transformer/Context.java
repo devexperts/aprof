@@ -29,8 +29,6 @@ class Context {
 	private final Configuration config;
 	private final String cname;
 	private final String mname;
-	private final String desc;
-	private final int access;
 
 	private final String location;
 	private final boolean method_tracked;
@@ -45,12 +43,10 @@ class Context {
 		this.config = config;
 		this.cname = cname;
 		this.mname = mname;
-		this.desc = desc;
-		this.access = access;
 
 		this.location = getLocationString(cname, mname, desc);
 		this.method_tracked = !isInternalLocation() && !mname.startsWith(AProfTransformer.ACCESS_METHOD) && isLocationTracked(location);
-		this.object_init = this.cname.equals(AProfTransformer.OBJECT_CLASS_NAME) && this.mname.equals(AProfTransformer.INIT);
+		this.object_init = this.cname.equals(AProfTransformer.OBJECT_CLASS_NAME) && this.mname.equals(AProfTransformer.OBJECT_INIT);
 		this.aprof_ops_impl = isInternalLocation() ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
 	}
 

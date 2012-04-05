@@ -52,7 +52,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 	static final String ACCESS_METHOD = "access$";
 
-	static final String INIT = "<init>";
+	static final String OBJECT_INIT = "<init>";
 	static final String CLONE = "clone";
 
 	static final String NOARG_RETURNS_OBJECT = "()Ljava/lang/Object;";
@@ -119,7 +119,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			cr.accept(classAnalyzer, flags);
 
 			ClassVisitor classTransformer = new ClassTransformer(cw, cname, method_contexts);
-//			classTransformer = new CheckClassAdapter(classTransformer);
+			classTransformer = new CheckClassAdapter(classTransformer);
 			cr.accept(classTransformer, flags);
 			return cw.toByteArray();
 		} catch (Throwable t) {
@@ -187,11 +187,11 @@ public class AProfTransformer implements ClassFileTransformer {
 				AProfRegistry.removeDirectCloneClass(cname);
 			}
 			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
-//			visitor = new CheckMethodAdapter(visitor);
-			visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature, exceptions);
+			visitor = new CheckMethodAdapter(visitor);
 			visitor = new TryCatchBlockSorter(visitor, access, mname, desc, signature, exceptions);
 			Context context = context_iterator.next();
 			visitor = new MethodTransformer(new GeneratorAdapter(visitor, access, mname, desc), context);
+			visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature, exceptions);
 			return visitor;
 		}
 

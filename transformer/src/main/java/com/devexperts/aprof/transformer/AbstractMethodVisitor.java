@@ -25,8 +25,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
-import static org.objectweb.asm.Opcodes.*;
-
 /**
  * @author Dmitry Paraschenko
  */
@@ -42,6 +40,8 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 
 	protected final GeneratorAdapter mv;
 	protected final Context context;
+
+	private Label startFinally;
 
 	public AbstractMethodVisitor(GeneratorAdapter mv, Context context) {
 		super(mv);
@@ -74,30 +74,42 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 		mv.visitCode();
 		visitMarkDeclareLocationStack();
 		if (context.isMethodTracked()) {
+			startFinally = new Label();
 			visitMarkInvokedMethod();
+			mv.visitLabel(startFinally);
 		}
 	}
 
 	@Override
-	public void visitInsn(final int opcode) {
+	public void visitInsn(int opcode) {
 		switch (opcode) {
-			case RETURN:
-			case IRETURN:
-			case FRETURN:
-			case ARETURN:
-			case LRETURN:
-			case DRETURN:
-			case ATHROW: {
-				if (context.isMethodTracked()) {
-					visitUnmarkInvokedMethod();
-				}
+			case Opcodes.RETURN:
+			case Opcodes.IRETURN:
+			case Opcodes.FRETURN:
+			case Opcodes.ARETURN:
+			case Opcodes.LRETURN:
+			case Opcodes.DRETURN:
 				if (context.isObjectInit() && context.getConfig().isUnknown()) {
 					visitObjectInit();
 				}
+				if (context.isMethodTracked()) {
+					visitUnmarkInvokedMethod();
+				}
 				break;
-			}
 		}
 		mv.visitInsn(opcode);
+	}
+
+	@Override
+	public void visitMaxs(int maxStack, int maxLocals) {
+		if (context.isMethodTracked()) {
+			Label endFinally = new Label();
+			mv.visitTryCatchBlock(startFinally, endFinally, endFinally, null);
+			mv.visitLabel(endFinally);
+			visitUnmarkInvokedMethod();
+			mv.throwException();
+		}
+		mv.visitMaxs(maxStack, maxLocals);
 	}
 
 	@Override
