@@ -20,12 +20,34 @@ package com.devexperts.aproftest;
 
 import com.devexperts.aprof.Configuration;
 
+import java.io.*;
+import java.util.ArrayList;
+
 /**
  * @author Dmitry Paraschenko
  */
-class NewTest implements TestCase {
+class DeserializationTest implements TestCase {
+	private final ArrayList<Entity> serialized_object;
+	private final byte[] serialized_data;
+
+	public DeserializationTest() {
+		serialized_object = new ArrayList<Entity>();
+		for (int i = 0; i < 100000; i++) {
+			serialized_object.add(new Entity());
+		}
+		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(baos);
+			oos.writeObject(serialized_object);
+			serialized_data = baos.toByteArray();
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+
 	public String name() {
-		return "new";
+		return "deserialization";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -33,7 +55,7 @@ class NewTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] {getClass().getCanonicalName() + "$"};
+		return null;
 	}
 
 	public String getExpectedStatistics() {
@@ -42,21 +64,25 @@ class NewTest implements TestCase {
 
 	public void doTest() {
 		long time = System.currentTimeMillis();
-		for (int i = 0; i < 10000000; i++) {
-			if (i % 1000000 == 0)
+		try {
+			for (int i = 0; i < 10; i++) {
 				System.out.print('.');
-			new Entity();
+				ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized_data));
+				Object object = ois.readObject();
+				if (!serialized_object.equals(object)) {
+					System.out.print(" Objects are different!");
+				}
+			}
+			System.out.printf(" Test took %d ms\n", System.currentTimeMillis() - time);
+		} catch (Exception e) {
+			System.out.printf(" Test failed in %d ms\n", System.currentTimeMillis() - time);
+			e.printStackTrace();
 		}
-		System.out.printf(" Test took %d ms\n", System.currentTimeMillis() - time);
 	}
 
-	private static class Entity {
+	private static class Entity implements Serializable {
 	}
 
 	private static String STATISTICS = "" +
-			"Allocated 80,000,000 bytes in 10,000,000 objects in 1 locations of 1 classes\n" +
-			"-------------------------------------------------------------------------------\n" +
-			"com.devexperts.aproftest.NewTest$Entity: 80,000,000 (100%) bytes in 10,000,000 (100%) objects (avg size 8 bytes)\n" +
-			"\tcom.devexperts.aproftest.NewTest.doTest: 80,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
 			"";
 }

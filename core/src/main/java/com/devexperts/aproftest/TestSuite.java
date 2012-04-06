@@ -36,7 +36,8 @@ public class TestSuite {
 			new BoxingTest(),
 			new ReflectionTest(),
 			new CloneTest(),
-			new TryTest()
+			new TryTest(),
+			new DeserializationTest()
 	);
 
 	public static Collection<TestCase> getTestCases() {
@@ -71,22 +72,20 @@ public class TestSuite {
 			}
 		}
 		String[] prefixes = test.getCheckedClasses();
-		if (prefixes == null) {
-			prefixes = new String[] {test.getClass().getCanonicalName() + "$"};
-		}
-		
-		for (int i = 0; i < snapshot.getUsed(); i++) {
-			Snapshot child = snapshot.getItem(i);
-			boolean tracked = false;
-			for (String prefix : prefixes) {
-				if (child.getId().startsWith(prefix)) {
-					tracked = true;
-					break;
+		if (prefixes != null) {
+			for (int i = 0; i < snapshot.getUsed(); i++) {
+				Snapshot child = snapshot.getItem(i);
+				boolean tracked = false;
+				for (String prefix : prefixes) {
+					if (child.getId().startsWith(prefix)) {
+						tracked = true;
+						break;
+					}
 				}
-			}
-			if (!tracked) {
-				snapshot.sub(child);
-				child.clearDeep();
+				if (!tracked) {
+					snapshot.sub(child);
+					child.clearDeep();
+				}
 			}
 		}
 

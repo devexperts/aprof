@@ -36,7 +36,7 @@ class GenericTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return null;
+		return new String[] {getClass().getCanonicalName() + "$"};
 	}
 
 	public String getExpectedStatistics() {
