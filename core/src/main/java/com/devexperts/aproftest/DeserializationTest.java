@@ -33,7 +33,7 @@ class DeserializationTest implements TestCase {
 	public DeserializationTest() {
 		serialized_object = new ArrayList<Entity>();
 		for (int i = 0; i < 100000; i++) {
-			serialized_object.add(new Entity());
+			serialized_object.add(new Entity(i));
 		}
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -55,7 +55,7 @@ class DeserializationTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return null;
+		return new String[] {getClass().getCanonicalName() + "$"};
 	}
 
 	public String getExpectedStatistics() {
@@ -68,10 +68,8 @@ class DeserializationTest implements TestCase {
 			for (int i = 0; i < 10; i++) {
 				System.out.print('.');
 				ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized_data));
-				Object object = ois.readObject();
-				if (!serialized_object.equals(object)) {
-					System.out.print(" Objects are different!");
-				}
+				ois.readObject();
+				ois.close();
 			}
 			System.out.printf(" Test took %d ms\n", System.currentTimeMillis() - time);
 		} catch (Exception e) {
@@ -81,8 +79,19 @@ class DeserializationTest implements TestCase {
 	}
 
 	private static class Entity implements Serializable {
+		private final int value;
+		
+		private Entity(int value) {
+			this.value = value;
+		}
 	}
 
 	private static String STATISTICS = "" +
+			"Allocated 16,000,000 bytes in 1,000,000 objects in 1 locations of 1 classes\n" +
+			"-------------------------------------------------------------------------------\n" +
+			"com.devexperts.aproftest.DeserializationTest$Entity: 16,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 16 bytes)\n" +
+			"\tsun.reflect.GeneratedSerializationConstructorAccessor.newInstance: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"\t\tjava.lang.reflect.Constructor.newInstance: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+			"\t\t\tjava.io.ObjectStreamClass.newInstance: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
 			"";
 }

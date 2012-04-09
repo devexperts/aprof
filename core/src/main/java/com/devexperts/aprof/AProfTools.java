@@ -72,18 +72,23 @@ public class AProfTools {
 		out.println("Usage: java -jar aprof.jar dump [<host>:]<port>");
 		out.println();
 		out.println("Usage: java -jar aprof.jar export [<file>]");
-		out.println();
-		out.println("Usage: java -jar aprof.jar selftest <test>");
-		out.println("Where <test> is 'all' or one of tests:");
-		for (TestCase test : TestSuite.getTestCases()) {
-			out.println("\t" + test.name());
-		}
 	}
 
 	private static String padr(String s, int len) {
 		while (s.length() < len)
 			s += " ";
 		return s;
+	}
+
+	private static void helpSelftest() throws IOException {
+		PrintWriter out = new PrintWriter(new FastOutputStreamWriter(System.out), true);
+		out.println(STARTUP_NOTICE);
+		out.println();
+		out.println("Usage: java -jar aprof.jar selftest <test>");
+		out.println("Where <test> is 'all' or one of tests:");
+		for (TestCase test : TestSuite.getTestCases()) {
+			out.println("\t" + test.name());
+		}
 	}
 
 	private static void runDumpCommand(String[] args) throws IOException, ClassNotFoundException {
@@ -127,7 +132,7 @@ public class AProfTools {
 	
 	private static void runSelfTest(String[] args) throws IOException {
 		if (args.length != 2) {
-			help();
+			helpSelftest();
 			return;
 		}
 		String test_name = args[1].trim().toLowerCase(Locale.US);
