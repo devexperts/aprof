@@ -27,8 +27,6 @@ import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.commons.TryCatchBlockSorter;
-import org.objectweb.asm.util.CheckClassAdapter;
-import org.objectweb.asm.util.CheckMethodAdapter;
 
 import java.lang.instrument.*;
 import java.security.ProtectionDomain;
@@ -119,7 +117,6 @@ public class AProfTransformer implements ClassFileTransformer {
 			cr.accept(classAnalyzer, flags);
 
 			ClassVisitor classTransformer = new ClassTransformer(cw, cname, method_contexts);
-			classTransformer = new CheckClassAdapter(classTransformer);
 			cr.accept(classTransformer, flags);
 			return cw.toByteArray();
 		} catch (Throwable t) {
@@ -187,7 +184,6 @@ public class AProfTransformer implements ClassFileTransformer {
 				AProfRegistry.removeDirectCloneClass(cname);
 			}
 			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
-			visitor = new CheckMethodAdapter(visitor);
 			visitor = new TryCatchBlockSorter(visitor, access, mname, desc, signature, exceptions);
 			Context context = context_iterator.next();
 			visitor = new MethodTransformer(new GeneratorAdapter(visitor, access, mname, desc), context);
