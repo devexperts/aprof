@@ -100,15 +100,17 @@ public class AProfTools {
 		int i = address.indexOf(':');
 		String host = i < 0 ? "localhost" : address.substring(0, i);
 		int port = Integer.parseInt(address.substring(i + 1));
-		Socket s = new Socket(host, port);
-		OutputStream outputStream = s.getOutputStream();
+		Socket socket = new Socket(host, port);
+		OutputStream outputStream = socket.getOutputStream();
 		outputStream.write("DUMP\r\n".getBytes(ENCODING));
 		outputStream.flush();
-		ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
-		Snapshot total_ss = (Snapshot)ois.readObject();
+		ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+		Snapshot totalSnapshot = (Snapshot)ois.readObject();
+		ois.close();
+		socket.close();
 		DumpFormatter formatter = new DumpFormatter(new Configuration());
 		PrintWriter out = new PrintWriter(System.out);
-		formatter.dumpSection(out, total_ss, 0);
+		formatter.dumpSection(out, totalSnapshot, 0);
 		out.flush();
 	}
 
@@ -117,9 +119,10 @@ public class AProfTools {
 			help();
 			return;
 		}
-		PrintWriter out = args.length < 2 ? new PrintWriter(System.out) : new PrintWriter(new File(args[1]));
-		InputStream config_stream = ClassLoader.getSystemResourceAsStream(DetailsConfiguration.RESOURCE);
-		BufferedReader in = new BufferedReader(new InputStreamReader(config_stream));
+		String fileName = args.length > 1 ? args[1].trim() : null;
+		PrintWriter out = fileName == null ? new PrintWriter(System.out) : new PrintWriter(fileName);
+		InputStream inputStream = ClassLoader.getSystemResourceAsStream(DetailsConfiguration.RESOURCE);
+		BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
 		while (true) {
 			String line = in.readLine();
 			if (line == null) {
@@ -127,7 +130,11 @@ public class AProfTools {
 			}
 			out.println(line);
 		}
+		in.close();
 		out.flush();
+		if (fileName != null) {
+			out.close();
+		}
 	}
 	
 	private static void runSelfTest(String[] args) throws IOException {
@@ -135,14 +142,14 @@ public class AProfTools {
 			helpSelftest();
 			return;
 		}
-		String test_name = args[1].trim().toLowerCase(Locale.US);
-		if ("all".equals(test_name)) {
+		String testName = args[1].trim().toLowerCase(Locale.US);
+		if ("all".equals(testName)) {
 			TestSuite.testAllApplicableCases();
 			return;
 		}
 		boolean done = false;
 		for (TestCase test : TestSuite.getTestCases()) {
-			if (test.name().equals(test_name)) {
+			if (test.name().equals(testName)) {
 				TestSuite.testSingleCase(test);
 				done = true;
 			}

@@ -44,26 +44,26 @@ public class AProfAgent {
 			"asm-util.jar"
 	);
 
-	private static InnerJarClassLoader class_loader;
+	private static InnerJarClassLoader classLoader;
 
 	private synchronized static InnerJarClassLoader getClassLoader() throws IOException, ClassNotFoundException {
-		if (class_loader == null) {
+		if (classLoader == null) {
 			List<URL> urls = new ArrayList<URL>();
 			for (String jar : CLASSPATH_JARS) {
 				URL url = Thread.currentThread().getContextClassLoader().getResource(jar);
 				urls.add(url);
 			}
-			class_loader = new InnerJarClassLoader(urls);
-			class_loader.forceLoadAllClasses();
+			classLoader = new InnerJarClassLoader(urls);
+			classLoader.forceLoadAllClasses();
 		}
-		return class_loader;
+		return classLoader;
 	}
 
-	public static void premain(String agent_args, Instrumentation inst) throws Exception {
+	public static void premain(String agentArgs, Instrumentation inst) throws Exception {
 		getClassLoader();
-		Configuration config = new Configuration(agent_args);
-		File config_file = new File(config.getConfigFile());
-		config = new Configuration(config_file, agent_args);
+		Configuration config = new Configuration(agentArgs);
+		File configFile = new File(config.getConfigFile());
+		config = new Configuration(configFile, agentArgs);
 		new AProfAgent(config, inst).go();
 	}
 
@@ -83,16 +83,16 @@ public class AProfAgent {
 		Log.out.println(sb);
 		config.showNotes(Log.out, false);
 
-		InnerJarClassLoader class_loader = getClassLoader();
+		InnerJarClassLoader classLoader = getClassLoader();
 
-		Class<ClassNameResolver> resolver_class = (Class<ClassNameResolver>)class_loader.loadClass(RESOLVER_CLASS);
+		Class<ClassNameResolver> resolverClass = (Class<ClassNameResolver>)classLoader.loadClass(RESOLVER_CLASS);
 
 		ArraySizeHelper.init(inst);
-		AProfRegistry.init(config, resolver_class.newInstance());
+		AProfRegistry.init(config, resolverClass.newInstance());
 
-		Class<ClassFileTransformer> transformer_class = (Class<ClassFileTransformer>)class_loader.loadClass(TRANSFORMER_CLASS);
-		Constructor<ClassFileTransformer> transformer_constructor = transformer_class.getConstructor(Configuration.class);
-		ClassFileTransformer transformer = transformer_constructor.newInstance(config);
+		Class<ClassFileTransformer> transformerClass = (Class<ClassFileTransformer>)classLoader.loadClass(TRANSFORMER_CLASS);
+		Constructor<ClassFileTransformer> transformerConstructor = transformerClass.getConstructor(Configuration.class);
+		ClassFileTransformer transformer = transformerConstructor.newInstance(config);
 
 		// make sure we transform certain classes in the first pass to avoid "unexpected" allocation locations
 		ArrayList<Class> classes = new ArrayList<Class>();
@@ -121,6 +121,7 @@ public class AProfAgent {
 				}
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				copy(is, baos);
+				is.close();
 				byte[] result = transformer.transform(
 					clazz.getClassLoader(), name, clazz, clazz.getProtectionDomain(),
 					baos.toByteArray());
