@@ -23,6 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 *** Included Software ***
 
+This product includes JarClassLoader class developed at Devexperts LLC (http://devexperts.com/).
+Copyright (C) 2002-2012  Devexperts LLC
+The class is licensed under the Mozilla Public License, Version 2.0.
+
 This product includes software developed at The OW2 Consortium (http://asm.objectweb.org/).
 Copyright (c) 2000-2005 INRIA, France Telecom.
 Licensed under the Modified BSD License.
