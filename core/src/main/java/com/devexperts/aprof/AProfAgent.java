@@ -19,6 +19,7 @@
 package com.devexperts.aprof;
 
 import com.devexperts.aprof.util.Log;
+import com.devexperts.util.JarClassLoader;
 
 import java.lang.instrument.*;
 import java.io.*;
@@ -31,6 +32,9 @@ import java.util.List;
  * @author Roman Elizarov
  */
 public class AProfAgent {
+	private static final String TRANSFORMER_CLASS = "com.devexperts.aprof.transformer.AProfTransformer";
+	private static final String RESOLVER_CLASS = "com.devexperts.aprof.ClassNameResolverImpl";
+
 	private static final List<String> CLASSPATH_JARS = Arrays.asList(
 			"transformer.jar",
 			"asm.jar",
@@ -39,20 +43,18 @@ public class AProfAgent {
 			"asm-tree.jar",
 			"asm-util.jar"
 	);
-	private static final String TRANSFORMER_CLASS = "com.devexperts.aprof.transformer.AProfTransformer";
-	private static final String RESOLVER_CLASS = "com.devexperts.aprof.ClassNameResolverImpl";
 
-	private static BulkClassLoader class_loader;
+	private static JarClassLoader class_loader;
 
-	private synchronized static BulkClassLoader getClassLoader() throws IOException {
+	private synchronized static JarClassLoader getClassLoader() throws IOException, ClassNotFoundException {
 		if (class_loader == null) {
 			List<URL> urls = new ArrayList<URL>();
 			for (String jar : CLASSPATH_JARS) {
 				URL url = Thread.currentThread().getContextClassLoader().getResource(jar);
 				urls.add(url);
 			}
-			class_loader = new BulkClassLoader(urls);
-			class_loader.loadAllClasses();
+			class_loader = new JarClassLoader(urls);
+			class_loader.forceLoadAllClasses();
 		}
 		return class_loader;
 	}
@@ -81,7 +83,7 @@ public class AProfAgent {
 		Log.out.println(sb);
 		config.showNotes(Log.out, false);
 
-		BulkClassLoader class_loader = getClassLoader();
+		JarClassLoader class_loader = getClassLoader();
 
 		Class<ClassNameResolver> resolver_class = (Class<ClassNameResolver>)class_loader.loadClass(RESOLVER_CLASS);
 
