@@ -28,15 +28,15 @@ class ArraySizeHelper {
 
 	private static final int SIZE_CACHE = 1024;
 
-	private static final int[] boolean_szc = new int[SIZE_CACHE];
-	private static final int[] byte_szc = new int[SIZE_CACHE];
-	private static final int[] char_szc = new int[SIZE_CACHE];
-	private static final int[] short_szc = new int[SIZE_CACHE];
-	private static final int[] int_szc = new int[SIZE_CACHE];
-	private static final int[] long_szc = new int[SIZE_CACHE];
-	private static final int[] float_szc = new int[SIZE_CACHE];
-	private static final int[] double_szc = new int[SIZE_CACHE];
-	private static final int[] object_szc = new int[SIZE_CACHE];
+	private static final int[] booleanSizeCache = new int[SIZE_CACHE];
+	private static final int[] byteSizeCache = new int[SIZE_CACHE];
+	private static final int[] charSizeCache = new int[SIZE_CACHE];
+	private static final int[] shortSizeCache = new int[SIZE_CACHE];
+	private static final int[] intSizeCache = new int[SIZE_CACHE];
+	private static final int[] longSizeCache = new int[SIZE_CACHE];
+	private static final int[] floatSizeCache = new int[SIZE_CACHE];
+	private static final int[] doubleSizeCache = new int[SIZE_CACHE];
+	private static final int[] objectSizeCache = new int[SIZE_CACHE];
 
 	private static Instrumentation inst;
 
@@ -49,9 +49,9 @@ class ArraySizeHelper {
 	public static int getArraySize(boolean[] o) {
 		int size;
 		if (o.length < SIZE_CACHE) {
-			size = boolean_szc[o.length];
+			size = booleanSizeCache[o.length];
 			if (size == 0)
-				boolean_szc[o.length] = size = getObjectSize(o);
+				booleanSizeCache[o.length] = size = getObjectSize(o);
 		} else
 			size = getObjectSize(o);
 		return size;
@@ -60,9 +60,9 @@ class ArraySizeHelper {
 	public static int getArraySize(byte[] o) {
 		int size;
 		if (o.length < SIZE_CACHE) {
-			size = byte_szc[o.length];
+			size = byteSizeCache[o.length];
 			if (size == 0)
-				byte_szc[o.length] = size = getObjectSize(o);
+				byteSizeCache[o.length] = size = getObjectSize(o);
 		} else
 			size = getObjectSize(o);
 		return size;
@@ -70,9 +70,9 @@ class ArraySizeHelper {
 
 	public static int getArraySize(char[] o) {
 		if (o.length < SIZE_CACHE) {
-			int size = char_szc[o.length];
+			int size = charSizeCache[o.length];
 			if (size == 0)
-				char_szc[o.length] = size = getObjectSize(o);
+				charSizeCache[o.length] = size = getObjectSize(o);
 			return size;
 		} else
 			return getObjectSize(o);
@@ -81,9 +81,9 @@ class ArraySizeHelper {
 	public static int getArraySize(short[] o) {
 		int size;
 		if (o.length < SIZE_CACHE) {
-			size = short_szc[o.length];
+			size = shortSizeCache[o.length];
 			if (size == 0)
-				short_szc[o.length] = size = getObjectSize(o);
+				shortSizeCache[o.length] = size = getObjectSize(o);
 		} else
 			size = getObjectSize(o);
 		return size;
@@ -92,9 +92,9 @@ class ArraySizeHelper {
 	public static int getArraySize(int[] o) {
 		int size;
 		if (o.length < SIZE_CACHE) {
-			size = int_szc[o.length];
+			size = intSizeCache[o.length];
 			if (size == 0)
-				int_szc[o.length] = size = getObjectSize(o);
+				intSizeCache[o.length] = size = getObjectSize(o);
 		} else
 			size = getObjectSize(o);
 		return size;
@@ -103,9 +103,9 @@ class ArraySizeHelper {
 	public static int getArraySize(long[] o) {
 		int size;
 		if (o.length < SIZE_CACHE) {
-			size = long_szc[o.length];
+			size = longSizeCache[o.length];
 			if (size == 0)
-				long_szc[o.length] = size = getObjectSize(o);
+				longSizeCache[o.length] = size = getObjectSize(o);
 		} else
 			size = getObjectSize(o);
 		return size;
@@ -114,9 +114,9 @@ class ArraySizeHelper {
 	public static int getArraySize(float[] o) {
 		int size;
 		if (o.length < SIZE_CACHE) {
-			size = float_szc[o.length];
+			size = floatSizeCache[o.length];
 			if (size == 0)
-				float_szc[o.length] = size = getObjectSize(o);
+				floatSizeCache[o.length] = size = getObjectSize(o);
 		} else
 			size = getObjectSize(o);
 		return size;
@@ -125,9 +125,9 @@ class ArraySizeHelper {
 	public static int getArraySize(double[] o) {
 		int size;
 		if (o.length < SIZE_CACHE) {
-			size = double_szc[o.length];
+			size = doubleSizeCache[o.length];
 			if (size == 0)
-				double_szc[o.length] = size = getObjectSize(o);
+				doubleSizeCache[o.length] = size = getObjectSize(o);
 		} else
 			size = getObjectSize(o);
 		return size;
@@ -135,9 +135,9 @@ class ArraySizeHelper {
 
 	public static int getArraySize(Object[] o) {
 		if (o.length < SIZE_CACHE) {
-			int size = object_szc[o.length];
+			int size = objectSizeCache[o.length];
 			if (size == 0)
-				object_szc[o.length] = size = getObjectSize(o);
+				objectSizeCache[o.length] = size = getObjectSize(o);
 			return size;
 		} else
 			return getObjectSize(o);

@@ -31,39 +31,39 @@ class DetailsConfiguration {
 	private static final Set<String> ALL_METHODS = Collections.singleton(ANY_METHOD);
 
 	/** Class name --> set of method names. */
-	private Map<String, Set<String>> tracked_locations = new HashMap<String, Set<String>>();
+	private Map<String, Set<String>> trackedLocations = new HashMap<String, Set<String>>();
 
-	private HashSet<String> remaining_classes = new HashSet<String>();
-	private boolean reload_tracked_classes;
+	private HashSet<String> remainingClasses = new HashSet<String>();
+	private boolean reloadTrackedClasses;
 
 	public DetailsConfiguration() {
 	}
 
 	public void loadFromResource() throws IOException {
 		loadFromStream(ClassLoader.getSystemResourceAsStream(RESOURCE));
-		for (String str : tracked_locations.keySet()) {
-			remaining_classes.add(str);
+		for (String str : trackedLocations.keySet()) {
+			remainingClasses.add(str);
 		}
 	}
 
-	public void loadFromFile(String file_name) throws IOException {
-		if (file_name == null || file_name.trim().isEmpty()) {
+	public void loadFromFile(String fileName) throws IOException {
+		if (fileName == null || fileName.trim().isEmpty()) {
 			return;
 		}
-		loadFromStream(new FileInputStream(file_name));
-		for (String str : tracked_locations.keySet()) {
-			remaining_classes.add(str);
+		loadFromStream(new FileInputStream(fileName));
+		for (String str : trackedLocations.keySet()) {
+			remainingClasses.add(str);
 		}
 	}
 
-	public void addClasses(String[] class_names) throws IOException {
-		for (String cname : class_names) {
-			tracked_locations.put(cname, ALL_METHODS);
+	public void addClasses(String[] classNames) throws IOException {
+		for (String cname : classNames) {
+			trackedLocations.put(cname, ALL_METHODS);
 		}
 	}
 
 	public void reloadTrackedClasses() {
-		reload_tracked_classes = true;
+		reloadTrackedClasses = true;
 	}
 
 	public boolean isLocationTracked(String location) {
@@ -72,27 +72,27 @@ class DetailsConfiguration {
 			location = location.substring(0, pos);
 		}
 		pos = location.lastIndexOf('.');
-		String class_name = location.substring(0, pos);
-		String method_name = location.substring(pos + 1);
+		String className = location.substring(0, pos);
+		String methodName = location.substring(pos + 1);
 		Map<String, Set<String>> tracked = getTrackedMethods();
-		Set<String> tracked_methods = tracked.get(class_name);
-		if (tracked_methods == null) {
+		Set<String> trackedMethods = tracked.get(className);
+		if (trackedMethods == null) {
 			return false;
 		}
-		if (tracked_methods.isEmpty() || tracked_methods.contains(ANY_METHOD)) {
+		if (trackedMethods.isEmpty() || trackedMethods.contains(ANY_METHOD)) {
 			return true;
 		}
-		return tracked_methods.contains(method_name);
+		return trackedMethods.contains(methodName);
 	}
 
 	private Map<String, Set<String>> getTrackedMethods() {
-		if (reload_tracked_classes) {
-			reload_tracked_classes = false;
-			ArrayList<String> processed_classes = null;
-			for (String cname : remaining_classes) {
+		if (reloadTrackedClasses) {
+			reloadTrackedClasses = false;
+			ArrayList<String> processedClasses = null;
+			for (String cname : remainingClasses) {
 				try {
 					Class clazz = Class.forName(cname);
-					Set<String> methods = tracked_locations.get(cname);
+					Set<String> methods = trackedLocations.get(cname);
 					if (methods.contains(ANY_METHOD)) {
 						methods = ALL_METHODS;
 					}
@@ -100,34 +100,34 @@ class DetailsConfiguration {
 						addInterfaces(clazz, methods);
 						clazz = clazz.getSuperclass();
 					}
-					if (processed_classes == null) {
-						processed_classes = new ArrayList<String>();
+					if (processedClasses == null) {
+						processedClasses = new ArrayList<String>();
 					}
-					processed_classes.add(cname);
+					processedClasses.add(cname);
 				} catch (ClassNotFoundException e) {
 					// do nothing
 				}
 			}
-			if (processed_classes != null) {
-				remaining_classes.removeAll(processed_classes);
+			if (processedClasses != null) {
+				remainingClasses.removeAll(processedClasses);
 			}
 		}
-		return tracked_locations;
+		return trackedLocations;
 	}
 
-	private void addInterfaces(Class clazz, Set<String> class_methods) {
-		Set<String> methods = tracked_locations.get(clazz.getCanonicalName());
+	private void addInterfaces(Class clazz, Set<String> classMethods) {
+		Set<String> methods = trackedLocations.get(clazz.getCanonicalName());
 		if (methods == null) {
 			methods = new HashSet<String>();
-			String class_name = clazz.getCanonicalName();
-			class_name = new String(class_name.toCharArray());
-			tracked_locations.put(class_name, methods);
+			String className = clazz.getCanonicalName();
+			className = new String(className.toCharArray());
+			trackedLocations.put(className, methods);
 		}
-		methods.addAll(class_methods);
+		methods.addAll(classMethods);
 		Class[] interfaces = clazz.getInterfaces();
 		if (interfaces != null) {
 			for (Class interfacce : interfaces) {
-				addInterfaces(interfacce, class_methods);
+				addInterfaces(interfacce, classMethods);
 			}
 		}
 	}
@@ -136,7 +136,7 @@ class DetailsConfiguration {
 		BufferedReader in = null;
 		try {
 			in = new BufferedReader(new InputStreamReader(stream));
-			Set<String> class_methods = null;
+			Set<String> classMethods = null;
 			while (true) {
 				String line = in.readLine();
 				if (line == null) {
@@ -147,17 +147,17 @@ class DetailsConfiguration {
 					continue;
 				}
 				if (line.length() == 0) {
-					class_methods = null;
+					classMethods = null;
 					continue;
 				}
-				if (class_methods == null) {
-					class_methods = tracked_locations.get(line);
-					if (class_methods == null) {
-						class_methods = new HashSet<String>();
-						tracked_locations.put(line, class_methods);
+				if (classMethods == null) {
+					classMethods = trackedLocations.get(line);
+					if (classMethods == null) {
+						classMethods = new HashSet<String>();
+						trackedLocations.put(line, classMethods);
 					}
 				} else {
-					class_methods.add(line);
+					classMethods.add(line);
 				}
 			}
 		} finally {

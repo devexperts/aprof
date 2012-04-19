@@ -27,27 +27,26 @@ import java.util.*;
 class HistogramConfiguration {
 	private static final String ANY_CLASS = "*";
 
-	private int[] common_histogram;
-	private Map<String, int[]> class_histograms;
+	private int[] commonHistogram;
+	private Map<String, int[]> classHistograms;
 
-	public HistogramConfiguration(int[] common_histogram, String histogram_file) throws IOException {
-		this.common_histogram = common_histogram;
-		this.class_histograms = new HashMap<String, int[]>();
-		loadFromFile(histogram_file);
+	public HistogramConfiguration(int[] commonHistogram, String histogramFileName) throws IOException {
+		this.commonHistogram = commonHistogram;
+		this.classHistograms = new HashMap<String, int[]>();
+		loadFromFile(histogramFileName);
 	}
 
-	public int[] getHistogram(String class_name) {
-		int[] histogram = class_histograms.get(class_name);
-		return histogram != null ? histogram : common_histogram;
+	public int[] getHistogram(String className) {
+		int[] histogram = classHistograms.get(className);
+		return histogram != null ? histogram : commonHistogram;
 	}
 
-	private void loadFromFile(String file_name) throws IOException {
-		if (file_name == null || file_name.trim().isEmpty()) {
+	private void loadFromFile(String fileName) throws IOException {
+		if (fileName == null || fileName.trim().isEmpty()) {
 			return;
 		}
-		BufferedReader in = null;
+		BufferedReader in = new BufferedReader(new FileReader(fileName));
 		try {
-			in = new BufferedReader(new FileReader(file_name));
 			while (true) {
 				String line = in.readLine();
 				if (line == null) {
@@ -80,15 +79,13 @@ class HistogramConfiguration {
 				}
 				Arrays.sort(histogram);
 				if (ANY_CLASS.equals(class_name)) {
-					common_histogram = histogram;
+					commonHistogram = histogram;
 				} else {
-					class_histograms.put(class_name, histogram);
+					classHistograms.put(class_name, histogram);
 				}
 			}
 		} finally {
-			if (in != null) {
-				in.close();
-			}
+			in.close();
 		}
 	}
 }

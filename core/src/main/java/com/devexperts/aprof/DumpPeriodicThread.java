@@ -55,13 +55,13 @@ class DumpPeriodicThread extends Thread {
 	public void run() {
 		while (running) {
 			try {
-				long wait_dump = time;
+				long waitDump = time;
 				//noinspection InfiniteLoopStatement
 				while (running) {
 					Thread.sleep(SLEEP_TIME);
-					if (time > 0 && (wait_dump -= SLEEP_TIME) <= 0) {
+					if (time > 0 && (waitDump -= SLEEP_TIME) <= 0) {
 						dumper.makeDump(false);
-						wait_dump = time;
+						waitDump = time;
 					} else if (AProfRegistry.isOverflowThreshold()) {
 						dumper.makeOverflowSnapshot();
 					}

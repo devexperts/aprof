@@ -65,7 +65,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 
 	private final Configuration config;
-	private final StringBuilder shared_sb = new StringBuilder();
+	private final StringBuilder sharedStringBuilder = new StringBuilder();
 
 	public AProfTransformer(Configuration config) {
 		this.config = config;
@@ -82,28 +82,28 @@ public class AProfTransformer implements ClassFileTransformer {
 		for (String s : config.getExcludedClasses())
 			if (cname.equals(s))
 				return null;
-		int class_no = AProfRegistry.incrementCount();
+		int classNo = AProfRegistry.incrementCount();
 		if (!config.isQuiet()) {
-			synchronized (shared_sb) {
-				shared_sb.setLength(0);
-				shared_sb.append("Transforming class #");
-				shared_sb.append(class_no);
-				shared_sb.append(": ");
-				shared_sb.append(cname);
+			synchronized (sharedStringBuilder) {
+				sharedStringBuilder.setLength(0);
+				sharedStringBuilder.append("Transforming class #");
+				sharedStringBuilder.append(classNo);
+				sharedStringBuilder.append(": ");
+				sharedStringBuilder.append(cname);
 				if (loader != null) {
-					shared_sb.append(" [in ");
+					sharedStringBuilder.append(" [in ");
 					String lcname = loader.getClass().getName();
 					String lstr = loader.toString();
 					if (lstr.startsWith(lcname))
-						shared_sb.append(lstr);
+						sharedStringBuilder.append(lstr);
 					else {
-						shared_sb.append(lcname);
-						shared_sb.append(": ");
-						shared_sb.append(lstr);
+						sharedStringBuilder.append(lcname);
+						sharedStringBuilder.append(": ");
+						sharedStringBuilder.append(lstr);
 					}
-					shared_sb.append("]");
+					sharedStringBuilder.append("]");
 				}
-				Log.out.println(shared_sb);
+				Log.out.println(sharedStringBuilder);
 			}
 		}
 		try {
@@ -112,23 +112,23 @@ public class AProfTransformer implements ClassFileTransformer {
 			ClassReader cr = new ClassReader(classfileBuffer);
 			ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
 
-			List<Context> method_contexts = new ArrayList<Context>();
-			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyVisitor(), cname, method_contexts);
+			List<Context> methodContexts = new ArrayList<Context>();
+			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyVisitor(), cname, methodContexts);
 			cr.accept(classAnalyzer, flags);
 
-			ClassVisitor classTransformer = new ClassTransformer(cw, cname, method_contexts);
+			ClassVisitor classTransformer = new ClassTransformer(cw, cname, methodContexts);
 			cr.accept(classTransformer, flags);
 			return cw.toByteArray();
 		} catch (Throwable t) {
-			synchronized (shared_sb) {
-				shared_sb.setLength(0);
-				shared_sb.append("Transforming class #");
-				shared_sb.append(class_no);
-				shared_sb.append(" (");
-				shared_sb.append(cname);
-				shared_sb.append(") failed with error: ");
-				shared_sb.append(t.getLocalizedMessage());
-				Log.out.println(shared_sb);
+			synchronized (sharedStringBuilder) {
+				sharedStringBuilder.setLength(0);
+				sharedStringBuilder.append("Transforming class #");
+				sharedStringBuilder.append(classNo);
+				sharedStringBuilder.append(" (");
+				sharedStringBuilder.append(cname);
+				sharedStringBuilder.append(") failed with error: ");
+				sharedStringBuilder.append(t.getLocalizedMessage());
+				Log.out.println(sharedStringBuilder);
 			}
 			t.printStackTrace();
 			return null;
@@ -158,12 +158,12 @@ public class AProfTransformer implements ClassFileTransformer {
 
 	private class ClassTransformer extends ClassAdapter {
 		private final String cname;
-		private final Iterator<Context> context_iterator;
+		private final Iterator<Context> contextIterator;
 
 		public ClassTransformer(final ClassVisitor cv, String cname, List<Context> contexts) {
 			super(cv);
 			this.cname = AProfRegistry.normalize(cname);
-			this.context_iterator = contexts.iterator();
+			this.contextIterator = contexts.iterator();
 		}
 
 		@Override
@@ -185,7 +185,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			}
 			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
 			visitor = new TryCatchBlockSorter(visitor, access, mname, desc, signature, exceptions);
-			Context context = context_iterator.next();
+			Context context = contextIterator.next();
 			visitor = new MethodTransformer(new GeneratorAdapter(visitor, access, mname, desc), context);
 			visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature, exceptions);
 			return visitor;
@@ -194,7 +194,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		@Override
 		public void visitEnd() {
 			super.visitEnd();
-			assert !context_iterator.hasNext();
+			assert !contextIterator.hasNext();
 		}
 	}
 }

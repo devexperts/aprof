@@ -22,15 +22,15 @@ package com.devexperts.aprof;
  * @author Roman Elizarov
  */
 public class Version {
-	private static String compact_version = createVersion(false);
-	private static String full_version = createVersion(true);
+	private static String compactVersion = createVersion(false);
+	private static String fullVersion = createVersion(true);
 
 	public static String compact() {
-		return compact_version;
+		return compactVersion;
 	}
 
 	public static String full() {
-		return full_version;
+		return fullVersion;
 	}
 
 	private static String createVersion(boolean with_vendor) {

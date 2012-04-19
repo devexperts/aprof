@@ -44,39 +44,39 @@ class MethodTransformer extends AbstractMethodVisitor {
 			mv.visitInsn(Opcodes.ACONST_NULL);
 			return;
 		}
-		int location_stack = context.getLocationStack();
+		int locationStack = context.getLocationStack();
 		if (context.isMethodTracked()) {
-			assert location_stack >= 0;
-			mv.loadLocal(location_stack);
+			assert locationStack >= 0;
+			mv.loadLocal(locationStack);
 			return;
 		}
-		if (location_stack < 0) {
+		if (locationStack < 0) {
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_STACK);
 			return;
 		}
 
 		Label done = new Label();
-		mv.loadLocal(location_stack);
+		mv.loadLocal(locationStack);
 		mv.dup();
 		mv.ifNonNull(done);
 		mv.pop();
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_STACK);
 		mv.dup();
-		mv.storeLocal(location_stack);
+		mv.storeLocal(locationStack);
 		mv.visitLabel(done);
 	}
 
 	@Override
 	protected void visitMarkDeclareLocationStack() {
 		if (context.isLocationStackNeeded()) {
-			int location_stack = mv.newLocal(Type.getType(LocationStack.class));
+			int locationStack = mv.newLocal(Type.getType(LocationStack.class));
 			if (context.isMethodTracked()) {
 				mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.LOCATION_STACK, "get", AProfTransformer.NOARG_RETURNS_STACK);
 			} else {
 				mv.visitInsn(Opcodes.ACONST_NULL);
 			}
-			mv.storeLocal(location_stack);
-			context.setLocationStack(location_stack);
+			mv.storeLocal(locationStack);
+			context.setLocationStack(locationStack);
 		}
 	}
 
@@ -175,6 +175,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(double[], LocationStack, int)
 	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(Object[], LocationStack, int)
 	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySizeMulti(Object[], LocationStack, int)
+	 * @param desc
 	 */
 	@Override
 	protected void visitAllocateArray(String desc) {
@@ -183,17 +184,17 @@ class MethodTransformer extends AbstractMethodVisitor {
 			mv.dup();
 			pushLocationStack();
 			pushAllocationPoint(desc);
-			boolean is_multi = desc.lastIndexOf('[') > 0;
-			boolean is_primitive = desc.length() == 2;
+			boolean isMulti = desc.lastIndexOf('[') > 0;
+			boolean isPrimitive = desc.length() == 2;
 			StringBuilder sb = new StringBuilder();
 			sb.append("(");
-			if (is_primitive) {
+			if (isPrimitive) {
 				sb.append(desc);
 			} else {
 				sb.append("[Ljava/lang/Object;");
 			}
 			sb.append("Lcom/devexperts/aprof/LocationStack;I)V");
-			String mname = is_multi ? "allocateArraySizeMulti" : "allocateArraySize";
+			String mname = isMulti ? "allocateArraySizeMulti" : "allocateArraySize";
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), mname, sb.toString());
 		} else {
 			pushLocationStack();

@@ -24,20 +24,20 @@ import java.io.*;
  * @author Roman Elizarov
  */
 public class AProfPerfTest {
-	String jdk_dir = "C:\\Java\\jdk1.5.0_11\\";
-	String javac_path = jdk_dir + "bin\\javac";
-	String source_dir = jdk_dir + "demo\\jfc\\SwingSet2\\src\\";
-	String sources = source_dir + "*.java";
-	String aprof_jar = "deploy\\aprof.jar";
-	String out_dir = "perf.out\\";
-	String global_args = "quiet=true:file=:time=0";
+	private String jdkDir = "C:\\Java\\jdk1.5.0_11\\";
+	private String javacPath = jdkDir + "bin\\javac";
+	private String sourceDir = jdkDir + "demo\\jfc\\SwingSet2\\src\\";
+	private String sources = sourceDir + "*.java";
+	private String aprofJar = "deploy\\aprof.jar";
+	private String outDir = "perf.out\\";
+	private String globalArgs = "quiet=true:file=:time=0";
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		new AProfPerfTest().go();
 	}
 
 	private void go() throws IOException, InterruptedException {
-		new File(out_dir).mkdirs();
+		new File(outDir).mkdirs();
 		for (int pass = 1; pass <= 3; pass++) {
 			System.out.println("====== PASS # " + pass + " ======");
 			makeRun("arrays-:reflect-:location-:unknown-:detailed-:size-:frames-");
@@ -61,12 +61,12 @@ public class AProfPerfTest {
 	}
 
 	private void makeRun(String args) throws IOException, InterruptedException {
-		String sa = global_args + (args.length() > 0 ? ":" + args : "");
+		String sa = globalArgs + (args.length() > 0 ? ":" + args : "");
 		System.out.println("*** Running with " + sa);
-		ProcessBuilder pb = new ProcessBuilder(javac_path,
-			"-J-javaagent:" + aprof_jar + "=" + sa,
-			"-sourcepath", source_dir,
-			"-d", out_dir,
+		ProcessBuilder pb = new ProcessBuilder(javacPath,
+			"-J-javaagent:" + aprofJar + "=" + sa,
+			"-sourcepath", sourceDir,
+			"-d", outDir,
 			"-nowarn",
 			sources);
 		pb.redirectErrorStream(true);

@@ -62,12 +62,12 @@ public class StringIndexer {
 	}
 
 	private void rehash() {
-		Core old_core = core;
-		Core new_core = new Core(2 * old_core.length);
-		for (int i = 0; i < old_core.length; i++)
-			if (old_core.strings[i] != null)
-				new_core.register(old_core.strings[i], old_core.ids[i]);
-		core = new_core;
+		Core oldCore = core;
+		Core newCore = new Core(2 * oldCore.length);
+		for (int i = 0; i < oldCore.length; i++)
+			if (oldCore.strings[i] != null)
+				newCore.register(oldCore.strings[i], oldCore.ids[i]);
+		core = newCore;
 	}
 
 	private static class Core {

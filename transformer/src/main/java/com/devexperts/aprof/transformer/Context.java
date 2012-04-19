@@ -31,13 +31,13 @@ class Context {
 	private final String mname;
 
 	private final String location;
-	private final boolean method_tracked;
-	private final boolean object_init;
-	private final String aprof_ops_impl;
+	private final boolean methodTracked;
+	private final boolean objectInit;
+	private final String aprofOpsImpl;
 
-	private boolean location_stack_needed = false;
+	private boolean locationStackNeeded = false;
 
-	private int location_stack = -1;
+	private int locationStack = -1;
 
 	public Context(Configuration config, String cname, String mname, String desc, int access) {
 		this.config = config;
@@ -45,9 +45,9 @@ class Context {
 		this.mname = mname;
 
 		this.location = getLocationString(cname, mname, desc);
-		this.method_tracked = !isInternalLocation() && !mname.startsWith(AProfTransformer.ACCESS_METHOD) && isLocationTracked(location);
-		this.object_init = this.cname.equals(AProfTransformer.OBJECT_CLASS_NAME) && this.mname.equals(AProfTransformer.OBJECT_INIT);
-		this.aprof_ops_impl = isInternalLocation() ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
+		this.methodTracked = !isInternalLocation() && !mname.startsWith(AProfTransformer.ACCESS_METHOD) && isLocationTracked(location);
+		this.objectInit = this.cname.equals(AProfTransformer.OBJECT_CLASS_NAME) && this.mname.equals(AProfTransformer.OBJECT_INIT);
+		this.aprofOpsImpl = isInternalLocation() ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
 	}
 
 	public boolean isInternalLocation() {
@@ -71,31 +71,31 @@ class Context {
 	}
 
 	public boolean isMethodTracked() {
-		return method_tracked;
+		return methodTracked;
 	}
 
 	public boolean isObjectInit() {
-		return object_init;
+		return objectInit;
 	}
 
 	public String getAprofOpsImplementation() {
-		return aprof_ops_impl;
+		return aprofOpsImpl;
 	}
 
 	public boolean isLocationStackNeeded() {
-		return location_stack_needed;
+		return locationStackNeeded;
 	}
 
-	public void setLocationStackNeeded(boolean location_stack_needed) {
-		this.location_stack_needed = location_stack_needed;
+	public void setLocationStackNeeded(boolean locationStackNeeded) {
+		this.locationStackNeeded = locationStackNeeded;
 	}
 
 	public int getLocationStack() {
-		return location_stack;
+		return locationStack;
 	}
 
-	public void setLocationStack(int location_stack) {
-		this.location_stack = location_stack;
+	public void setLocationStack(int locationStack) {
+		this.locationStack = locationStack;
 	}
 
 	public String getLocationString(String cname, String mname, String desc) {

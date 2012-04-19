@@ -85,12 +85,12 @@ public class FastObjIntMap<T> {
 	}
 
 	private void rehash() {
-		Core old_core = core;
-		Core new_core = new Core(old_core.shift - 1);
-		for (int i = 0; i < old_core.length; i++)
-			if (old_core.keys[i] != null)
-				putInternal(new_core, old_core.keys[i], old_core.values[i]);
-		core = new_core;
+		Core oldCore = core;
+		Core newCore = new Core(oldCore.shift - 1);
+		for (int i = 0; i < oldCore.length; i++)
+			if (oldCore.keys[i] != null)
+				putInternal(newCore, oldCore.keys[i], oldCore.values[i]);
+		core = newCore;
 	}
 
 	public void fill(int value) {

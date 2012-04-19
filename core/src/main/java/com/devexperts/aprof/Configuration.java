@@ -102,18 +102,17 @@ public class Configuration {
 	@Description("Whether track.file replaces default configuration.")
 	private boolean track_file_replace = false;
 
-	private DetailsConfiguration details_config;
-
 	@Description("Comma-separated list of array lengths which shall be shown in histograms.")
 	private int[] histogram = new int[0];
 
 	@Description("File name for histogram configuration.")
 	private String histogram_file = "";
 
-	private HistogramConfiguration histogram_config;
-
 	@Description("Port to listen on.")
 	private int port = 0;
+
+	private DetailsConfiguration detailsConfig;
+	private HistogramConfiguration histogramConfig;
 
 	public Configuration() throws IOException {
 		seal();
@@ -144,13 +143,13 @@ public class Configuration {
 	}
 
 	private void seal() throws IOException {
-		details_config = new DetailsConfiguration();
+		detailsConfig = new DetailsConfiguration();
 		if (!track_file_replace) {
-			details_config.loadFromResource();
+			detailsConfig.loadFromResource();
 		}
-		details_config.loadFromFile(track_file);
-		details_config.addClasses(track);
-		histogram_config = new HistogramConfiguration(histogram, histogram_file);
+		detailsConfig.loadFromFile(track_file);
+		detailsConfig.addClasses(track);
+		histogramConfig = new HistogramConfiguration(histogram, histogram_file);
 	}
 
 	public String getConfigFile() {
@@ -225,8 +224,8 @@ public class Configuration {
 		return aggregate;
 	}
 
-	public int[] getHistogram(String class_name) {
-		return histogram_config.getHistogram(class_name);
+	public int[] getHistogram(String className) {
+		return histogramConfig.getHistogram(className);
 	}
 
 	public int getPort() {
@@ -234,11 +233,11 @@ public class Configuration {
 	}
 
 	public void reloadTrackedClasses() {
-		details_config.reloadTrackedClasses();
+		detailsConfig.reloadTrackedClasses();
 	}
 
 	public boolean isLocationTracked(String location) {
-		return details_config.isLocationTracked(location);
+		return detailsConfig.isLocationTracked(location);
 	}
 
 	public void applyString(String string) {

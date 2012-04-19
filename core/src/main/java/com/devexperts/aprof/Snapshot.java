@@ -33,23 +33,23 @@ public class Snapshot implements Serializable {
 	private static final Snapshot[] EMPTY = new Snapshot[0];
 
 	private final String id;
-	private final long[] histo_counts;
+	private final long[] histoCounts;
 
 	private long count;
 	private long size;
-	private volatile long histo_counts_sum;
+	private volatile long histoCountsSum;
 
 	private Snapshot[] items = EMPTY;
 	private int used;
 
 	public Snapshot() {
 		id = null;
-		histo_counts = new long[0];
+		histoCounts = new long[0];
 	}
 
-	public Snapshot(String id, int histo_length) {
+	public Snapshot(String id, int histoLength) {
 		this.id = id;
-		this.histo_counts = new long[histo_length];
+		this.histoCounts = new long[histoLength];
 	}
 
 	public long getCount() {
@@ -57,7 +57,7 @@ public class Snapshot implements Serializable {
 	}
 
 	public long getTotalCount() {
-		return count + histo_counts_sum;
+		return count + histoCountsSum;
 	}
 
 	public long getSize() {
@@ -65,14 +65,14 @@ public class Snapshot implements Serializable {
 	}
 
 	public long[] getCounts() {
-		return histo_counts;
+		return histoCounts;
 	}
 
 	public boolean isEmpty() {
 		if (count != 0 || size != 0) {
 			return false;
 		}
-		for (long count : histo_counts) {
+		for (long count : histoCounts) {
 			if (count != 0) {
 				return false;
 			}
@@ -103,17 +103,17 @@ public class Snapshot implements Serializable {
 	public void clear() {
 		count = 0;
 		size = 0;
-		Arrays.fill(histo_counts, 0);
-		histo_counts_sum = 0;
+		Arrays.fill(histoCounts, 0);
+		histoCountsSum = 0;
 	}
 
 	public void positive() {
 		count = Math.max(0, count);
 		size = Math.max(0, size);
-		histo_counts_sum = 0;
-		for (int i = 0; i < histo_counts.length; i++) {
-			histo_counts[i] = Math.max(0, histo_counts[i]);
-			histo_counts_sum += histo_counts[i];
+		histoCountsSum = 0;
+		for (int i = 0; i < histoCounts.length; i++) {
+			histoCounts[i] = Math.max(0, histoCounts[i]);
+			histoCountsSum += histoCounts[i];
 		}
 	}
 
@@ -129,30 +129,30 @@ public class Snapshot implements Serializable {
 		this.size += size;
 	}
 
-	public void add(long count, long size, long[] histo_counts) {
+	public void add(long count, long size, long[] histoCounts) {
 		this.count += count;
 		this.size += size;
-		for (int i = 0; i < this.histo_counts.length; i++) {
-			this.histo_counts[i] += histo_counts[i];
-			this.histo_counts_sum += histo_counts[i];
+		for (int i = 0; i < this.histoCounts.length; i++) {
+			this.histoCounts[i] += histoCounts[i];
+			this.histoCountsSum += histoCounts[i];
 		}
 	}
 
-	public void sub(long count, long size, long[] histo_counts) {
+	public void sub(long count, long size, long[] histoCounts) {
 		this.count -= count;
 		this.size -= size;
-		for (int i = 0; i < this.histo_counts.length; i++) {
-			this.histo_counts[i] -= histo_counts[i];
-			this.histo_counts_sum -= histo_counts[i];
+		for (int i = 0; i < this.histoCounts.length; i++) {
+			this.histoCounts[i] -= histoCounts[i];
+			this.histoCountsSum -= histoCounts[i];
 		}
 	}
 
 	public void add(Snapshot ss) {
-		add(ss.count, ss.size, ss.histo_counts);
+		add(ss.count, ss.size, ss.histoCounts);
 	}
 
 	public void sub(Snapshot ss) {
-		sub(ss.count, ss.size, ss.histo_counts);
+		sub(ss.count, ss.size, ss.histoCounts);
 	}
 
 	public void addAll(Snapshot ss) {
@@ -183,9 +183,9 @@ public class Snapshot implements Serializable {
 		int n = items.length;
 		if (n < size) {
 			int nn = Math.max(size, n + n / 4);
-			Snapshot[] new_items = new Snapshot[nn];
-			System.arraycopy(items, 0, new_items, 0, used);
-			items = new_items;
+			Snapshot[] newItems = new Snapshot[nn];
+			System.arraycopy(items, 0, newItems, 0, used);
+			items = newItems;
 		}
 	}
 
@@ -196,15 +196,15 @@ public class Snapshot implements Serializable {
 	}
 
 	public Snapshot get(int i, String id) {
-		return get(i, id, histo_counts.length);
+		return get(i, id, histoCounts.length);
 	}
 
-	public Snapshot get(int i, String id, int histo_length) {
+	public Snapshot get(int i, String id, int histoLength) {
 		if (i < used && id.equals(items[i].id)) {
 			return items[i];
 		}
 		ensureCapacity(used + 1);
-		return items[used++] = new Snapshot(id, histo_length);
+		return items[used++] = new Snapshot(id, histoLength);
 	}
 
 	public int countNonEmptyShallow() {
@@ -270,8 +270,8 @@ public class Snapshot implements Serializable {
 	/** Deserialization. */
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
-		for (long cnt : histo_counts) {
-			histo_counts_sum += cnt;
+		for (long cnt : histoCounts) {
+			histoCountsSum += cnt;
 		}
 	}
 }

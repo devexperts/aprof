@@ -32,7 +32,7 @@ public class DumpFormatter {
 	private final Configuration config;
 
 	private final Snapshot[] rest = new Snapshot[MAX_DEPTH];
-	private final FastObjIntMap<String> class_level = new FastObjIntMap<String>();
+	private final FastObjIntMap<String> classLevel = new FastObjIntMap<String>();
 
 	public DumpFormatter(Configuration config) {
 		this.config = config;
@@ -64,16 +64,16 @@ public class DumpFormatter {
 
 	private void dumpSnapshot(PrintWriter out, Snapshot ss, double threshold) {
 		// compute class levels -- classes of level 0 are classes that exceed threshold
-		class_level.fill(Integer.MAX_VALUE);
+		classLevel.fill(Integer.MAX_VALUE);
 		for (int csi = 0; csi < ss.getUsed(); csi++) {
 			Snapshot cs = ss.getItem(csi);
-			class_level.put(cs.getId(), cs.exceedsThreshold(threshold, ss) ? 0 : Integer.MAX_VALUE);
+			classLevel.put(cs.getId(), cs.exceedsThreshold(threshold, ss) ? 0 : Integer.MAX_VALUE);
 		}
 		// compute progressive higher levels
 		for (int level = 0; level < config.getLevel(); level++)
 			for (int csi = 0; csi < ss.getUsed(); csi++) {
 				Snapshot cs = ss.getItem(csi);
-				if (class_level.get(cs.getId()) == level)
+				if (classLevel.get(cs.getId()) == level)
 					markClassLevelRec(cs, threshold, level);
 			}
 
@@ -82,11 +82,11 @@ public class DumpFormatter {
 		rest[0].clear();
 		for (int csi = 0; csi < ss.getUsed(); csi++) {
 			Snapshot cs = ss.getItem(csi);
-			if (!cs.isEmpty() && class_level.get(cs.getId()) <= config.getLevel()) {
-				boolean is_array = cs.getId().indexOf('[') >= 0;
+			if (!cs.isEmpty() && classLevel.get(cs.getId()) <= config.getLevel()) {
+				boolean isArray = cs.getId().indexOf('[') >= 0;
 				out.print(cs.getId());
 				printlnDetails(out, cs, ss, true);
-				printLocationsRec(out, 1, cs, threshold, is_array);
+				printLocationsRec(out, 1, cs, threshold, isArray);
 				out.println();
 			} else if (!cs.isEmpty()) {
 				cskipped++;
@@ -101,7 +101,7 @@ public class DumpFormatter {
 		}
 	}
 
-	private void printlnDetails(PrintWriter out, Snapshot item, Snapshot total, boolean print_avg) {
+	private void printlnDetails(PrintWriter out, Snapshot item, Snapshot total, boolean printAvg) {
 		out.print(": ");
 		if (config.isSize()) {
 			printp(out, item.getSize(), total.getSize());
@@ -109,16 +109,16 @@ public class DumpFormatter {
 		}
 		printp(out, item.getTotalCount(), total.getTotalCount());
 		out.print(" objects");
-		if (print_avg) {
+		if (printAvg) {
 			out.print(" ");
 			printavg(out, item.getSize(), item.getTotalCount());
 		}
 		long[] counts = item.getCounts();
 		if (counts != null && counts.length > 1) {
 			out.print(" [histogram: ");
-			int last_non_zero = counts.length - 1;
-			while (last_non_zero > 0 && counts[last_non_zero] == 0) {
-				last_non_zero--;
+			int lastNonZero = counts.length - 1;
+			while (lastNonZero > 0 && counts[lastNonZero] == 0) {
+				lastNonZero--;
 			}
 			long count = item.getCount();
 			if (count != 0) {
@@ -126,11 +126,11 @@ public class DumpFormatter {
 				out.print(count);
 				out.print(") ");
 			}
-			for (int i = 0; i < last_non_zero; i++) {
+			for (int i = 0; i < lastNonZero; i++) {
 				out.print(counts[i]);
 				out.print(" ");
 			}
-			out.print(counts[last_non_zero]);
+			out.print(counts[lastNonZero]);
 			out.print("]");
 		}
 		out.println();
@@ -144,18 +144,18 @@ public class DumpFormatter {
 	private void markClassLevelRec(Snapshot list, double threshold, int level) {
 		for (int i = 0; i < list.getUsed(); i++) {
 			Snapshot item = list.getItem(i);
-			String class_name = item.getId();
-			if (item.exceedsThreshold(threshold, list) && class_name != null) {
-				int old_level = class_level.get(class_name);
-				if (old_level > level + 1)
-					class_level.put(class_name, level + 1);
+			String className = item.getId();
+			if (item.exceedsThreshold(threshold, list) && className != null) {
+				int oldLevel = classLevel.get(className);
+				if (oldLevel > level + 1)
+					classLevel.put(className, level + 1);
 			}
 			if (item.isList())
 				markClassLevelRec(item, threshold, level);
 		}
 	}
 
-	private void printLocationsRec(PrintWriter out, int depth, Snapshot list, double threshold, boolean is_array) {
+	private void printLocationsRec(PrintWriter out, int depth, Snapshot list, double threshold, boolean isArray) {
 		// count how many below threshold (1st pass)
 		int skipped = 0;
 		for (int i = 0; i < list.getUsed(); i++) {
@@ -163,19 +163,19 @@ public class DumpFormatter {
 			if (!item.exceedsThreshold(threshold, list) && !item.isEmpty())
 				skipped++;
 		}
-		boolean print_all = skipped <= 2; // avoid ... 1 more and ... 2 more messages
+		boolean printAll = skipped <= 2; // avoid ... 1 more and ... 2 more messages
 
 		// print (2nd pass)
 		skipped = 0;
 		rest[depth].clear();
 		for (int i = 0; i < list.getUsed(); i++) {
 			Snapshot item = list.getItem(i);
-			if ((print_all && !item.isEmpty()) || item.exceedsThreshold(threshold, list)) {
+			if ((printAll && !item.isEmpty()) || item.exceedsThreshold(threshold, list)) {
 				printIndent(out, depth);
 				out.print(item.getId());
-				printlnDetails(out, item, list, is_array);
+				printlnDetails(out, item, list, isArray);
 				if (item.isList())
-					printLocationsRec(out, depth + 1, item, threshold, is_array);
+					printLocationsRec(out, depth + 1, item, threshold, isArray);
 			} else if (!item.isEmpty()) {
 				skipped++;
 				rest[depth].add(item);
@@ -186,7 +186,7 @@ public class DumpFormatter {
 			out.print("... ");
 			printnum(out, skipped);
 			out.print(" more below threshold");
-			printlnDetails(out, rest[depth], list, is_array);
+			printlnDetails(out, rest[depth], list, isArray);
 		}
 	}
 

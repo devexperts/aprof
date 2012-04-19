@@ -90,31 +90,31 @@ public class FastIntObjMap<V> {
 	}
 
 	private void rehash() {
-		Core old_core = core;
-		Core new_core = new Core(old_core.shift - 1);
-		for (int i = 0; i < old_core.length; i++)
-			if (old_core.keys[i] != 0)
-				putInternal(new_core, old_core.keys[i], old_core.values[i]);
-		core = new_core;
+		Core oldCore = core;
+		Core newCore = new Core(oldCore.shift - 1);
+		for (int i = 0; i < oldCore.length; i++)
+			if (oldCore.keys[i] != 0)
+				putInternal(newCore, oldCore.keys[i], oldCore.values[i]);
+		core = newCore;
 	}
 
 	public Iterator<Integer> iterator() {
 		return new Iterator<Integer>() {
-			int i = 0;
-			Core saved_core = core;
+			private int i = 0;
+			private Core savedCore = core;
 
 			public boolean hasNext() {
-				while (i < saved_core.length && (saved_core.keys[i] == 0 || saved_core.values[i] == null)) {
+				while (i < savedCore.length && (savedCore.keys[i] == 0 || savedCore.values[i] == null)) {
 					i++;
 				}
-				return i < saved_core.length;
+				return i < savedCore.length;
 			}
 
 			public Integer next() {
 				if (!hasNext()) {
 					throw new NoSuchElementException();
 				}
-				return saved_core.keys[i++];
+				return savedCore.keys[i++];
 			}
 
 			public void remove() {

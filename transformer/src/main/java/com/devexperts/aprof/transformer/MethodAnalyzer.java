@@ -18,9 +18,6 @@
 
 package com.devexperts.aprof.transformer;
 
-import com.devexperts.aprof.AProfRegistry;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
 /**

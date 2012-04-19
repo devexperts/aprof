@@ -31,11 +31,11 @@ public class AllocSpeedTest {
 
 	private final NumberFormat nf = NumberFormat.getInstance(Locale.US);
 
-	private long total_bobjs;
-	private long total_bytes;
+	private long totalByteObjs;
+	private long totalBytes;
 
-	private long total_cobjs;
-	private long total_chars;
+	private long totalCharObjs;
+	private long totalChars;
 
 	private void go() {
 		for (int pass = 1; pass <= 3; pass++) {
@@ -45,8 +45,8 @@ public class AllocSpeedTest {
 			System.out.println("Chars via StringBuilder.toString()...");
 			runCharTest();
 		}
-		System.out.println("TOTAL of " + nf.format(total_bytes) + " bytes in " + nf.format(total_bobjs) + " objects");
-		System.out.println("TOTAL of " + nf.format(total_chars) + " chars in " + nf.format(total_cobjs) + " objects");
+		System.out.println("TOTAL of " + nf.format(totalBytes) + " bytes in " + nf.format(totalByteObjs) + " objects");
+		System.out.println("TOTAL of " + nf.format(totalChars) + " chars in " + nf.format(totalCharObjs) + " objects");
 	}
 
 	private void runByteTest() {
@@ -94,8 +94,8 @@ public class AllocSpeedTest {
 			b = new byte[size];
 		time = System.currentTimeMillis() - time;
 		printByteResult(size, count, bytes, time);
-		total_bobjs += count;
-		total_bytes += bytes;
+		totalByteObjs += count;
+		totalBytes += bytes;
 		return b;
 	}
 
@@ -118,8 +118,8 @@ public class AllocSpeedTest {
 			s = sb.toString();
 		time = System.currentTimeMillis() - time;
 		printCharResult(size, count, chars, time);
-		total_cobjs += count;
-		total_chars += chars;
+		totalCharObjs += count;
+		totalChars += chars;
 		return s;
 	}
 

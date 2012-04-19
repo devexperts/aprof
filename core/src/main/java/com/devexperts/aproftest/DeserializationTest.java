@@ -27,19 +27,19 @@ import java.util.ArrayList;
  * @author Dmitry Paraschenko
  */
 class DeserializationTest implements TestCase {
-	private final ArrayList<Entity> serialized_object;
-	private final byte[] serialized_data;
+	private final ArrayList<Entity> serializedObject;
+	private final byte[] serializedData;
 
 	public DeserializationTest() {
-		serialized_object = new ArrayList<Entity>();
+		serializedObject = new ArrayList<Entity>();
 		for (int i = 0; i < 100000; i++) {
-			serialized_object.add(new Entity(i));
+			serializedObject.add(new Entity(i));
 		}
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream(baos);
-			oos.writeObject(serialized_object);
-			serialized_data = baos.toByteArray();
+			oos.writeObject(serializedObject);
+			serializedData = baos.toByteArray();
 		} catch (IOException e) {
 			throw new IllegalStateException(e);
 		}
@@ -67,7 +67,7 @@ class DeserializationTest implements TestCase {
 		try {
 			for (int i = 0; i < 10; i++) {
 				System.out.print('.');
-				ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized_data));
+				ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serializedData));
 				ois.readObject();
 				ois.close();
 			}

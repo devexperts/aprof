@@ -29,23 +29,23 @@ import java.util.Date;
  */
 class Dumper {
 	private final Configuration config;
-	private final String args_str;
+	private final String argsStr;
 	private final long start;
 	private final Snapshot total = new Snapshot();
 	private final Snapshot last = new Snapshot();
 	private final Snapshot temp = new Snapshot();
-	private long last_time = System.currentTimeMillis();
+	private long lastTime = System.currentTimeMillis();
 
 	private final DumpFormatter formatter;
 
-	private int file_number = 0;
+	private int fileNumber = 0;
 
-	private int snapshot_count = 0;
-	private int overflow_count = 0;
+	private int snapshotCount = 0;
+	private int overflowCount = 0;
 
 	public Dumper(Configuration config, long start) {
 		this.config = config;
-		this.args_str = config.toString();
+		this.argsStr = config.toString();
 		this.start = start;
 		this.formatter = new DumpFormatter(config);
 	}
@@ -53,7 +53,7 @@ class Dumper {
 	public synchronized void makeOverflowSnapshot() {
 		Log.out.println("Making snapshot to prevent overflow...");
 		AProfRegistry.makeSnapshot(last);
-		overflow_count++;
+		overflowCount++;
 	}
 
 
@@ -66,38 +66,38 @@ class Dumper {
 		oos.writeObject(temp);
 	}
 
-	public synchronized void makeDump(boolean dump_all) {
-		String file_name = config.getFile();
-		if (file_name.length() == 0)
+	public synchronized void makeDump(boolean dumpAll) {
+		String fileName = config.getFile();
+		if (fileName.length() == 0)
 			return; // do not dump
-		boolean file_append = snapshot_count > file_number && config.isFileAppend();
+		boolean fileAppend = snapshotCount > fileNumber && config.isFileAppend();
 
-		int mask_end = file_name.lastIndexOf('#');
-		if (mask_end >= 0) {
-			file_number++;
+		int maskEnd = fileName.lastIndexOf('#');
+		if (maskEnd >= 0) {
+			fileNumber++;
 			if (config.getFilecount() != 0)
-				file_number %= config.getFilecount();
-			int mask_start = mask_end;
-			while (mask_start > 0 && file_name.charAt(mask_start - 1) == '#') {
-				mask_start--;
+				fileNumber %= config.getFilecount();
+			int maskStart = maskEnd;
+			while (maskStart > 0 && fileName.charAt(maskStart - 1) == '#') {
+				maskStart--;
 			}
 			StringBuilder sb = new StringBuilder();
-			sb.append(file_name.substring(0, mask_start));
-			String number = resize(String.valueOf(file_number), mask_end - mask_start + 1);
+			sb.append(fileName.substring(0, maskStart));
+			String number = resize(String.valueOf(fileNumber), maskEnd - maskStart + 1);
 			sb.append(number);
-			sb.append(file_name.substring(mask_end + 1));
-			file_name = sb.toString();
+			sb.append(fileName.substring(maskEnd + 1));
+			fileName = sb.toString();
 		}
 
-		Log.out.println("Writing dump to file " + file_name + "...");
+		Log.out.println("Writing dump to file " + fileName + "...");
 		AProfRegistry.makeSnapshot(last);
 		total.addAll(last);
-		snapshot_count++;
+		snapshotCount++;
 
 		PrintWriter out = null;
 		try {
-			out = new PrintWriter(new FastOutputStreamWriter(new FileOutputStream(file_name, file_append)));
-			dumpAll(out, dump_all);
+			out = new PrintWriter(new FastOutputStreamWriter(new FileOutputStream(fileName, fileAppend)));
+			dumpAll(out, dumpAll);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -109,7 +109,7 @@ class Dumper {
 				}
 		}
 		last.clearDeep();
-		Log.out.println("Writing dump to file " + file_name + "... done");
+		Log.out.println("Writing dump to file " + fileName + "... done");
 	}
 
 	private String resize(String str, int length) {
@@ -125,7 +125,7 @@ class Dumper {
 		return sb.toString();
 	}
 
-	private void dumpAll(PrintWriter out, boolean dump_all) {
+	private void dumpAll(PrintWriter out, boolean dumpAll) {
 		long now = System.currentTimeMillis();
 		long uptime = now - start;
 		//------ Line #1
@@ -143,7 +143,7 @@ class Dumper {
 		out.flush();
 		//------ Line #3
 		out.print("Arguments ");
-		out.println(args_str);
+		out.println(argsStr);
 		//------ Line #4
 		out.print("Transformed ");
 		DumpFormatter.printnum(out, AProfRegistry.getCount());
@@ -155,21 +155,21 @@ class Dumper {
 		out.println();
 		//------ Line #4
 		out.print("Snapshot of counters was made ");
-		DumpFormatter.printnum(out, snapshot_count);
+		DumpFormatter.printnum(out, snapshotCount);
 		out.print(" times to write file and ");
-		DumpFormatter.printnum(out, overflow_count);
+		DumpFormatter.printnum(out, overflowCount);
 		out.println(" times to prevent overflow");
 		//------ last line
 		out.print("===============================================================================");
 		out.flush();
 
-		if (!dump_all) {
+		if (!dumpAll) {
 			out.println();
 			out.println();
 			out.print("LAST allocation dump for ");
-			long delta = now - last_time;
+			long delta = now - lastTime;
 			DumpFormatter.printnum(out, delta);
-			last_time = now;
+			lastTime = now;
 			out.print(" ms (");
 			DumpFormatter.printtime(out, delta);
 			out.println(")");
@@ -183,7 +183,7 @@ class Dumper {
 		out.print(" ms (");
 		DumpFormatter.printtime(out, uptime);
 		out.println(")");
-		formatter.dumpSection(out, total, dump_all ? 0 : config.getThreshold());
+		formatter.dumpSection(out, total, dumpAll ? 0 : config.getThreshold());
 		out.println();
 		out.println();
 	}

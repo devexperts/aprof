@@ -120,36 +120,36 @@ public class AProfOps {
 		}
 	}
 
-	public static void allocateReflectVClone(Object o, int reflect_index) {
+	public static void allocateReflectVClone(Object o, int reflectIndex) {
 		if (isDirectCloneClass(o.getClass().getName())) {
-			allocateReflect(o, reflect_index);
+			allocateReflect(o, reflectIndex);
 		}
 	}
 
-	public static void allocateReflectVCloneSize(Object o, int reflect_index) {
+	public static void allocateReflectVCloneSize(Object o, int reflectIndex) {
 		if (isDirectCloneClass(o.getClass().getName())) {
-			allocateReflectSize(o, reflect_index);
+			allocateReflectSize(o, reflectIndex);
 		}
 	}
 
 	public static void objectInit(Object o) {
 		String name = o.getClass().getName();
-		DatatypeInfo datatype_info = getDatatypeInfo(name);
-		if (datatype_info == null) {
+		DatatypeInfo datatypeInfo = getDatatypeInfo(name);
+		if (datatypeInfo == null) {
 			return;
 		}
-		datatype_info.getIndex().increment();
+		datatypeInfo.getIndex().increment();
 	}
 
 	public static void objectInitSize(Object o) {
 		String name = o.getClass().getName();
-		DatatypeInfo datatype_info = getDatatypeInfo(name);
-		if (datatype_info == null) {
+		DatatypeInfo datatypeInfo = getDatatypeInfo(name);
+		if (datatypeInfo == null) {
 			return;
 		}
-		if (datatype_info.getSize() == 0) {
-			datatype_info.setSize(getObjectSize(o));
+		if (datatypeInfo.getSize() == 0) {
+			datatypeInfo.setSize(getObjectSize(o));
 		}
-		datatype_info.getIndex().increment();
+		datatypeInfo.getIndex().increment();
 	}
 }

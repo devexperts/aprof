@@ -63,11 +63,11 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 
 	protected abstract void visitAllocate(String desc);
 
-	protected abstract void visitAllocateArray(String array_name);
+	protected abstract void visitAllocateArray(String desc);
 
-	protected abstract void visitAllocateReflect(String arrayNewinstanceSuffix);
+	protected abstract void visitAllocateReflect(String suffix);
 
-	protected abstract void visitAllocateReflectVClone(String cloneSuffix);
+	protected abstract void visitAllocateReflectVClone(String suffix);
 
 	@Override
 	public void visitCode() {
@@ -123,8 +123,8 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 		}
 		mv.visitTypeInsn(opcode, desc);
 		if (opcode == Opcodes.ANEWARRAY && context.getConfig().isArrays()) {
-			String array_name = name.startsWith("[") ? "[" + name : "[L" + name + ";";
-			visitAllocateArray(array_name);
+			String arrayName = name.startsWith("[") ? "[" + name : "[L" + name + ";";
+			visitAllocateArray(arrayName);
 		}
 	}
 
@@ -181,14 +181,14 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 		}
 
 		// check if it is eligible object.clone call (that can get dispatched to actual Object.clone method
-		boolean is_clone = opcode != Opcodes.INVOKESTATIC && name.equals(AProfTransformer.CLONE) && desc.equals(AProfTransformer.NOARG_RETURNS_OBJECT);
-		boolean is_array_clone = is_clone && owner.startsWith("[");
-		boolean is_object_clone = is_clone && AProfRegistry.isDirectCloneClass(owner.replace('/', '.'));
+		boolean isClone = opcode != Opcodes.INVOKESTATIC && name.equals(AProfTransformer.CLONE) && desc.equals(AProfTransformer.NOARG_RETURNS_OBJECT);
+		boolean isArrayClone = isClone && owner.startsWith("[");
+		boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(owner.replace('/', '.'));
 
-		String invoked_method = context.getLocationString(owner, name, desc);
-		boolean is_method_tracked = context.isLocationTracked(invoked_method) && !context.getMethodName().startsWith(AProfTransformer.ACCESS_METHOD);
+		String invokedMethod = context.getLocationString(owner, name, desc);
+		boolean isMethodTracked = context.isLocationTracked(invokedMethod) && !context.getMethodName().startsWith(AProfTransformer.ACCESS_METHOD);
 
-		if (is_method_tracked) {
+		if (isMethodTracked) {
 			Label start = new Label();
 			Label end = new Label();
 			Label handler = new Label();
@@ -215,15 +215,15 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 			return;
 		}
 
-		if (opcode == Opcodes.INVOKEVIRTUAL && is_object_clone) {
+		if (opcode == Opcodes.INVOKEVIRTUAL && isObjectClone) {
 			// INVOKEVIRTUAL needs runtime check of class that is being cloned
 			visitAllocateReflectVClone(AProfRegistry.CLONE_SUFFIX);
 		}
-		if (opcode == Opcodes.INVOKESPECIAL && is_object_clone) {
+		if (opcode == Opcodes.INVOKESPECIAL && isObjectClone) {
 			// Object.clone via super.clone (does not need runtime check)
 			visitAllocateReflect(AProfRegistry.CLONE_SUFFIX);
 		}
-		if (is_array_clone) {
+		if (isArrayClone) {
 			// <array>.clone (usually via INVOKEVIRTUAL, but we don't care)
 			visitAllocateReflect(AProfRegistry.CLONE_SUFFIX);
 		}

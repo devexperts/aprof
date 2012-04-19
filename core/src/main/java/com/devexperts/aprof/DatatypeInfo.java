@@ -29,7 +29,7 @@ final class DatatypeInfo {
 	private final String name;
 	private final IndexMap index;
 	private volatile int size;
-	private volatile boolean direct_clone;
+	private volatile boolean directClone;
 
 	public DatatypeInfo(String name, IndexMap index) {
 		this.name = name;
@@ -45,11 +45,11 @@ final class DatatypeInfo {
 	}
 
 	public boolean isDirectClone() {
-		return direct_clone;
+		return directClone;
 	}
 
-	public void setDirectClone(boolean direct_clone) {
-		this.direct_clone = direct_clone;
+	public void setDirectClone(boolean directClone) {
+		this.directClone = directClone;
 	}
 
 	public int getSize() {

@@ -44,6 +44,7 @@ class ConnectionHandlerThread extends Thread {
 		this.address = address;
 	}
 
+	@Override
 	public void run() {
 		try {
 			BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream(), ENCODING));
@@ -53,29 +54,29 @@ class ConnectionHandlerThread extends Thread {
 				line = line.trim().toUpperCase(Locale.US);
 				if (line.equals("DUMP")) {
 					sendDump(out);
-					s.close();
 					return;
 				} else if (line.equals("BYE")) {
-					s.close();
 					return;
 				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally {
+			try {
+				s.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
-	private void sendDump(OutputStream out) {
-		try {
-			ByteArrayOutputStream buf = new ByteArrayOutputStream();
-			ObjectOutputStream oos = new ObjectOutputStream(buf);
-			dumper.sendDumpTo(oos, address);
-			oos.close();
-			byte[] bytes = buf.toByteArray();
-			out.write(bytes);
-			out.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	private void sendDump(OutputStream out) throws IOException {
+		ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(buf);
+		dumper.sendDumpTo(oos, address);
+		oos.close();
+		byte[] bytes = buf.toByteArray();
+		out.write(bytes);
+		out.flush();
 	}
 }
