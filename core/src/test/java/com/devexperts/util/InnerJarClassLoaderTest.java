@@ -24,9 +24,9 @@ import java.io.IOException;
 /**
  * @author Dmitry Paraschenko
  */
-public class JarClassLoaderTest {
+public class InnerJarClassLoaderTest {
 	public static void main(String[] args) throws IOException {
-		JarClassLoader loader = new JarClassLoader(new File("aprof.jar").toURL());
+		InnerJarClassLoader loader = new InnerJarClassLoader(new File("aprof.jar").toURL());
 		System.out.println(loader.getResourceAsStream("details.config"));
 		System.out.println(loader.getResource("details.config"));
 	}

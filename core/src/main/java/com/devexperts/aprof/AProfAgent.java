@@ -19,7 +19,7 @@
 package com.devexperts.aprof;
 
 import com.devexperts.aprof.util.Log;
-import com.devexperts.util.JarClassLoader;
+import com.devexperts.util.InnerJarClassLoader;
 
 import java.lang.instrument.*;
 import java.io.*;
@@ -44,16 +44,16 @@ public class AProfAgent {
 			"asm-util.jar"
 	);
 
-	private static JarClassLoader class_loader;
+	private static InnerJarClassLoader class_loader;
 
-	private synchronized static JarClassLoader getClassLoader() throws IOException, ClassNotFoundException {
+	private synchronized static InnerJarClassLoader getClassLoader() throws IOException, ClassNotFoundException {
 		if (class_loader == null) {
 			List<URL> urls = new ArrayList<URL>();
 			for (String jar : CLASSPATH_JARS) {
 				URL url = Thread.currentThread().getContextClassLoader().getResource(jar);
 				urls.add(url);
 			}
-			class_loader = new JarClassLoader(urls);
+			class_loader = new InnerJarClassLoader(urls);
 			class_loader.forceLoadAllClasses();
 		}
 		return class_loader;
@@ -83,7 +83,7 @@ public class AProfAgent {
 		Log.out.println(sb);
 		config.showNotes(Log.out, false);
 
-		JarClassLoader class_loader = getClassLoader();
+		InnerJarClassLoader class_loader = getClassLoader();
 
 		Class<ClassNameResolver> resolver_class = (Class<ClassNameResolver>)class_loader.loadClass(RESOLVER_CLASS);
 

@@ -25,7 +25,7 @@ import java.util.jar.Manifest;
  * @author Vitaly Trifanov
  * @author Devexperts LLC
  */
-public class JarClassLoader extends URLClassLoader {
+public class InnerJarClassLoader extends URLClassLoader {
 	private static final String CLASS_FILE_SUFFIX = ".class";
 	private static final int BUFFER_SIZE = 4096;
 
@@ -37,12 +37,12 @@ public class JarClassLoader extends URLClassLoader {
 	private final List<CachedResource> resources = new ArrayList<CachedResource>();
 
 	/** Creates class loader for specified JAR files. */
-	public JarClassLoader(URL... jars) throws IOException {
+	public InnerJarClassLoader(URL... jars) throws IOException {
 		this(Arrays.asList(jars));
 	}
 
 	/** Creates class loader for specified JAR files. */
-	public JarClassLoader(List<URL> jars) throws IOException {
+	public InnerJarClassLoader(List<URL> jars) throws IOException {
 		super(new URL[0]);
 		acc = AccessController.getContext();
 		for (URL jar : jars) {
