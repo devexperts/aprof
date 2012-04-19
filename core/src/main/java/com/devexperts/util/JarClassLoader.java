@@ -13,7 +13,6 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -33,9 +32,9 @@ public class JarClassLoader extends URLClassLoader {
 	/** The context to be used for loading classes and resources. */
 	private final AccessControlContext acc;
 	/** All cached classes. */
-	private final List<CachedClass> classes = Collections.synchronizedList(new ArrayList<CachedClass>());
+	private final List<CachedClass> classes = new ArrayList<CachedClass>();
 	/** All cached classes and other resources. */
-	private final List<CachedResource> resources = Collections.synchronizedList(new ArrayList<CachedResource>());
+	private final List<CachedResource> resources = new ArrayList<CachedResource>();
 
 	/** Creates class loader for specified JAR files. */
 	public JarClassLoader(URL... jars) throws IOException {
