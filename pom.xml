@@ -3,7 +3,7 @@
 
 	<groupId>com.devexperts.aprof</groupId>
 	<artifactId>aprof</artifactId>
-	<version>20-SNAPSHOT</version>
+	<version>20</version>
 	<packaging>pom</packaging>
 
 	<name>Aprof</name>
@@ -15,8 +15,8 @@
 	</properties>
 
 	<scm>
-		<connection>scm:svn:http://svn-code.devexperts.com/code/aprof/trunk</connection>
-		<developerConnection>scm:svn:http://svn-code.devexperts.com/coderw/aprof/trunk</developerConnection>
+		<connection>scm:svn:http://svn-code.devexperts.com/code/aprof/tags/aprof-20</connection>
+		<developerConnection>scm:svn:http://svn-code.devexperts.com/coderw/aprof/tags/aprof-20</developerConnection>
 	</scm>
 
 	<modules>
