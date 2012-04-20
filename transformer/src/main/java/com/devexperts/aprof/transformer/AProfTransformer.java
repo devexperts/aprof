@@ -78,31 +78,33 @@ public class AProfTransformer implements ClassFileTransformer {
 		LocationStack.markInternalInvokedMethod(TRANSFORM_LOC);
 		config.reloadTrackedClasses();
 		long start = System.currentTimeMillis();
-		String cname = className.replace('/', '.');
-		for (String s : config.getExcludedClasses())
-			if (cname.equals(s))
+		if (className == null) {
+			sharedStringBuilder.setLength(0);
+			sharedStringBuilder.append("Cannot transform class with no name");
+			describeClassLoader(sharedStringBuilder, loader);
+			Log.out.println(sharedStringBuilder);
+			return null;
+		}
+		className = className.replace('/', '.');
+		for (String s : config.getExcludedClasses()) {
+			if (className.equals(s)) {
+				sharedStringBuilder.setLength(0);
+				sharedStringBuilder.append("Skipping transformation of excluded class: ");
+				sharedStringBuilder.append(className);
+				describeClassLoader(sharedStringBuilder, loader);
+				Log.out.println(sharedStringBuilder);
 				return null;
+			}
+		}
 		int classNo = AProfRegistry.incrementCount();
-		if (!config.isQuiet()) {
+		if (config.isVerbose()) {
 			synchronized (sharedStringBuilder) {
 				sharedStringBuilder.setLength(0);
 				sharedStringBuilder.append("Transforming class #");
 				sharedStringBuilder.append(classNo);
 				sharedStringBuilder.append(": ");
-				sharedStringBuilder.append(cname);
-				if (loader != null) {
-					sharedStringBuilder.append(" [in ");
-					String lcname = loader.getClass().getName();
-					String lstr = loader.toString();
-					if (lstr.startsWith(lcname))
-						sharedStringBuilder.append(lstr);
-					else {
-						sharedStringBuilder.append(lcname);
-						sharedStringBuilder.append(": ");
-						sharedStringBuilder.append(lstr);
-					}
-					sharedStringBuilder.append("]");
-				}
+				sharedStringBuilder.append(className);
+				describeClassLoader(sharedStringBuilder, loader);
 				Log.out.println(sharedStringBuilder);
 			}
 		}
@@ -113,10 +115,10 @@ public class AProfTransformer implements ClassFileTransformer {
 			ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
 
 			List<Context> methodContexts = new ArrayList<Context>();
-			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyVisitor(), cname, methodContexts);
+			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyVisitor(), className, methodContexts);
 			cr.accept(classAnalyzer, flags);
 
-			ClassVisitor classTransformer = new ClassTransformer(cw, cname, methodContexts);
+			ClassVisitor classTransformer = new ClassTransformer(cw, className, methodContexts);
 			cr.accept(classTransformer, flags);
 			return cw.toByteArray();
 		} catch (Throwable t) {
@@ -124,9 +126,9 @@ public class AProfTransformer implements ClassFileTransformer {
 				sharedStringBuilder.setLength(0);
 				sharedStringBuilder.append("Transforming class #");
 				sharedStringBuilder.append(classNo);
-				sharedStringBuilder.append(" (");
-				sharedStringBuilder.append(cname);
-				sharedStringBuilder.append(") failed with error: ");
+				sharedStringBuilder.append(" (").append(className).append(")");
+				describeClassLoader(sharedStringBuilder, loader);
+				sharedStringBuilder.append(" failed with error: ");
 				sharedStringBuilder.append(t.getLocalizedMessage());
 				Log.out.println(sharedStringBuilder);
 			}
@@ -135,6 +137,22 @@ public class AProfTransformer implements ClassFileTransformer {
 		} finally {
 			AProfRegistry.incrementTime(System.currentTimeMillis() - start);
 			LocationStack.unmarkInternalInvokedMethod();
+		}
+	}
+
+	private static void describeClassLoader(StringBuilder sharedStringBuilder, ClassLoader loader) {
+		if (loader != null) {
+			sharedStringBuilder.append(" [in ");
+			String lcname = loader.getClass().getName();
+			String lstr = loader.toString();
+			if (lstr.startsWith(lcname)) {
+				sharedStringBuilder.append(lstr);
+			} else {
+				sharedStringBuilder.append(lcname);
+				sharedStringBuilder.append(": ");
+				sharedStringBuilder.append(lstr);
+			}
+			sharedStringBuilder.append("]");
 		}
 	}
 

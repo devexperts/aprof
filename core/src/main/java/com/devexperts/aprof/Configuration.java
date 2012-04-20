@@ -56,11 +56,11 @@ public class Configuration {
 	@Description("Time period to write Aprof dump file.")
 	private long time = MIN;
 
-	@Description("Be quiet in stdout (do not log every transformation).")
-	private boolean quiet = true;
-
-	@Description("Be verbose about class redefinitions and transformations.")
+	@Description("Be verbose and log every class transformation.")
 	private boolean verbose = false;
+
+	@Description("Be verbose about class redefinitions too.")
+	private boolean verbose_redefinition = false;
 
 	@Description("Skip debug information (line numbers and local variables) during class transformation.")
 	private boolean skipdebug = false;
@@ -180,12 +180,12 @@ public class Configuration {
 		return time;
 	}
 
-	public boolean isQuiet() {
-		return quiet;
-	}
-
 	public boolean isVerbose() {
 		return verbose;
+	}
+
+	public boolean isVerboseRedefinition() {
+		return verbose_redefinition;
 	}
 
 	public boolean isSkipDebug() {
@@ -287,8 +287,8 @@ public class Configuration {
 			out.println("Note: 'histogram' option does not work without 'arrays' and 'size'.");
 		if (all || size && location && !unknown)
 			out.println("Note: 'size' with 'location' does not work without 'unknown'.");
-		if (all || verbose && quiet)
-			out.println("Note: 'verbose' does not work with 'quiet'.");
+		if (all || verbose_redefinition && !verbose)
+			out.println("Note: 'verbose.redefinition' does not work without 'verbose'.");
 	}
 
 	@Override

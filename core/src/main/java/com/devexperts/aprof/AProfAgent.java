@@ -135,7 +135,7 @@ public class AProfAgent {
 			sb.append("Redefining classes pass #").append(pass).append("...");
 			log(sb);
 
-			if (config.isVerbose()) {
+			if (config.isVerboseRedefinition()) {
 				for (ClassDefinition cd : cdl) {
 					String name = cd.getDefinitionClass().getName();
 					sb.setLength(0);
@@ -192,7 +192,7 @@ public class AProfAgent {
 	}
 
 	private void log(Object o) {
-		if (!config.isQuiet())
+		if (config.isVerbose())
 			Log.out.println(o);
 	}
 
