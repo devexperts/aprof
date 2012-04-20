@@ -1,3 +1,21 @@
+Release Notes - AProf - Version 20
+
+** Change Request
+    * [APROF-52] - Core: improve performance of tracked methods
+    * [APROF-58] - Core: improve logging during class transformation
+
+** Defect Report
+    * [APROF-50] - Core: exception is printed on application shutdown
+    * [APROF-53] - Core: incorrect statistics after exception in tracked method
+    * [APROF-56] - Core: close open resources
+
+** Improvement
+    * [APROF-57] - Core: migrate to improved version of jar class loader
+
+** Task
+    * [APROF-55] - Core: investigate serialization/deserialization
+
+
 Release Notes - AProf - Version 19
 
 ** Change Request
