@@ -77,71 +77,78 @@ public class AProfTransformer implements ClassFileTransformer {
 							Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
 			throws IllegalClassFormatException {
 		LocationStack.markInternalInvokedMethod(TRANSFORM_LOC);
-		config.reloadTrackedClasses();
-		long start = System.currentTimeMillis();
-		if (className == null) {
-			sharedStringBuilder.setLength(0);
-			sharedStringBuilder.append("Cannot transform class with no name");
-			describeClassLoader(sharedStringBuilder, loader);
-			Log.out.println(sharedStringBuilder);
-			return null;
-		}
-		className = className.replace('/', '.');
-		for (String s : config.getExcludedClasses()) {
-			if (className.equals(s)) {
-				sharedStringBuilder.setLength(0);
-				sharedStringBuilder.append("Skipping transformation of excluded class: ");
-				sharedStringBuilder.append(className);
-				describeClassLoader(sharedStringBuilder, loader);
-				Log.out.println(sharedStringBuilder);
-				return null;
-			}
-		}
-		int classNo = AProfRegistry.incrementCount();
-		if (config.isVerbose()) {
-			synchronized (sharedStringBuilder) {
-				sharedStringBuilder.setLength(0);
-				sharedStringBuilder.append("Transforming class #");
-				sharedStringBuilder.append(classNo);
-				sharedStringBuilder.append(": ");
-				sharedStringBuilder.append(className);
-				describeClassLoader(sharedStringBuilder, loader);
-				Log.out.println(sharedStringBuilder);
-			}
-		}
-		try {
-			int flags = (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES;
+        try {
+            return transformImpl(loader, className, classfileBuffer);
+        } finally {
+            LocationStack.unmarkInternalInvokedMethod();
+        }
+    }
 
-			ClassReader cr = new ClassReader(classfileBuffer);
-			ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+    private byte[] transformImpl(ClassLoader loader, String className, byte[] classfileBuffer) {
+        config.reloadTrackedClasses();
+        long start = System.currentTimeMillis();
+        if (className == null) {
+            sharedStringBuilder.setLength(0);
+            sharedStringBuilder.append("Cannot transform class with no name");
+            describeClassLoader(sharedStringBuilder, loader);
+            Log.out.println(sharedStringBuilder);
+            return null;
+        }
+        className = className.replace('/', '.');
+        for (String s : config.getExcludedClasses()) {
+            if (className.equals(s)) {
+                sharedStringBuilder.setLength(0);
+                sharedStringBuilder.append("Skipping transformation of excluded class: ");
+                sharedStringBuilder.append(className);
+                describeClassLoader(sharedStringBuilder, loader);
+                Log.out.println(sharedStringBuilder);
+                return null;
+            }
+        }
+        int classNo = AProfRegistry.incrementCount();
+        if (config.isVerbose()) {
+            synchronized (sharedStringBuilder) {
+                sharedStringBuilder.setLength(0);
+                sharedStringBuilder.append("Transforming class #");
+                sharedStringBuilder.append(classNo);
+                sharedStringBuilder.append(": ");
+                sharedStringBuilder.append(className);
+                describeClassLoader(sharedStringBuilder, loader);
+                Log.out.println(sharedStringBuilder);
+            }
+        }
+        try {
+            int flags = (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES;
 
-			List<Context> methodContexts = new ArrayList<Context>();
-			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyVisitor(), className, methodContexts);
-			cr.accept(classAnalyzer, flags);
+            ClassReader cr = new ClassReader(classfileBuffer);
+            ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
 
-			ClassVisitor classTransformer = new ClassTransformer(cw, className, methodContexts);
-			cr.accept(classTransformer, flags);
-			return cw.toByteArray();
-		} catch (Throwable t) {
-			synchronized (sharedStringBuilder) {
-				sharedStringBuilder.setLength(0);
-				sharedStringBuilder.append("Transforming class #");
-				sharedStringBuilder.append(classNo);
-				sharedStringBuilder.append(" (").append(className).append(")");
-				describeClassLoader(sharedStringBuilder, loader);
-				sharedStringBuilder.append(" failed with error: ");
-				sharedStringBuilder.append(t.getLocalizedMessage());
-				Log.out.println(sharedStringBuilder);
-			}
-			t.printStackTrace();
-			return null;
-		} finally {
-			AProfRegistry.incrementTime(System.currentTimeMillis() - start);
-			LocationStack.unmarkInternalInvokedMethod();
-		}
-	}
+            List<Context> methodContexts = new ArrayList<Context>();
+            ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyVisitor(), className, methodContexts);
+            cr.accept(classAnalyzer, flags);
 
-	private static void describeClassLoader(StringBuilder sharedStringBuilder, ClassLoader loader) {
+            ClassVisitor classTransformer = new ClassTransformer(cw, className, methodContexts);
+            cr.accept(classTransformer, flags);
+            return cw.toByteArray();
+        } catch (Throwable t) {
+            synchronized (sharedStringBuilder) {
+                sharedStringBuilder.setLength(0);
+                sharedStringBuilder.append("Transforming class #");
+                sharedStringBuilder.append(classNo);
+                sharedStringBuilder.append(" (").append(className).append(")");
+                describeClassLoader(sharedStringBuilder, loader);
+                sharedStringBuilder.append(" failed with error: ");
+                sharedStringBuilder.append(t.getLocalizedMessage());
+                Log.out.println(sharedStringBuilder);
+            }
+            t.printStackTrace();
+            return null;
+        } finally {
+            AProfRegistry.incrementTime(System.currentTimeMillis() - start);
+        }
+    }
+
+    private static void describeClassLoader(StringBuilder sharedStringBuilder, ClassLoader loader) {
 		if (loader != null) {
 			sharedStringBuilder.append(" [in ");
 			String lcname = loader.getClass().getName();
