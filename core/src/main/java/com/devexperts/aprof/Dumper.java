@@ -138,12 +138,10 @@ class Dumper {
 		out.print("Allocation dump at ");
 		out.print(new Date(now));
 		out.print(". Uptime ");
-		out.flush();
 		DumpFormatter.printnum(out, uptime);
 		out.print(" ms (");
 		DumpFormatter.printtime(out, uptime);
 		out.println(")");
-		out.flush();
 		//------ Line #3
 		out.print("Arguments ");
 		out.println(argsStr);
@@ -164,7 +162,6 @@ class Dumper {
 		out.println(" times to prevent overflow");
 		//------ last line
 		out.print("===============================================================================");
-		out.flush();
 
 		if (!dumpAll) {
 			out.println();
