@@ -28,7 +28,6 @@ class DetailsConfiguration {
 	public static String RESOURCE = "details.config";
 
 	private static final String ANY_METHOD = "*";
-	private static final Set<String> ALL_METHODS = Collections.singleton(ANY_METHOD);
 
 	/** Class name --> set of method names. */
 	private Map<String, Set<String>> trackedLocations = new HashMap<String, Set<String>>();
@@ -36,30 +35,25 @@ class DetailsConfiguration {
 	private HashSet<String> remainingClasses = new HashSet<String>();
 	private boolean reloadTrackedClasses;
 
-	public DetailsConfiguration() {
-	}
+	public DetailsConfiguration() {}
 
 	public void loadFromResource() throws IOException {
 		loadFromStream(ClassLoader.getSystemResourceAsStream(RESOURCE));
-		for (String str : trackedLocations.keySet()) {
+		for (String str : trackedLocations.keySet())
 			remainingClasses.add(str);
-		}
 	}
 
 	public void loadFromFile(String fileName) throws IOException {
-		if (fileName == null || fileName.trim().isEmpty()) {
+		if (fileName == null || fileName.trim().length() == 0)
 			return;
-		}
 		loadFromStream(new FileInputStream(fileName));
-		for (String str : trackedLocations.keySet()) {
+		for (String str : trackedLocations.keySet())
 			remainingClasses.add(str);
-		}
 	}
 
-	public void addClasses(String[] classNames) throws IOException {
-		for (String cname : classNames) {
-			trackedLocations.put(cname, ALL_METHODS);
-		}
+	public void addClassMethods(String[] classMethodNames) throws IOException {
+		for (String classMethodName : classMethodNames)
+            addClassMethod(classMethodName, ANY_METHOD);
 	}
 
 	public void reloadTrackedClasses() {
@@ -68,34 +62,25 @@ class DetailsConfiguration {
 
 	public boolean isLocationTracked(String location) {
 		int pos = location.indexOf('(');
-		if (pos >= 0) {
+		if (pos >= 0)
 			location = location.substring(0, pos);
-		}
 		pos = location.lastIndexOf('.');
 		String className = location.substring(0, pos);
 		String methodName = location.substring(pos + 1);
 		Map<String, Set<String>> tracked = getTrackedMethods();
 		Set<String> trackedMethods = tracked.get(className);
-		if (trackedMethods == null) {
-			return false;
-		}
-		if (trackedMethods.isEmpty() || trackedMethods.contains(ANY_METHOD)) {
-			return true;
-		}
-		return trackedMethods.contains(methodName);
-	}
+        return trackedMethods != null &&
+            (trackedMethods.isEmpty() || trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(methodName));
+    }
 
 	private Map<String, Set<String>> getTrackedMethods() {
 		if (reloadTrackedClasses) {
 			reloadTrackedClasses = false;
 			ArrayList<String> processedClasses = null;
-			for (String cname : remainingClasses) {
+			for (String className : remainingClasses) {
 				try {
-					Class clazz = Class.forName(cname);
-					Set<String> methods = trackedLocations.get(cname);
-					if (methods.contains(ANY_METHOD)) {
-						methods = ALL_METHODS;
-					}
+					Class clazz = Class.forName(className);
+					Set<String> methods = trackedLocations.get(className);
 					while (clazz != null && clazz != Object.class) {
 						addInterfaces(clazz, methods);
 						clazz = clazz.getSuperclass();
@@ -103,7 +88,7 @@ class DetailsConfiguration {
 					if (processedClasses == null) {
 						processedClasses = new ArrayList<String>();
 					}
-					processedClasses.add(cname);
+					processedClasses.add(className);
 				} catch (ClassNotFoundException e) {
 					// do nothing
 				}
@@ -126,44 +111,55 @@ class DetailsConfiguration {
 		methods.addAll(classMethods);
 		Class[] interfaces = clazz.getInterfaces();
 		if (interfaces != null) {
-			for (Class interfacce : interfaces) {
-				addInterfaces(interfacce, classMethods);
+			for (Class anInterface : interfaces) {
+				addInterfaces(anInterface, classMethods);
 			}
 		}
 	}
 
+    private Set<String> addClassMethod(String classMethodName, String defaultMethodName) {
+        int pos = classMethodName.indexOf('#');
+        String className = pos < 0 ? classMethodName : classMethodName.substring(0, pos);
+        Set<String> classMethods = trackedLocations.get(className);
+        if (classMethods == null)
+            trackedLocations.put(className, classMethods = new HashSet<String>());
+        if (pos >= 0) {
+            classMethods.add(classMethodName.substring(pos + 1));
+            return null;
+        } else {
+            if (defaultMethodName != null)
+                classMethods.add(defaultMethodName);
+            return classMethods;
+        }
+    }
+
 	private void loadFromStream(InputStream stream) throws IOException {
-		BufferedReader in = null;
-		try {
-			in = new BufferedReader(new InputStreamReader(stream));
+        BufferedReader in = new BufferedReader(new InputStreamReader(stream));
+        try {
 			Set<String> classMethods = null;
-			while (true) {
+			for (int lineNo = 1;; lineNo++) {
 				String line = in.readLine();
-				if (line == null) {
+				if (line == null)
 					break;
-				}
+                if (line.length() == 0)
+                    continue;
+                boolean indentedLine = Character.isSpaceChar(line.charAt(0));
 				line = line.trim();
-				if (line.startsWith(Configuration.COMMENT)) {
+				if (line.length() == 0 || line.startsWith(Configuration.COMMENT))
 					continue;
-				}
-				if (line.length() == 0) {
-					classMethods = null;
-					continue;
-				}
-				if (classMethods == null) {
-					classMethods = trackedLocations.get(line);
-					if (classMethods == null) {
-						classMethods = new HashSet<String>();
-						trackedLocations.put(line, classMethods);
-					}
-				} else {
-					classMethods.add(line);
+                if (indentedLine) {
+                    if (classMethods == null)
+                        throw new IOException(String.format(
+                            "Line %d: Indented line with method name shall follow a line with class name", lineNo));
+                    classMethods.add(line);
+                } else {
+                    // non-indented line with a class-name or class-name#method-name
+                    classMethods = addClassMethod(line, null);
 				}
 			}
 		} finally {
-			if (in != null) {
-				in.close();
-			}
+    		in.close();
 		}
 	}
+
 }

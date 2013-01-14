@@ -59,7 +59,8 @@ public class AProfTools {
 		PrintWriter out = new PrintWriter(new FastOutputStreamWriter(System.out), true);
 		out.println(STARTUP_NOTICE);
 		out.println();
-		out.println("Usage: java -javaagent:aprof.jar[=<args>]");
+		out.println("Usage: java -javaagent:aprof.jar[=<args>] <other-JVM-options-and-main-class>");
+		out.println("       Runs JVM with aprof agent to profile memory allocations.");
 		out.println("Where <args> is <key>=<value>[:<key>=<value>[:...]]");
 		out.println("Supported keys are:");
 		Configuration def = new Configuration();
@@ -70,8 +71,10 @@ public class AProfTools {
 		def.showNotes(out, true);
 		out.println();
 		out.println("Usage: java -jar aprof.jar dump [<host>:]<port>");
+		out.println("       Dumps statistics from a running aprof agent that listen on a port.");
 		out.println();
 		out.println("Usage: java -jar aprof.jar export [<file>]");
+        out.println("       Exports default tracked locations configuration to a file.");
 	}
 
 	private static String padr(String s, int len) {

@@ -42,9 +42,8 @@ class HistogramConfiguration {
 	}
 
 	private void loadFromFile(String fileName) throws IOException {
-		if (fileName == null || fileName.trim().isEmpty()) {
+		if (fileName == null || fileName.trim().length() == 0)
 			return;
-		}
 		BufferedReader in = new BufferedReader(new FileReader(fileName));
 		try {
 			while (true) {

@@ -93,7 +93,7 @@ public class Configuration {
 			"sun.reflect.GeneratedMethodAccessor"
 	};
 
-	@Description("Comma-separated list of classes which methods shall be additionally tracked.")
+	@Description("Comma-separated list of classes or class#method strings which shall be additionally tracked.")
 	private String[] track = new String[] {};
 
 	@Description("File name for tracked locations configuration.")
@@ -144,11 +144,10 @@ public class Configuration {
 
 	private void seal() throws IOException {
 		detailsConfig = new DetailsConfiguration();
-		if (!track_file_replace) {
+		if (!track_file_replace)
 			detailsConfig.loadFromResource();
-		}
 		detailsConfig.loadFromFile(track_file);
-		detailsConfig.addClasses(track);
+		detailsConfig.addClassMethods(track);
 		histogramConfig = new HistogramConfiguration(histogram, histogram_file);
 	}
 

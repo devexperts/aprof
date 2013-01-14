@@ -133,35 +133,6 @@ class Context {
 	}
 
 	public boolean isLocationTracked(String location) {
-		if (AProfRegistry.isInternalLocation(location)) {
-			return false;
-		}
-		if (location.startsWith("java.lang.String.")) {
-			if (location.startsWith("java.lang.String.length")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.chatAt")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.hashCode")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.equals")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.indexOf")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.lastIndexOf")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.startsWith")) {
-				return false;
-			}
-			if (location.startsWith("java.lang.String.endsWith")) {
-				return false;
-			}
-		}
-		return config.isLocationTracked(location);
-	}
+        return config.isLocationTracked(location);
+    }
 }
