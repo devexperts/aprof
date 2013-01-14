@@ -80,7 +80,7 @@ public class AProfAgent {
 	}
 
 	public void go() throws Exception {
-		LocationStack.markInternalInvokedMethod(AProfRegistry.registerLocation(AProfAgent.class.getCanonicalName() + ".go"));
+		LocationStack.markInternalInvokedMethod(AProfRegistry.registerLocation(AProfAgent.class.getName() + ".go"));
 		long start = System.currentTimeMillis();
 		StringBuilder sb = new StringBuilder();
 		sb.append("Loading ").append(Version.full()).append("...");

@@ -41,7 +41,7 @@ import java.util.List;
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class AProfTransformer implements ClassFileTransformer {
-	private static final int TRANSFORM_LOC = AProfRegistry.registerLocation(AProfTransformer.class.getCanonicalName() + ".transform");
+	private static final int TRANSFORM_LOC = AProfRegistry.registerLocation(AProfTransformer.class.getName() + ".transform");
 
 	static final String APROF_OPS = "com/devexperts/aprof/AProfOps";
 	static final String APROF_OPS_INTERNAL = "com/devexperts/aprof/AProfOpsInternal";

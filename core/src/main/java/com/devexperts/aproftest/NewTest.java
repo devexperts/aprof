@@ -33,7 +33,7 @@ class NewTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] {getClass().getCanonicalName() + "$"};
+		return new String[] {getClass().getName() + "$"};
 	}
 
 	public String getExpectedStatistics() {

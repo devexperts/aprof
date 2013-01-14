@@ -54,7 +54,7 @@ public class AProfRegistry {
 
 	private static final String UNKNOWN = "<unknown>";
 	public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
-	private static final int MAKE_SNAPSHOT_LOC = registerLocation(AProfRegistry.class.getCanonicalName() + ".makeSnapshot");
+	private static final int MAKE_SNAPSHOT_LOC = registerLocation(AProfRegistry.class.getName() + ".makeSnapshot");
 
 	private static Configuration config;
 	private static ClassNameResolver classNameResolver;
@@ -67,9 +67,9 @@ public class AProfRegistry {
 		AProfRegistry.config = config;
 		AProfRegistry.classNameResolver = resolver;
 
-		registerDatatypeInfo(Object.class.getCanonicalName());
-		registerDatatypeInfo(IndexMap.class.getCanonicalName());
-		registerDatatypeInfo(FastIntObjMap.class.getCanonicalName());
+		registerDatatypeInfo(Object.class.getName());
+		registerDatatypeInfo(IndexMap.class.getName());
+		registerDatatypeInfo(FastIntObjMap.class.getName());
 	}
 
 	public static boolean isInternalLocation(String name) {

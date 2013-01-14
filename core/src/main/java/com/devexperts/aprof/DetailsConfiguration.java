@@ -101,10 +101,10 @@ class DetailsConfiguration {
 	}
 
 	private void addInterfaces(Class clazz, Set<String> classMethods) {
-		Set<String> methods = trackedLocations.get(clazz.getCanonicalName());
+		Set<String> methods = trackedLocations.get(clazz.getName());
 		if (methods == null) {
 			methods = new HashSet<String>();
-			String className = clazz.getCanonicalName();
+			String className = clazz.getName();
 			className = new String(className.toCharArray());
 			trackedLocations.put(className, methods);
 		}

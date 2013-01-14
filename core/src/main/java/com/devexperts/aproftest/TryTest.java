@@ -33,7 +33,7 @@ class TryTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] {Double.class.getCanonicalName(), Float.class.getCanonicalName()};
+		return new String[] {Double.class.getName(), Float.class.getName()};
 	}
 
 	public String getExpectedStatistics() {

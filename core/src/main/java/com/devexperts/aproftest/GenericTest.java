@@ -36,7 +36,7 @@ class GenericTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] {getClass().getCanonicalName() + "$"};
+		return new String[] {getClass().getName() + "$"};
 	}
 
 	public String getExpectedStatistics() {
@@ -145,7 +145,7 @@ class GenericTest implements TestCase {
 	}
 
 
-	private static String TRACK = GenericTest.class.getCanonicalName() + "$" + Tracked.class.getSimpleName();
+	private static String TRACK = GenericTest.class.getName() + "$" + Tracked.class.getSimpleName();
 
 	private static String STATISTICS = "" +
 			"Allocated 592,000,000 bytes in 40,400,000 objects in 60 locations of 6 classes\n" +
