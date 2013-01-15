@@ -91,9 +91,8 @@ class DetailsConfiguration {
 						addInterfaces(clazz, methods);
 						clazz = clazz.getSuperclass();
 					}
-					if (processedClasses == null) {
+					if (processedClasses == null)
 						processedClasses = new ArrayList<String>();
-					}
 					processedClasses.add(className);
 				} catch (ClassNotFoundException e) {
 					// do nothing
@@ -108,19 +107,13 @@ class DetailsConfiguration {
 
 	private void addInterfaces(Class clazz, Set<String> classMethods) {
 		Set<String> methods = trackedLocations.get(clazz.getName());
-		if (methods == null) {
-			methods = new HashSet<String>();
-			String className = clazz.getName();
-			className = new String(className.toCharArray());
-			trackedLocations.put(className, methods);
-		}
+		if (methods == null)
+            trackedLocations.put(clazz.getName(), methods = new HashSet<String>());
 		methods.addAll(classMethods);
 		Class[] interfaces = clazz.getInterfaces();
-		if (interfaces != null) {
-			for (Class anInterface : interfaces) {
+		if (interfaces != null)
+			for (Class anInterface : interfaces)
 				addInterfaces(anInterface, classMethods);
-			}
-		}
 	}
 
     private void loadFromStream(InputStream stream) throws IOException {
