@@ -51,12 +51,18 @@ class DetailsConfiguration {
 			remainingClasses.add(str);
 	}
 
-	public void addClassMethods(String[] classMethodNames) throws IOException {
-		for (String classMethodName : classMethodNames)
-            addClassMethod(classMethodName, ANY_METHOD);
+	public void addClassMethods(String[] locations) throws IOException {
+		for (String location : locations) {
+            int pos = location.lastIndexOf('.');
+            if (pos < 0)
+                throw new IllegalArgumentException("Location is <class>.<method>");
+            String className = location.substring(0, pos);
+            String methodName = location.substring(pos + 1);
+            getOrCreateClassMethods(className).add(methodName);
+        }
 	}
 
-	public void reloadTrackedClasses() {
+    public void reloadTrackedClasses() {
 		reloadTrackedClasses = true;
 	}
 
@@ -117,23 +123,7 @@ class DetailsConfiguration {
 		}
 	}
 
-    private Set<String> addClassMethod(String classMethodName, String defaultMethodName) {
-        int pos = classMethodName.indexOf('#');
-        String className = pos < 0 ? classMethodName : classMethodName.substring(0, pos);
-        Set<String> classMethods = trackedLocations.get(className);
-        if (classMethods == null)
-            trackedLocations.put(className, classMethods = new HashSet<String>());
-        if (pos >= 0) {
-            classMethods.add(classMethodName.substring(pos + 1));
-            return null;
-        } else {
-            if (defaultMethodName != null)
-                classMethods.add(defaultMethodName);
-            return classMethods;
-        }
-    }
-
-	private void loadFromStream(InputStream stream) throws IOException {
+    private void loadFromStream(InputStream stream) throws IOException {
         BufferedReader in = new BufferedReader(new InputStreamReader(stream));
         try {
 			Set<String> classMethods = null;
@@ -153,8 +143,8 @@ class DetailsConfiguration {
                             "Line %d: Indented line with method name shall follow a line with class name", lineNo));
                     classMethods.add(line);
                 } else {
-                    // non-indented line with a class-name or class-name#method-name
-                    classMethods = addClassMethod(line, null);
+                    // non-indented line with a class-name
+                    classMethods = getOrCreateClassMethods(line);
 				}
 			}
 		} finally {
@@ -162,4 +152,10 @@ class DetailsConfiguration {
 		}
 	}
 
+    private Set<String> getOrCreateClassMethods(String className) {
+        Set<String> classMethods = trackedLocations.get(className);
+        if (classMethods == null)
+            trackedLocations.put(className, classMethods = new HashSet<String>());
+        return classMethods;
+    }
 }

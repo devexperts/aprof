@@ -98,7 +98,7 @@ public class Configuration {
 			"sun.reflect.GeneratedMethodAccessor"
 	};
 
-	@Description("Comma-separated list of class names or class#method strings which shall be additionally tracked.")
+	@Description("Comma-separated list of location names which shall be additionally tracked (use class.method or class.* for all methods).")
 	private String[] track = new String[] {};
 
 	@Description("File name for tracked locations configuration.")
