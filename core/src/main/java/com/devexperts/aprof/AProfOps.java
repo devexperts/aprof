@@ -119,35 +119,30 @@ public class AProfOps {
 	}
 
 	public static void allocateReflectVClone(Object o, int reflectIndex) {
-		if (isDirectCloneClass(o.getClass().getName())) {
+		if (isDirectCloneClass(o.getClass().getName()))
 			allocateReflect(o, reflectIndex);
-		}
 	}
 
 	public static void allocateReflectVCloneSize(Object o, int reflectIndex) {
-		if (isDirectCloneClass(o.getClass().getName())) {
+		if (isDirectCloneClass(o.getClass().getName()))
 			allocateReflectSize(o, reflectIndex);
-		}
 	}
 
 	public static void objectInit(Object o) {
-		String name = o.getClass().getName();
-		DatatypeInfo datatypeInfo = getDatatypeInfo(name);
-		if (datatypeInfo == null) {
+		String cname = o.getClass().getName();
+		DatatypeInfo datatypeInfo = getDatatypeInfo(cname);
+		if (datatypeInfo == null)
 			return;
-		}
 		datatypeInfo.getIndex().increment();
 	}
 
 	public static void objectInitSize(Object o) {
-		String name = o.getClass().getName();
-		DatatypeInfo datatypeInfo = getDatatypeInfo(name);
-		if (datatypeInfo == null) {
+		String cname = o.getClass().getName();
+		DatatypeInfo datatypeInfo = getDatatypeInfo(cname);
+		if (datatypeInfo == null)
 			return;
-		}
-		if (datatypeInfo.getSize() == 0) {
+		if (datatypeInfo.getSize() == 0)
 			datatypeInfo.setSize(getObjectSize(o));
-		}
 		datatypeInfo.getIndex().increment();
 	}
 }

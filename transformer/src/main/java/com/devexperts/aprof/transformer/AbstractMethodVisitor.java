@@ -175,18 +175,20 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 
 	@Override
 	public void visitMethodInsn(final int opcode, final String owner, final String name, final String desc) {
-		if (AProfRegistry.isInternalLocation(context.getClassName())) {
+		if (AProfRegistry.isInternalLocationClass(context.getLocationClass())) {
 			mv.visitMethodInsn(opcode, owner, name, desc);
 			return;
 		}
 
+        String cname = owner.replace('/', '.'); // convert owner to dot-separated class name
+
 		// check if it is eligible object.clone call (that can get dispatched to actual Object.clone method
 		boolean isClone = opcode != Opcodes.INVOKESTATIC && name.equals(AProfTransformer.CLONE) && desc.equals(AProfTransformer.NOARG_RETURNS_OBJECT);
 		boolean isArrayClone = isClone && owner.startsWith("[");
-		boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(owner.replace('/', '.'));
+        boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(cname);
 
-		String invokedMethod = context.getLocationString(owner, name, desc);
-		boolean isMethodTracked = context.isLocationTracked(invokedMethod) && !context.getMethodName().startsWith(AProfTransformer.ACCESS_METHOD);
+		String invokedMethod = context.getLocationString(AProfRegistry.normalize(cname), name, desc);
+		boolean isMethodTracked = context.isLocationTracked(invokedMethod);
 
 		if (isMethodTracked) {
 			Label start = new Label();

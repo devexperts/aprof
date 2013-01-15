@@ -29,7 +29,7 @@ public final class LocationStack {
 	int internal_invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
 	int internal_invoked_method_count = 0;
 
-	private static final ThreadLocal<LocationStack> location_stack = new ThreadLocal<LocationStack>() {
+	private static final ThreadLocal<LocationStack> LOCATION_STACK = new ThreadLocal<LocationStack>() {
 		@Override
 		protected LocationStack initialValue() {
 			return new LocationStack();
@@ -37,7 +37,7 @@ public final class LocationStack {
 	};
 
 	public static LocationStack get() {
-		return location_stack.get();
+		return LOCATION_STACK.get();
 	}
 
 	public void addInvocationPoint(int loc) {

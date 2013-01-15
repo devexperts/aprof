@@ -72,39 +72,37 @@ public class AProfRegistry {
 		registerDatatypeInfo(FastIntObjMap.class.getName());
 	}
 
-	public static boolean isInternalLocation(String name) {
-		name = name.replace('/', '.');
-		if (name.startsWith("java.lang.ThreadLocal")) {
-			return true;
-		}
-		if (name.startsWith("com.devexperts.aprof.")) {
-			return true;
-		}
-		return false;
-	}
+	public static boolean isInternalLocationClass(String locationClass) {
+        return locationClass.startsWith("java.lang.ThreadLocal") || locationClass.startsWith("com.devexperts.aprof.");
+    }
 
-	public static String normalize(String string) {
-		int pos1 = string.indexOf(PROXY_CLASS_TOKEN);
+    // converts fully qualified dot-separated class name (cname) to "locationClass"
+	public static String normalize(String cname) {
+		int pos1 = cname.indexOf(PROXY_CLASS_TOKEN);
 		if (pos1 >= 0) {
 			pos1 += PROXY_CLASS_TOKEN.length();
 			int pos2 = pos1;
-			while (pos2 < string.length() && Character.isDigit(string.charAt(pos2))) {
+			while (pos2 < cname.length() && Character.isDigit(cname.charAt(pos2))) {
 				pos2++;
 			}
-			string = string.substring(0, pos1) + string.substring(pos2);
+            // snip $ProxyXXX number
+			return cname.substring(0, pos1) + cname.substring(pos2);
 		} else if (config != null) {
 			for (String name : config.getAggregatedClasses()) {
-				if (string.startsWith(name)) {
+				if (cname.startsWith(name)) {
 					int pos = name.length();
-					while (pos < string.length() && Character.isDigit(string.charAt(pos))) {
+					while (pos < cname.length() && Character.isDigit(cname.charAt(pos))) {
 						pos++;
 					}
-					string = name + string.substring(pos);
-					break;
+                    // Snip number after aggregated class name
+					return name + cname.substring(pos);
 				}
 			}
 		}
-		return new String(string.toCharArray());
+        // Nothing to snip.
+        // But we recreate string to trim the baggage that came with string,
+        // because those strings comes from ASM which allocates them out of big char[] chunks (really!?)
+		return new String(cname);
 	}
 
 	public static Configuration getConfiguration() {
@@ -122,36 +120,32 @@ public class AProfRegistry {
 	// allocates memory during class transformation only
 	public static int registerLocation(String location) {
 		int loc = locations.get(location);
-		if (loc == 0) {
-			loc = locations.register(normalize(location));
-		}
+		if (loc == 0)
+			loc = locations.register(location);
 		return loc;
 	}
 
 	// allocates memory during class transformation only???
-	public static DatatypeInfo getDatatypeInfo(String datatype) {
-		int id = datatypeNames.get(datatype);
-		if (id == 0) {
+	public static DatatypeInfo getDatatypeInfo(String cname) {
+		int id = datatypeNames.get(cname);
+		if (id == 0)
 			return null;
-		}
 		DatatypeInfo datatypeInfo = datatypeInfos[id];
-		if (datatypeInfo == null) {
+		if (datatypeInfo == null)
 			return getDatatypeInfoImpl(id);
-		}
 		return datatypeInfo;
 	}
 
 	// allocates memory during class transformation only
-	public static DatatypeInfo registerDatatypeInfo(String datatype) {
-		int id = datatypeNames.get(datatype);
+	public static DatatypeInfo registerDatatypeInfo(String locationClass) {
+		int id = datatypeNames.get(locationClass);
 		if (id == 0) {
-			id = datatypeNames.register(normalize(datatype));
+			id = datatypeNames.register(locationClass);
 			return createDatatypeInfo(id);
 		}
 		DatatypeInfo datatypeInfo = datatypeInfos[id];
-		if (datatypeInfo == null) {
+		if (datatypeInfo == null)
 			return getDatatypeInfoImpl(id);
-		}
 		return datatypeInfo;
 	}
 
@@ -177,11 +171,11 @@ public class AProfRegistry {
 				String datatype = datatypeNames.get(id);
 				if (datatype.startsWith("[")) {
 					datatype = resolveClassName(datatype);
-					IndexMap map = new IndexMap(id, config.getHistogram(datatype));
+					IndexMap map = new IndexMap(UNKNOWN_LOC, id, config.getHistogram(datatype));
 					datatypeInfo = new DatatypeInfo(datatype, map);
 				} else {
 					datatype = resolveClassName(datatype);
-					IndexMap map = new IndexMap(id, null);
+					IndexMap map = new IndexMap(UNKNOWN_LOC, id, null);
 					datatypeInfo = new DatatypeInfo(datatype, map);
 				}
 				datatypeInfos[id] = datatypeInfo;
@@ -206,9 +200,8 @@ public class AProfRegistry {
 
 	static IndexMap getRootIndex(int id) {
 		IndexMap result = id < rootIndexes.length ? rootIndexes[id] : null;
-		if (result == null) {
+		if (result == null)
 			result = getRootIndexImpl(id);
-		}
 		return result;
 	}
 
@@ -227,12 +220,12 @@ public class AProfRegistry {
 			synchronized (datatypeMap) {
 				rootMap = datatypeMap.get(loc);
 				if (rootMap == null) {
-					int rootIndex = lastRootIndex.incrementAndGet();
-					rootMap = new IndexMap(rootIndex, datatypeMap.getHistogram());
+					int index = lastRootIndex.incrementAndGet();
+					rootMap = new IndexMap(loc, index, datatypeMap.getHistogram());
 					datatypeMap.put(loc, rootMap);
 					synchronized (rootIndexesSync) {
-						ensureRootIndexCapacity(rootIndex);
-						rootIndexes[rootIndex] = rootMap;
+						ensureRootIndexCapacity(index);
+						rootIndexes[index] = rootMap;
 					}
 				}
 			}
@@ -258,8 +251,8 @@ public class AProfRegistry {
 	}
 
 	// allocates memory during class transformation only
-	public static int registerAllocationPoint(String datatype, String location) {
-		DatatypeInfo datatypeInfo = registerDatatypeInfo(datatype);
+	public static int registerAllocationPoint(String cname, String location) {
+		DatatypeInfo datatypeInfo = registerDatatypeInfo(normalize(cname));
 		int loc = registerLocation(location);
 		return registerRootIndex(datatypeInfo, loc).getIndex();
 	}
@@ -272,7 +265,7 @@ public class AProfRegistry {
 			synchronized (map) {
 				result = map.get(loc);
 				if (result == null) {
-					result = new IndexMap(-1, map.getHistogram());
+					result = new IndexMap(loc, -1, map.getHistogram());
 					map.put(loc, result);
 				}
 			}
@@ -305,8 +298,8 @@ public class AProfRegistry {
 
 	// TODO: can allocate memory during execution: new root because of reflection call
 	// all data-types should be registered beforehand
-	static IndexMap getDetailedIndex(String datatype, int loc) {
-		DatatypeInfo datatypeInfo = registerDatatypeInfo(datatype);
+	static IndexMap getDetailedIndex(String cname, int loc) {
+		DatatypeInfo datatypeInfo = registerDatatypeInfo(normalize(cname));
 		return registerRootIndex(datatypeInfo, loc);
 	}
 
@@ -314,17 +307,14 @@ public class AProfRegistry {
 	static IndexMap getDetailedIndex(LocationStack stack, int index) {
 		assert stack != null;
 		IndexMap map = getRootIndex(index);
-		if (stack.internal_invoked_method_count > 0) {
+		if (stack.internal_invoked_method_count > 0)
 			return putLocation(map, stack.internal_invoked_method_loc);
-		}
 		int loc1 = stack.invoked_method_loc;
 		int loc2 = stack.invocation_point_loc;
-		if (loc2 != UNKNOWN_LOC) {
-			map = putLocation(map, loc1);
-			map = putLocation(map, loc2);
-		} else if (loc1 != UNKNOWN_LOC) {
-			map = putLocation(map, loc1);
-		}
+        if (loc1 != UNKNOWN_LOC && loc1 != map.getLocation())
+            map = putLocation(map, loc1);
+        if (loc2 != UNKNOWN_LOC)
+            map = putLocation(map, loc2);
 		return map;
 	}
 
@@ -489,17 +479,17 @@ public class AProfRegistry {
 	//=================== DIRECT CLONE ====================
 
 	// called during class transformation only
-	public static void addDirectCloneClass(String name) {
-		registerDatatypeInfo(name).setDirectClone(true);
+	public static void addDirectCloneClass(String locationClass) {
+		registerDatatypeInfo(locationClass).setDirectClone(true);
 	}
 
 	// called during class transformation only
-	public static void removeDirectCloneClass(String name) {
-		getDatatypeInfo(name).setDirectClone(false);
+	public static void removeDirectCloneClass(String locationClass) {
+		getDatatypeInfo(locationClass).setDirectClone(false);
 	}
 
-	public static boolean isDirectCloneClass(String name) {
-		DatatypeInfo datatypeInfo = getDatatypeInfo(name);
+	public static boolean isDirectCloneClass(String cname) {
+		DatatypeInfo datatypeInfo = getDatatypeInfo(cname);
 		return datatypeInfo != null && datatypeInfo.isDirectClone();
 	}
 }

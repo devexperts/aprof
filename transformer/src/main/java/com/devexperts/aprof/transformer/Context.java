@@ -27,10 +27,9 @@ import org.objectweb.asm.Type;
  */
 class Context {
 	private final Configuration config;
-	private final String cname;
-	private final String mname;
-
+	private final String locationClass;
 	private final String location;
+    private final boolean accessMethod;
 	private final boolean methodTracked;
 	private final boolean objectInit;
 	private final String aprofOpsImpl;
@@ -41,32 +40,27 @@ class Context {
 
 	public Context(Configuration config, String cname, String mname, String desc, int access) {
 		this.config = config;
-		this.cname = cname;
-		this.mname = mname;
-
-		this.location = getLocationString(cname, mname, desc);
-		this.methodTracked = !isInternalLocation() && !mname.startsWith(AProfTransformer.ACCESS_METHOD) && isLocationTracked(location);
-		this.objectInit = this.cname.equals(AProfTransformer.OBJECT_CLASS_NAME) && this.mname.equals(AProfTransformer.OBJECT_INIT);
+		this.locationClass = AProfRegistry.normalize(cname);
+		this.location = getLocationString(locationClass, mname, desc);
+        this.accessMethod = mname.startsWith(AProfTransformer.ACCESS_METHOD);
+		this.methodTracked = !isInternalLocation() && isLocationTracked(location);
+		this.objectInit = this.locationClass.equals(AProfTransformer.OBJECT_CLASS_NAME) && mname.equals(AProfTransformer.OBJECT_INIT);
 		this.aprofOpsImpl = isInternalLocation() ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
 	}
 
 	public boolean isInternalLocation() {
-		return AProfRegistry.isInternalLocation(cname);
+		return AProfRegistry.isInternalLocationClass(locationClass);
 	}
 
 	public Configuration getConfig() {
 		return config;
 	}
 
-	public String getClassName() {
-		return cname;
+	public String getLocationClass() {
+		return locationClass;
 	}
 
-	public String getMethodName() {
-		return mname;
-	}
-
-	public String getLocation() {
+    public String getLocation() {
 		return location;
 	}
 
@@ -98,11 +92,9 @@ class Context {
 		this.locationStack = locationStack;
 	}
 
-	public String getLocationString(String cname, String mname, String desc) {
-		cname = cname.replace('/', '.'); // to make sure it can be called both on cname and owner descs.
-		cname = AProfRegistry.normalize(cname);
-		StringBuilder sb = new StringBuilder(cname.length() + 1 + mname.length());
-		sb.append(cname).append(".").append(mname);
+	public String getLocationString(String locationClass, String mname, String desc) {
+		StringBuilder sb = new StringBuilder(locationClass.length() + 1 + mname.length());
+		sb.append(locationClass).append(".").append(mname);
 		String location = sb.toString();
 		for (String s : config.getSignatureLocations())
 			if (location.equals(s)) {
@@ -133,6 +125,6 @@ class Context {
 	}
 
 	public boolean isLocationTracked(String location) {
-        return config.isLocationTracked(location);
+        return config.isLocationTracked(location) && !accessMethod;
     }
 }

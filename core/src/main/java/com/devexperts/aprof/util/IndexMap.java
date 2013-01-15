@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Roman Elizarov
  */
 public final class IndexMap implements Iterable<Integer> {
+    private final int location;
+
 	private final int index;
 
 	/**
@@ -53,7 +55,8 @@ public final class IndexMap implements Iterable<Integer> {
 
 	private final FastIntObjMap<IndexMap> items = new FastIntObjMap<IndexMap>();
 
-	public IndexMap(int index, int[] histogram) {
+	public IndexMap(int location, int index, int[] histogram) {
+		this.location = location;
 		this.index = index;
 		this.histogram = histogram;
 		this.counter = new AtomicInteger();
@@ -69,7 +72,11 @@ public final class IndexMap implements Iterable<Integer> {
 		}
 	}
 
-	public int getIndex() {
+    public int getLocation() {
+        return location;
+    }
+
+    public int getIndex() {
 		return index;
 	}
 

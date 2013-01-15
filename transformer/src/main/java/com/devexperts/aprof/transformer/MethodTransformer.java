@@ -33,9 +33,9 @@ class MethodTransformer extends AbstractMethodVisitor {
 		super(mv, context);
 	}
 
-	protected void pushAllocationPoint(String datatype) {
-		datatype = datatype.replace('/', '.');
-		mv.push(AProfRegistry.registerAllocationPoint(datatype, context.getLocation()));
+	protected void pushAllocationPoint(String desc) {
+		String cname = desc.replace('/', '.');
+		mv.push(AProfRegistry.registerAllocationPoint(cname, context.getLocation()));
 	}
 
 	public void pushLocationStack() {
@@ -209,7 +209,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitAllocateReflect(String suffix) {
-		assert !AProfRegistry.isInternalLocation(context.getClassName());
+		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass());
 		assert context.getConfig().isReflect();
 		mv.dup();
 		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
@@ -225,7 +225,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitAllocateReflectVClone(String suffix) {
-		assert !AProfRegistry.isInternalLocation(context.getClassName());
+		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass());
 		assert context.getConfig().isReflect();
 		mv.dup();
 		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
