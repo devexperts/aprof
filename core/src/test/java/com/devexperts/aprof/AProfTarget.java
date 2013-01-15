@@ -28,21 +28,25 @@ import java.nio.CharBuffer;
  * @author Roman Elizarov
  */
 public class AProfTarget {
+    private static final int COUNT = 10000;
+
 	private static final char[] CHARS = "chars".toCharArray();
 	private static final byte[] BYTES = "bytes".getBytes();
 	private static final int[] CODE_POINTS = new int[] { CHARS[0], CHARS[1], CHARS[2], CHARS[3], CHARS[4] };
 
 	public static void main(String[] args) throws Exception {
-		// all ways to create string
-		createStrings();
-		// 4 x Dupable instances
-		cloneObjectSerial(copyObjectReflect(dupeDupable(allocateDupable())));
-		// 4 x Point instances
-		cloneObjectSerial(copyObjectReflect(clonePoint(allocatePoint())));
-		// 4 x Point[] instances
-		cloneObjectSerial(cloneArrayReflect(clonePointArray(allocatePointArray())));
-		// 4 x short[] instances
-		cloneObjectSerial(cloneArrayReflect(cloneShortArray(allocateShortArray())));
+        for (int i = 0; i < COUNT; i++) {
+            // all ways to create string
+            createStrings();
+            // 4 x Dupable instances
+            cloneObjectSerial(copyObjectReflect(dupeDupable(allocateDupable())));
+            // 4 x Point instances
+            cloneObjectSerial(copyObjectReflect(clonePoint(allocatePoint())));
+            // 4 x Point[] instances
+            cloneObjectSerial(cloneArrayReflect(clonePointArray(allocatePointArray())));
+            // 4 x short[] instances
+            cloneObjectSerial(cloneArrayReflect(cloneShortArray(allocateShortArray())));
+        }
 	}
 
 	private static String[] createStrings() throws UnsupportedEncodingException {
