@@ -76,7 +76,20 @@ public class AProfRegistry {
         return locationClass.startsWith("java.lang.ThreadLocal") || locationClass.startsWith("com.devexperts.aprof.");
     }
 
+    public static boolean isNormal(String cname) {
+        int pos1 = cname.indexOf(PROXY_CLASS_TOKEN);
+        if (pos1 >= 0)
+            return false;
+        if (config != null)
+            for (String name : config.getAggregatedClasses())
+                if (cname.startsWith(name))
+                    return false;
+        return true;
+    }
+
     // converts fully qualified dot-separated class name (cname) to "locationClass"
+    // when isNormal(cname) == true, then normalize(cname).equals(cname)
+    // also isNormal(normalize(cname)) is always true
 	public static String normalize(String cname) {
 		int pos1 = cname.indexOf(PROXY_CLASS_TOKEN);
 		if (pos1 >= 0) {
@@ -87,7 +100,8 @@ public class AProfRegistry {
 			}
             // snip $ProxyXXX number
 			return cname.substring(0, pos1) + cname.substring(pos2);
-		} else if (config != null) {
+		}
+        if (config != null) {
 			for (String name : config.getAggregatedClasses()) {
 				if (cname.startsWith(name)) {
 					int pos = name.length();

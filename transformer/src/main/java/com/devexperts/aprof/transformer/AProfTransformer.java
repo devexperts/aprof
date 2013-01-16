@@ -184,13 +184,13 @@ public class AProfTransformer implements ClassFileTransformer {
 
 	private class ClassTransformer extends ClassAdapter {
 		private final String locationClass;
-        private final boolean wasNormalized;
+        private final boolean isNormal;
 		private final Iterator<Context> contextIterator;
 
 		public ClassTransformer(final ClassVisitor cv, String cname, List<Context> contexts) {
 			super(cv);
+            this.isNormal = AProfRegistry.isNormal(cname);
 			this.locationClass = AProfRegistry.normalize(cname);
-            this.wasNormalized = !this.locationClass.equals(cname);
 			this.contextIterator = contexts.iterator();
 		}
 
@@ -198,7 +198,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
 			super.visit(version, access, name, signature, superName, interfaces);
 			AProfRegistry.registerDatatypeInfo(locationClass);
-			if (superName != null && !wasNormalized && AProfRegistry.isDirectCloneClass(superName.replace('/', '.')))
+			if (superName != null && isNormal && AProfRegistry.isDirectCloneClass(superName.replace('/', '.')))
 				// candidate for direct clone
 				AProfRegistry.addDirectCloneClass(locationClass);
 
@@ -206,7 +206,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 		@Override
 		public MethodVisitor visitMethod(final int access, final String mname, final String desc, final String signature, final String[] exceptions) {
-			if (!wasNormalized && ((access & Opcodes.ACC_STATIC) == 0) && !locationClass.equals(OBJECT_CLASS_NAME) &&
+			if (isNormal && ((access & Opcodes.ACC_STATIC) == 0) && !locationClass.equals(OBJECT_CLASS_NAME) &&
 					mname.equals(CLONE) && desc.equals(NOARG_RETURNS_OBJECT)) {
 				// no -- does not implement clone directly
 				AProfRegistry.removeDirectCloneClass(locationClass);
