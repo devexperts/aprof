@@ -240,8 +240,8 @@ public class Configuration {
 		detailsConfig.reloadTrackedClasses();
 	}
 
-	public boolean isLocationTracked(String location) {
-		return detailsConfig.isLocationTracked(location);
+	public boolean isLocationTracked(String locationClass, String locationMethod) {
+		return detailsConfig.isLocationTracked(locationClass, locationMethod);
 	}
 
 	public void applyString(String string) {

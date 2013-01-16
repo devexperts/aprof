@@ -66,17 +66,11 @@ class DetailsConfiguration {
 		reloadTrackedClasses = true;
 	}
 
-	public boolean isLocationTracked(String location) {
-		int pos = location.indexOf('(');
-		if (pos >= 0)
-			location = location.substring(0, pos);
-		pos = location.lastIndexOf('.');
-		String className = location.substring(0, pos);
-		String methodName = location.substring(pos + 1);
+	public boolean isLocationTracked(String locationClass, String locationMethod) {
 		Map<String, Set<String>> tracked = getTrackedMethods();
-		Set<String> trackedMethods = tracked.get(className);
+		Set<String> trackedMethods = tracked.get(locationClass);
         return trackedMethods != null &&
-            (trackedMethods.isEmpty() || trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(methodName));
+            (trackedMethods.isEmpty() || trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(locationMethod));
     }
 
 	private Map<String, Set<String>> getTrackedMethods() {

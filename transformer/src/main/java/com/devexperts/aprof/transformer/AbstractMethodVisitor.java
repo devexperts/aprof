@@ -187,8 +187,9 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 		boolean isArrayClone = isClone && owner.startsWith("[");
         boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(cname);
 
-		String invokedMethod = context.getLocationString(AProfRegistry.normalize(cname), name, desc);
-		boolean isMethodTracked = context.isLocationTracked(invokedMethod);
+        String locationClass = AProfRegistry.normalize(cname);
+        boolean isMethodTracked = context.isLocationTracked(locationClass,
+                context.getLocationMethod(locationClass, name, desc));
 
 		if (isMethodTracked) {
 			Label start = new Label();

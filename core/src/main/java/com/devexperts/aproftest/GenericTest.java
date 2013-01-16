@@ -29,7 +29,7 @@ class GenericTest implements TestCase {
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
-		if (configuration != null && !configuration.isLocationTracked(TRACK + ".*")) {
+		if (configuration != null && !configuration.isLocationTracked(TRACK, "*")) {
 			return "track=" + TRACK;
 		}
 		return null;

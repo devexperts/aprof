@@ -41,9 +41,10 @@ class Context {
 	public Context(Configuration config, String cname, String mname, String desc, int access) {
 		this.config = config;
 		this.locationClass = AProfRegistry.normalize(cname);
-		this.location = getLocationString(locationClass, mname, desc);
+        String locationMethod = getLocationMethod(locationClass, mname, desc);
+        this.location = locationClass + "." + locationMethod;
         this.accessMethod = mname.startsWith(AProfTransformer.ACCESS_METHOD);
-		this.methodTracked = !isInternalLocation() && isLocationTracked(location);
+		this.methodTracked = !isInternalLocation() && isLocationTracked(locationClass, locationMethod);
 		this.objectInit = this.locationClass.equals(AProfTransformer.OBJECT_CLASS_NAME) && mname.equals(AProfTransformer.OBJECT_INIT);
 		this.aprofOpsImpl = isInternalLocation() ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
 	}
@@ -92,20 +93,17 @@ class Context {
 		this.locationStack = locationStack;
 	}
 
-	public String getLocationString(String locationClass, String mname, String desc) {
-		StringBuilder sb = new StringBuilder(locationClass.length() + 1 + mname.length());
-		sb.append(locationClass).append(".").append(mname);
-		String location = sb.toString();
-		for (String s : config.getSignatureLocations())
-			if (location.equals(s)) {
-				convertDesc(sb, desc);
-				location = sb.toString();
-				break;
-			}
-		return location;
-	}
+    public String getLocationMethod(String locationClass, String mname, String desc) {
+        for (String s : config.getSignatureLocations())
+            if (locationClass.equals(s)) {
+                StringBuilder sb = new StringBuilder(mname);
+                convertDesc(sb, desc);
+                return sb.toString();
+            }
+        return mname;
+    }
 
-	private void convertDesc(StringBuilder sb, String desc) {
+    private void convertDesc(StringBuilder sb, String desc) {
 		sb.append('(');
 		Type[] types = Type.getArgumentTypes(desc);
 		for (int i = 0; i < types.length; i++) {
@@ -124,7 +122,7 @@ class Context {
 		sb.append(s, s.lastIndexOf('.') + 1, s.length());
 	}
 
-	public boolean isLocationTracked(String location) {
-        return config.isLocationTracked(location) && !accessMethod;
+	public boolean isLocationTracked(String locationClass, String locationMethod) {
+        return config.isLocationTracked(locationClass, locationMethod) && !accessMethod;
     }
 }
