@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.util;
+package com.devexperts.aprof.util;
 
 import java.io.*;
 import java.net.URL;

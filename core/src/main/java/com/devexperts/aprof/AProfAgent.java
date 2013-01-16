@@ -18,8 +18,8 @@
 
 package com.devexperts.aprof;
 
+import com.devexperts.aprof.util.InnerJarClassLoader;
 import com.devexperts.aprof.util.Log;
-import com.devexperts.util.InnerJarClassLoader;
 
 import java.io.*;
 import java.lang.instrument.ClassDefinition;

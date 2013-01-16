@@ -18,6 +18,8 @@
 
 package com.devexperts.util;
 
+import com.devexperts.aprof.util.InnerJarClassLoader;
+
 import java.io.File;
 import java.io.IOException;
 
