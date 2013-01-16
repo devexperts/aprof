@@ -6,5 +6,5 @@ Can-Redefine-Classes: true
 Name: com/devexperts/aprof/
 Implementation-Title: Aprof
 Implementation-Version: ${project.version}
-Implementation-Vendor: Roman Elizarov, Dmitry Paraschenko, Devexperts LLC
+Implementation-Vendor: Devexperts LLC
 
