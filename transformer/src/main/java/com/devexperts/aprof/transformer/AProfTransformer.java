@@ -20,7 +20,6 @@ package com.devexperts.aprof.transformer;
 
 import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
-import com.devexperts.aprof.LocationStack;
 import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.EmptyVisitor;
@@ -41,8 +40,6 @@ import java.util.List;
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class AProfTransformer implements ClassFileTransformer {
-	private static final int TRANSFORM_LOC = AProfRegistry.registerLocation(AProfTransformer.class.getName() + ".transform");
-
 	static final String APROF_OPS = "com/devexperts/aprof/AProfOps";
 	static final String APROF_OPS_INTERNAL = "com/devexperts/aprof/AProfOpsInternal";
 	static final String LOCATION_STACK = "com/devexperts/aprof/LocationStack";
@@ -76,15 +73,6 @@ public class AProfTransformer implements ClassFileTransformer {
 	public byte[] transform(ClassLoader loader, String className,
 							Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
 			throws IllegalClassFormatException {
-		LocationStack.markInternalInvokedMethod(TRANSFORM_LOC);
-        try {
-            return transformImpl(loader, className, classfileBuffer);
-        } finally {
-            LocationStack.unmarkInternalInvokedMethod();
-        }
-    }
-
-    private byte[] transformImpl(ClassLoader loader, String className, byte[] classfileBuffer) {
         config.reloadTrackedClasses();
         long start = System.currentTimeMillis();
         if (className == null) {

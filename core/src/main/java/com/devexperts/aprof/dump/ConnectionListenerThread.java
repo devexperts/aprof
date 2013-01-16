@@ -16,16 +16,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aprof;
+package com.devexperts.aprof.dump;
 
-import org.objectweb.asm.Type;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 /**
- * @author Dmitry Paraschenko
+ * @author Denis Davydov
  */
-@SuppressWarnings({"UnusedDeclaration"})
-public class ClassNameResolverImpl implements ClassNameResolver {
-	public String resolve(String id) {
-		return id.startsWith("[") ? Type.getType(id.replace('.', '/')).getClassName() : id;
+public class ConnectionListenerThread extends Thread {
+	private final int port;
+	private final Dumper dumper;
+
+	public ConnectionListenerThread(int port, Dumper dumper) {
+		super("Aprof-ConnectionListener");
+		setDaemon(true);
+		this.port = port;
+		this.dumper = dumper;
+	}
+
+	@Override
+	public void run() {
+		try {
+			ServerSocket ss = new ServerSocket(port);
+			while (!Thread.interrupted()) {
+				Socket s = ss.accept();
+				s.setSoTimeout(60000);
+				Thread t = new ConnectionHandlerThread(s, dumper);
+				t.start();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

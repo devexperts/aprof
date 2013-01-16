@@ -18,6 +18,7 @@
 
 package com.devexperts.aprof;
 
+import com.devexperts.aprof.dump.Snapshot;
 import com.devexperts.aprof.util.FastIntObjMap;
 import com.devexperts.aprof.util.IndexMap;
 import com.devexperts.aprof.util.QuickSort;
@@ -73,7 +74,10 @@ public class AProfRegistry {
 	}
 
 	public static boolean isInternalLocationClass(String locationClass) {
-        return locationClass.startsWith("java.lang.ThreadLocal") || locationClass.startsWith("com.devexperts.aprof.");
+        return locationClass.startsWith("java.lang.ThreadLocal") ||
+                locationClass.startsWith("com.devexperts.aprof.") &&
+                        !locationClass.startsWith("com.devexperts.aprof.transformer.") &&
+                        !locationClass.startsWith("com.devexperts.aprof.dump.");
     }
 
     public static boolean isNormal(String cname) {
@@ -123,7 +127,7 @@ public class AProfRegistry {
 		return config;
 	}
 
-	static int getLocationCount() {
+	public static int getLocationCount() {
 		return lastRootIndex.get();
 	}
 
@@ -287,7 +291,7 @@ public class AProfRegistry {
 		return result;
 	}
 
-	static boolean isOverflowThreshold() {
+	public static boolean isOverflowThreshold() {
 		int n = getLocationCount();
 		for (int i = 1; i <= n; i++) {
 			IndexMap map = getRootIndex(i);

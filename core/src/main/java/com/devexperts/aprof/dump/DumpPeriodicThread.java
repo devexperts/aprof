@@ -16,14 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aprof;
+package com.devexperts.aprof.dump;
 
+import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.util.Log;
 
 /**
  * @author Roman Elizarov
  */
-class DumpPeriodicThread extends Thread {
+public class DumpPeriodicThread extends Thread {
 	private static final long SLEEP_TIME = 1000;
 
 	private final Dumper dumper;

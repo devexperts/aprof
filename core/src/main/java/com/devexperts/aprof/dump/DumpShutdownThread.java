@@ -16,14 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aprof;
+package com.devexperts.aprof.dump;
 
+import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.util.Log;
 
 /**
  * @author Roman Elizarov
  */
-class DumpShutdownThread extends Thread {
+public class DumpShutdownThread extends Thread {
 	private final Dumper dumper;
 	private final long finish;
 	private final long trtime;

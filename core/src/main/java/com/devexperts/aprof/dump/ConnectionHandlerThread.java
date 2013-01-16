@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aprof;
+package com.devexperts.aprof.dump;
 
 import java.io.*;
 import java.net.Socket;
@@ -25,7 +25,7 @@ import java.util.Locale;
 /**
  * @author Denis Davydov
  */
-class ConnectionHandlerThread extends Thread {
+public class ConnectionHandlerThread extends Thread {
 	private static final String ENCODING = "UTF-8";
 
 	private final Socket s;

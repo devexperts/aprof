@@ -18,6 +18,8 @@
 
 package com.devexperts.aprof;
 
+import com.devexperts.aprof.dump.DumpFormatter;
+import com.devexperts.aprof.dump.Snapshot;
 import com.devexperts.aprof.util.FastOutputStreamWriter;
 import com.devexperts.aproftest.TestCase;
 import com.devexperts.aproftest.TestSuite;

@@ -18,6 +18,7 @@
 
 package com.devexperts.aprof;
 
+import com.devexperts.aprof.dump.Snapshot;
 import junit.framework.TestCase;
 
 import java.util.Arrays;

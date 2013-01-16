@@ -18,7 +18,11 @@
 
 package com.devexperts.aproftest;
 
-import com.devexperts.aprof.*;
+import com.devexperts.aprof.AProfRegistry;
+import com.devexperts.aprof.Configuration;
+import com.devexperts.aprof.Version;
+import com.devexperts.aprof.dump.DumpFormatter;
+import com.devexperts.aprof.dump.Snapshot;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;

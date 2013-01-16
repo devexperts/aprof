@@ -16,8 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aprof;
+package com.devexperts.aprof.dump;
 
+import com.devexperts.aprof.AProfRegistry;
+import com.devexperts.aprof.Configuration;
+import com.devexperts.aprof.Version;
 import com.devexperts.aprof.util.FastOutputStreamWriter;
 import com.devexperts.aprof.util.Log;
 
@@ -30,7 +33,7 @@ import java.util.Date;
 /**
  * @author Roman Elizarov
  */
-class Dumper {
+public class Dumper {
 	private final Configuration config;
 	private final String argsStr;
 	private final long start;

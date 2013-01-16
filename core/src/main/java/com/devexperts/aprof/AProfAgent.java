@@ -18,6 +18,10 @@
 
 package com.devexperts.aprof;
 
+import com.devexperts.aprof.dump.ConnectionListenerThread;
+import com.devexperts.aprof.dump.DumpPeriodicThread;
+import com.devexperts.aprof.dump.DumpShutdownThread;
+import com.devexperts.aprof.dump.Dumper;
 import com.devexperts.aprof.util.InnerJarClassLoader;
 import com.devexperts.aprof.util.Log;
 
@@ -37,7 +41,7 @@ import java.util.List;
  */
 public class AProfAgent {
 	private static final String TRANSFORMER_CLASS = "com.devexperts.aprof.transformer.AProfTransformer";
-	private static final String RESOLVER_CLASS = "com.devexperts.aprof.ClassNameResolverImpl";
+	private static final String RESOLVER_CLASS = "com.devexperts.aprof.transformer.ClassNameResolverImpl";
 
 	private static final List<String> CLASSPATH_JARS = Arrays.asList(
 			"transformer.jar",
@@ -80,7 +84,6 @@ public class AProfAgent {
 	}
 
 	public void go() throws Exception {
-		LocationStack.markInternalInvokedMethod(AProfRegistry.registerLocation(AProfAgent.class.getName() + ".go"));
 		long start = System.currentTimeMillis();
 		StringBuilder sb = new StringBuilder();
 		sb.append("Loading ").append(Version.full()).append("...");
@@ -192,7 +195,6 @@ public class AProfAgent {
 		sb.append("Loaded in ").append(finish - start).append(" ms with ").append(trtime).
 			append(" ms in transformer (").append(finish - start - trtime).append(" ms other)");
 		Log.out.println(sb);
-		LocationStack.unmarkInternalInvokedMethod();
 	}
 
 	private void log(Object o) {
