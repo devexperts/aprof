@@ -55,14 +55,13 @@ class TryTest implements TestCase {
 	}
 
 	private static String STATISTICS = "" +
-			"Allocated 32,000,000 bytes in 2,000,000 objects in 2 locations of 2 classes\n" +
-			"-------------------------------------------------------------------------------\n" +
-			"java.lang.Double: 16,000,000 (50%) bytes in 1,000,000 (50%) objects (avg size 16 bytes)\n" +
-			"\tjava.lang.Double.valueOf: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"\t\tjava.lang.Double.valueOf: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"\t\t\tcom.devexperts.aproftest.TryTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"\n" +
-			"java.lang.Float: 16,000,000 (50%) bytes in 1,000,000 (50%) objects (avg size 16 bytes)\n" +
-			"\tcom.devexperts.aproftest.TryTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+            "Allocated 32,000,000 bytes in 2,000,000 objects in 2 locations of 2 classes\n" +
+            "-------------------------------------------------------------------------------\n" +
+            "java.lang.Double: 16,000,000 (50%) bytes in 1,000,000 (50%) objects (avg size 16 bytes)\n" +
+            "\tjava.lang.Double.valueOf: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+            "\t\tcom.devexperts.aproftest.TryTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+            "\n" +
+            "java.lang.Float: 16,000,000 (50%) bytes in 1,000,000 (50%) objects (avg size 16 bytes)\n" +
+            "\tcom.devexperts.aproftest.TryTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
 			"";
 }

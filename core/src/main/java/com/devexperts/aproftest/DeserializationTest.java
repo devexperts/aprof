@@ -87,11 +87,11 @@ class DeserializationTest implements TestCase {
 	}
 
 	private static String STATISTICS = "" +
-			"Allocated 16,000,000 bytes in 1,000,000 objects in 1 locations of 1 classes\n" +
-			"-------------------------------------------------------------------------------\n" +
-			"com.devexperts.aproftest.DeserializationTest$Entity: 16,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 16 bytes)\n" +
-			"\tsun.reflect.GeneratedSerializationConstructorAccessor.newInstance: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"\t\tjava.lang.reflect.Constructor.newInstance: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"\t\t\tjava.io.ObjectStreamClass.newInstance: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+            "Allocated 16,000,000 bytes in 1,000,000 objects in 1 locations of 1 classes\n" +
+            "-------------------------------------------------------------------------------\n" +
+            "com.devexperts.aproftest.DeserializationTest$Entity: 16,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 16 bytes)\n" +
+            "\tsun.reflect.GeneratedSerializationConstructorAccessor.newInstance: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+            "\t\tjava.io.ObjectInputStream.readObject: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
+            "\t\t\tcom.devexperts.aproftest.DeserializationTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
 			"";
 }
