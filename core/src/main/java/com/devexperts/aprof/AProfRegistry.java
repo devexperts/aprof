@@ -19,10 +19,7 @@
 package com.devexperts.aprof;
 
 import com.devexperts.aprof.dump.Snapshot;
-import com.devexperts.aprof.util.FastIntObjMap;
-import com.devexperts.aprof.util.IndexMap;
-import com.devexperts.aprof.util.QuickSort;
-import com.devexperts.aprof.util.StringIndexer;
+import com.devexperts.aprof.util.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -39,21 +36,30 @@ public class AProfRegistry {
 
 	private static final int OVERFLOW_THRESHOLD = 1 << 30;
 
-	/* locations are created at transformation time */
-	private static final StringIndexer locations = new StringIndexer();
-	/* datatypes are created at transformation time */
-	private static final StringIndexer datatypeNames = new StringIndexer();
+	/**
+     * Locations are created at transformation time
+     */
+	private static final StringIndexer LOCATIONS = new StringIndexer();
 
-	/* datatype infos are created at transformation time */
-	private static final Object datatypeInfosSync = new Object();
-	private static volatile DatatypeInfo[] datatypeInfos = new DatatypeInfo[1024];
+	/**
+     * Datatypes are created at transformation time.
+     */
+	private static final StringIndexer DATATYPE_NAMES = new StringIndexer();
 
-	/* indexes are created at any time */
-	private static final AtomicInteger lastRootIndex = new AtomicInteger();
-	private static final Object rootIndexesSync = new Object();
-	private static volatile IndexMap[] rootIndexes = new IndexMap[1024];
+    /**
+     * Datatype infos are created at transformation time.
+     */
+	private static final FastArrayList<DatatypeInfo> DATATYPE_INFOS = new FastArrayList<DatatypeInfo>();
+
+	private static final AtomicInteger LAST_ROOT_INDEX = new AtomicInteger();
+
+    /**
+     * Indexes can be created at any time.
+     */
+    private static final FastArrayList<IndexMap> ROOT_INDEXES = new FastArrayList<IndexMap>();
 
 	private static final String UNKNOWN = "<unknown>";
+
 	public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
 
 	private static Configuration config;
@@ -127,7 +133,7 @@ public class AProfRegistry {
 	}
 
 	public static int getLocationCount() {
-		return lastRootIndex.get();
+		return LAST_ROOT_INDEX.get();
 	}
 
 	private static String resolveClassName(String datatype) {
@@ -136,56 +142,39 @@ public class AProfRegistry {
 
 	// allocates memory during class transformation only
 	public static int registerLocation(String location) {
-		int loc = locations.get(location);
+		int loc = LOCATIONS.get(location);
 		if (loc == 0)
-			loc = locations.register(location);
+			loc = LOCATIONS.register(location);
 		return loc;
 	}
 
 	// allocates memory during class transformation only???
 	public static DatatypeInfo getDatatypeInfo(String cname) {
-		int id = datatypeNames.get(cname);
+		int id = DATATYPE_NAMES.get(cname);
 		if (id == 0)
 			return null;
-		DatatypeInfo datatypeInfo = datatypeInfos[id];
-		if (datatypeInfo == null)
-			return getDatatypeInfoImpl(id);
-		return datatypeInfo;
+        return DATATYPE_INFOS.getSafely(id);
 	}
 
 	// allocates memory during class transformation only
 	public static DatatypeInfo registerDatatypeInfo(String locationClass) {
-		int id = datatypeNames.get(locationClass);
+		int id = DATATYPE_NAMES.get(locationClass);
 		if (id == 0) {
-			id = datatypeNames.register(locationClass);
+			id = DATATYPE_NAMES.register(locationClass);
 			return createDatatypeInfo(id);
 		}
-		DatatypeInfo datatypeInfo = datatypeInfos[id];
-		if (datatypeInfo == null)
-			return getDatatypeInfoImpl(id);
-		return datatypeInfo;
+        return DATATYPE_INFOS.getSafely(id);
 	}
 
 	private static DatatypeInfo getDatatypeInfo(int id) {
-		DatatypeInfo datatypeInfo = datatypeInfos[id];
-		if (datatypeInfo == null) {
-			return getDatatypeInfoImpl(id);
-		}
-		return datatypeInfo;
-	}
-
-	private static DatatypeInfo getDatatypeInfoImpl(int id) {
-		synchronized (datatypeInfosSync) {
-			return datatypeInfos[id];
-		}
+        return DATATYPE_INFOS.getSafely(id);
 	}
 
 	private static DatatypeInfo createDatatypeInfo(int id) {
-		synchronized (datatypeInfosSync) {
-			ensureDatatypeIndexCapacity(id);
-			DatatypeInfo datatypeInfo = datatypeInfos[id];
+		synchronized (DATATYPE_INFOS) {
+			DatatypeInfo datatypeInfo = DATATYPE_INFOS.getUnsync(id);
 			if (datatypeInfo == null) {
-				String datatype = datatypeNames.get(id);
+				String datatype = DATATYPE_NAMES.get(id);
 				if (datatype.startsWith("[")) {
 					datatype = resolveClassName(datatype);
 					IndexMap map = new IndexMap(UNKNOWN_LOC, id, config.getHistogram(datatype));
@@ -195,77 +184,39 @@ public class AProfRegistry {
 					IndexMap map = new IndexMap(UNKNOWN_LOC, id, null);
 					datatypeInfo = new DatatypeInfo(datatype, map);
 				}
-				datatypeInfos[id] = datatypeInfo;
+                DATATYPE_INFOS.putUnsync(id, datatypeInfo);
 			}
 			return datatypeInfo;
 		}
 	}
 
-	// allocates memory during class transformation only
-	// requires synchronization on datatypeInfos
-	private static void ensureDatatypeIndexCapacity(int lastId) {
-		int length = datatypeInfos.length;
-		if (length <= lastId) {
-			while (length <= lastId) {
-				length *= 2;
-			}
-			DatatypeInfo[] new_datatypeInfos = new DatatypeInfo[length];
-			System.arraycopy(datatypeInfos, 0, new_datatypeInfos, 0, datatypeInfos.length);
-			datatypeInfos = new_datatypeInfos;
-		}
-	}
-
 	static IndexMap getRootIndex(int id) {
-		IndexMap result = id < rootIndexes.length ? rootIndexes[id] : null;
-		if (result == null)
-			result = getRootIndexImpl(id);
-		return result;
-	}
-
-	private static IndexMap getRootIndexImpl(int id) {
-		synchronized (rootIndexesSync) {
-			return rootIndexes[id];
-		}
+		return ROOT_INDEXES.getSafely(id);
 	}
 
 	// allocates memory during class transformation and reflection calls
 	public static IndexMap registerRootIndex(DatatypeInfo datatypeInfo, int loc) {
 		IndexMap datatypeMap = datatypeInfo.getIndex();
 		IndexMap rootMap = datatypeMap.get(loc);
-		if (rootMap == null) {
-			//noinspection SynchronizationOnLocalVariableOrMethodParameter
-			synchronized (datatypeMap) {
-				rootMap = datatypeMap.get(loc);
-				if (rootMap == null) {
-					int index = lastRootIndex.incrementAndGet();
-					rootMap = new IndexMap(loc, index, datatypeMap.getHistogram());
-					datatypeMap.put(loc, rootMap);
-					synchronized (rootIndexesSync) {
-						ensureRootIndexCapacity(index);
-						rootIndexes[index] = rootMap;
-					}
-				}
-			}
-		}
+		if (rootMap == null)
+            rootMap = registerRootIndexSlowPath(datatypeMap, loc);
 		return rootMap;
 	}
 
-	// allocates memory during class transformation and reflection calls
-	private static void ensureRootIndexCapacity(int lastId) {
-		if (rootIndexes.length <= lastId) {
-			synchronized (rootIndexesSync) {
-				int length = rootIndexes.length;
-				if (length <= lastId) {
-					while (length <= lastId) {
-						length *= 2;
-					}
-					IndexMap[] newIndexes = new IndexMap[length];
-					System.arraycopy(rootIndexes, 0, newIndexes, 0, rootIndexes.length);
-					rootIndexes = newIndexes;
-				}
-			}
-		}
-	}
+    private static IndexMap registerRootIndexSlowPath(IndexMap datatypeMap, int loc) {
+        synchronized (datatypeMap) {
+            IndexMap rootMap = datatypeMap.get(loc);
+            if (rootMap == null) {
+                int index = LAST_ROOT_INDEX.incrementAndGet();
+                rootMap = new IndexMap(loc, index, datatypeMap.getHistogram());
+                datatypeMap.put(loc, rootMap);
+                synchronized (ROOT_INDEXES) {
+                    ROOT_INDEXES.putUnsync(index, rootMap);
+                }
+            }
+            return rootMap;
+        }
+    }
 
 	// allocates memory during class transformation only
 	public static int registerAllocationPoint(String cname, String location) {
@@ -342,7 +293,7 @@ public class AProfRegistry {
 	}
 
 	private static synchronized void makeSnapshotInternal(Snapshot ss) {
-		int size = datatypeNames.size();
+		int size = DATATYPE_NAMES.size();
 		DatatypeInfo[] datatypes = new DatatypeInfo[size];
 		int count = 0;
 		for (int i = 0; i < size; i++) {
@@ -405,7 +356,7 @@ public class AProfRegistry {
 				if (key == UNKNOWN_LOC) {
 					continue;
 				}
-				String id = locations.get(key);
+				String id = LOCATIONS.get(key);
 				IndexMap childMap = map.get(key);
 				Snapshot childList = list.get(list.move(0, id), id);
 				makeSnapshotRec(childList, childMap, classSize, unknown, null);
