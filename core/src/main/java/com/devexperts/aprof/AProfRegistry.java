@@ -280,17 +280,15 @@ public class AProfRegistry {
 			if (map == null) {
 				continue;
 			}
-			AtomicInteger counter = map.getCounter();
-			if (counter.get() >= OVERFLOW_THRESHOLD)
+            if (map.getCount() >= OVERFLOW_THRESHOLD)
 				return true;
-			AtomicInteger[] counters = map.getCounters();
+			int[] counters = map.getHistogramCounts();
 			if (counters != null) {
-				for (AtomicInteger cnt : counters)
-					if (cnt.get() >= OVERFLOW_THRESHOLD)
+				for (int cnt : counters)
+					if (cnt >= OVERFLOW_THRESHOLD)
 						return true;
 			}
-			AtomicInteger size = map.getSize();
-			if (size != null && size.get() >= OVERFLOW_THRESHOLD)
+            if (map.getSize() >= OVERFLOW_THRESHOLD)
 				return true;
 		}
 		return false;
@@ -364,23 +362,19 @@ public class AProfRegistry {
 		list.clear();
 
 		Snapshot temp = total != null ? total : unknown;
-		AtomicInteger acounter = map.getCounter();
-		AtomicInteger asize = map.getSize();
-		AtomicInteger[] acounters = map.getCounters();
-		if (acounters == null) {
-			long count = acounter.getAndSet(0);
-			long size = (count * classSize) << ArraySizeHelper.SIZE_SHIFT;
-			temp.add(count, size);
-		} else {
-			long count = acounter.getAndSet(0);
-			long size = asize.getAndSet(0) << ArraySizeHelper.SIZE_SHIFT;
-			long[] counts = new long[acounters.length];
-			for (int i = 0; i < counts.length; i++) {
-				counts[i] = acounters[i].getAndSet(0);
-			}
-			temp.add(count, size, counts);
-		}
-		if (map.size() == 0) {
+		int count = map.takeCount();
+        if (map.hasHistogram()) {
+            long size = map.takeSize() << ArraySizeHelper.SIZE_SHIFT;
+            int n = map.getHistogramLength();
+            long[] counts = new long[n];
+            for (int i = 0; i < n; i++)
+                counts[i] = map.takeHistogramCount(i);
+            temp.add(count, size, counts);
+        } else {
+            long size = (count * classSize) << ArraySizeHelper.SIZE_SHIFT;
+            temp.add(count, size);
+        }
+        if (map.size() == 0) {
 			list.add(unknown);
 			unknown.clear();
 		} else {

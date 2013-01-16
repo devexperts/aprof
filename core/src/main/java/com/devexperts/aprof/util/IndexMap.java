@@ -19,14 +19,35 @@
 package com.devexperts.aprof.util;
 
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Roman Elizarov
  */
 public final class IndexMap implements Iterable<Integer> {
+    private static final long COUNT_OFFSET;
+    private static final long SIZE_OFFSET;
+    private static final int INT_ARRAY_BASE_OFFSET;
+    private static final int INT_ARRAY_INDEX_SCALE;
+
+    static {
+        try {
+            COUNT_OFFSET = UnsafeHolder.UNSAFE.objectFieldOffset(IndexMap.class.getDeclaredField("count"));
+            SIZE_OFFSET = UnsafeHolder.UNSAFE.objectFieldOffset(IndexMap.class.getDeclaredField("size"));
+            INT_ARRAY_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(int[].class);
+            INT_ARRAY_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(int[].class);
+        } catch (Throwable t) {
+            throw new ExceptionInInitializerError(t);
+        }
+    }
+
+    /**
+     * Location id in AProfRegistry.locations
+     */
     private final int location;
 
+    /**
+     * Root index in AProfRegistry.rootIndexes
+     */
 	private final int index;
 
 	/**
@@ -40,18 +61,18 @@ public final class IndexMap implements Iterable<Integer> {
 	 * For non-arrays acts as an ordinal instance counter.
 	 * For arrays counts instances created via {@link #increment(int size)}.
 	 */
-	private final AtomicInteger counter;
+	private int count;
 
 	/**
 	 * Total size of all instances.
 	 */
-	private final AtomicInteger size;
+	private int size;
 
 	/**
 	 * Instance counter for arrays of specific lengths (as specified in {@link #histogram}).
 	 * <code>null</code> for non-arrays.
 	 */
-	private final AtomicInteger[] counters;
+	private final int[] histogramCounts;
 
 	private final FastIntObjMap<IndexMap> items = new FastIntObjMap<IndexMap>();
 
@@ -59,17 +80,7 @@ public final class IndexMap implements Iterable<Integer> {
 		this.location = location;
 		this.index = index;
 		this.histogram = histogram;
-		this.counter = new AtomicInteger();
-		if (histogram != null) {
-			this.size = new AtomicInteger();
-			this.counters = new AtomicInteger[histogram.length + 1];
-			for (int i = 0; i < counters.length; i++) {
-				this.counters[i] = new AtomicInteger();
-			}
-		} else {
-			this.size = null;
-			this.counters = null;
-		}
+        this.histogramCounts = histogram != null ? new int[histogram.length + 1] : null;
 	}
 
     public int getLocation() {
@@ -101,38 +112,84 @@ public final class IndexMap implements Iterable<Integer> {
 		return items.iterator();
 	}
 
-	public AtomicInteger getCounter() {
-		return counter;
+	public int getCount() {
+		return count;
 	}
 
-	public AtomicInteger[] getCounters() {
-		return counters;
+    public int getSize() {
+        return size;
+    }
+
+    public boolean hasHistogram() {
+        return histogramCounts != null;
+    }
+
+    public int getHistogramLength() {
+        return histogramCounts.length;
+    }
+
+    public int[] getHistogramCounts() {
+		return histogramCounts;
 	}
 
-	public AtomicInteger getSize() {
-		return size;
-	}
+    public int takeCount() {
+        int val;
+        do {
+            val = count;
+        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, COUNT_OFFSET, val, 0));
+        return val;
+    }
 
-	public void increment() {
-		this.counter.incrementAndGet();
+    public int takeSize() {
+        int val;
+        do {
+            val = size;
+        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, SIZE_OFFSET, val, 0));
+        return val;
+    }
+
+    public int takeHistogramCount(int i) {
+        int val;
+        do {
+            val = histogramCounts[i];
+        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(histogramCounts,
+                INT_ARRAY_BASE_OFFSET + i * INT_ARRAY_INDEX_SCALE, val, 0));
+        return val;
+    }
+
+    public void increment() {
+        int val;
+        do {
+            val = count;
+        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, COUNT_OFFSET, val, val + 1));
 	}
 
 	public void increment(int size) {
-		this.counter.incrementAndGet();
-		this.size.addAndGet(size);
+        increment();
+        incrementSize(size);
 	}
 
-	public void increment(int length, int size) {
-		int idx = getHistogramIndex(length);
-		this.counters[idx].incrementAndGet();
-		this.size.addAndGet(size);
+    public void increment(int length, int size) {
+		int i = getHistogramIndex(length);
+        int val;
+        do {
+            val = histogramCounts[i];
+        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(histogramCounts,
+                INT_ARRAY_BASE_OFFSET + i * INT_ARRAY_INDEX_SCALE, val, val + 1));
+		increment(size);
 	}
 
-	private int getHistogramIndex(int length) {
+    private void incrementSize(int size) {
+        int val;
+        do {
+            val = this.size;
+        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, SIZE_OFFSET, val, val + size));
+    }
+
+    private int getHistogramIndex(int length) {
 		for (int i = 0; i < histogram.length; i++) {
-			if (length <= histogram[i]) {
+			if (length <= histogram[i])
 				return i;
-			}
 		}
 		return histogram.length;
 	}
