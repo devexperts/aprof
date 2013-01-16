@@ -228,8 +228,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass());
 		assert context.getConfig().isReflect();
 		mv.dup();
-		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
-		mv.push(loc);
+        mv.push(AProfRegistry.registerLocation(context.getLocation() + suffix));
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS,
 				context.getConfig().isSize() ? "allocateReflectVCloneSize" : "allocateReflectVClone",
 				AProfTransformer.OBJECT_INT_VOID);

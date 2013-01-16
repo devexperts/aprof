@@ -28,21 +28,22 @@ import org.objectweb.asm.Type;
 class Context {
 	private final Configuration config;
 	private final String locationClass;
-	private final String location;
+    private final String locationMethod;
     private final boolean accessMethod;
 	private final boolean methodTracked;
 	private final boolean objectInit;
 	private final String aprofOpsImpl;
 
-	private boolean locationStackNeeded = false;
+    private String location; // lazily computed on first get
+
+    private boolean locationStackNeeded = false;
 
 	private int locationStack = -1;
 
-	public Context(Configuration config, String cname, String mname, String desc, int access) {
+    public Context(Configuration config, String cname, String mname, String desc, int access) {
 		this.config = config;
 		this.locationClass = AProfRegistry.normalize(cname);
-        String locationMethod = getLocationMethod(locationClass, mname, desc);
-        this.location = locationClass + "." + locationMethod;
+        this.locationMethod = getLocationMethod(locationClass, mname, desc);
         this.accessMethod = mname.startsWith(AProfTransformer.ACCESS_METHOD);
 		this.methodTracked = !isInternalLocation() && isLocationTracked(locationClass, locationMethod);
 		this.objectInit = this.locationClass.equals(AProfTransformer.OBJECT_CLASS_NAME) && mname.equals(AProfTransformer.OBJECT_INIT);
@@ -62,7 +63,9 @@ class Context {
 	}
 
     public String getLocation() {
-		return location;
+        if (location == null)
+            location = locationClass + "." + locationMethod;
+        return location;
 	}
 
 	public boolean isMethodTracked() {
