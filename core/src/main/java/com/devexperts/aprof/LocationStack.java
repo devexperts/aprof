@@ -26,8 +26,6 @@ public final class LocationStack {
 	int invocation_point_count;
 	int invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
 	int invoked_method_count = 0;
-	int internal_invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
-	int internal_invoked_method_count = 0;
 
 	private static final ThreadLocal<LocationStack> LOCATION_STACK = new ThreadLocal<LocationStack>() {
 		@Override
@@ -78,31 +76,5 @@ public final class LocationStack {
 			invoked_method_count = 0;
 			invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
 		}
-	}
-
-	public void addInternalInvokedMethod(int loc) {
-		if (internal_invoked_method_count > 0) {
-			internal_invoked_method_count++;
-		} else {
-			internal_invoked_method_count = 1;
-			internal_invoked_method_loc = loc;
-		}
-	}
-
-	public void removeInternalInvokedMethod() {
-		if (internal_invoked_method_count > 1) {
-			internal_invoked_method_count--;
-		} else {
-			internal_invoked_method_count = 0;
-			internal_invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
-		}
-	}
-
-	public static void markInternalInvokedMethod(int loc) {
-		LocationStack.get().addInternalInvokedMethod(loc);
-	}
-
-	public static void unmarkInternalInvokedMethod() {
-		LocationStack.get().removeInternalInvokedMethod();
 	}
 }

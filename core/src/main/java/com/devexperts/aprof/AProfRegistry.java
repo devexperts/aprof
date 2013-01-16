@@ -55,7 +55,6 @@ public class AProfRegistry {
 
 	private static final String UNKNOWN = "<unknown>";
 	public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
-	private static final int MAKE_SNAPSHOT_LOC = registerLocation(AProfRegistry.class.getName() + ".makeSnapshot");
 
 	private static Configuration config;
 	private static ClassNameResolver classNameResolver;
@@ -323,8 +322,6 @@ public class AProfRegistry {
 	static IndexMap getDetailedIndex(LocationStack stack, int index) {
 		assert stack != null;
 		IndexMap map = getRootIndex(index);
-		if (stack.internal_invoked_method_count > 0)
-			return putLocation(map, stack.internal_invoked_method_loc);
 		int loc1 = stack.invoked_method_loc;
 		int loc2 = stack.invocation_point_loc;
         if (loc1 != UNKNOWN_LOC && loc1 != map.getLocation())
@@ -339,14 +336,9 @@ public class AProfRegistry {
 
 	/** Adds current snapshot information to <code>ss</code> and clears internal counters. */
 	public static void makeSnapshot(Snapshot ss) {
-		LocationStack.markInternalInvokedMethod(MAKE_SNAPSHOT_LOC);
-		try {
-			ss.sort(Snapshot.COMPARATOR_ID);
-			makeSnapshotInternal(ss);
-			compactUnknowns(ss);
-		} finally {
-			LocationStack.unmarkInternalInvokedMethod();
-		}
+        ss.sort(Snapshot.COMPARATOR_ID);
+        makeSnapshotInternal(ss);
+        compactUnknowns(ss);
 	}
 
 	private static synchronized void makeSnapshotInternal(Snapshot ss) {
