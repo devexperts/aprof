@@ -1,5 +1,10 @@
+Release Notes - AProf - Version 22
+** Defect Reports
+[APROF-65] AProf does not work for code that is compiled with Java 7
+
+
 Release Notes - AProf - Version 21
-	
+
 ** Change Request
 APROF-59: Add toString methods and other garabage-producers in standard boxing class to the default config
 APROF-63: Improve format of details configurations
