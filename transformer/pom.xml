@@ -30,37 +30,41 @@
 	<artifactId>transformer</artifactId>
 	<name>Aprof Transformer</name>
 
+	<properties>
+		<asm.version>4.2</asm.version>
+	</properties>
+
 	<dependencies>
 		<dependency>
-			<groupId>asm</groupId>
+			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm-all</artifactId>
-			<version>3.3</version>
+			<version>${asm.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>asm</groupId>
+			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm</artifactId>
-			<version>3.3</version>
+			<version>${asm.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>asm</groupId>
+			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm-commons</artifactId>
-			<version>3.3</version>
+			<version>${asm.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>asm</groupId>
+			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm-tree</artifactId>
-			<version>3.3</version>
+			<version>${asm.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>asm</groupId>
+			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm-analysis</artifactId>
-			<version>3.3</version>
+			<version>${asm.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>asm</groupId>
+			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm-util</artifactId>
-			<version>3.3</version>
+			<version>${asm.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.devexperts.aprof</groupId>

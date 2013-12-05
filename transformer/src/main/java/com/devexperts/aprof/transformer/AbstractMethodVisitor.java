@@ -20,7 +20,7 @@ package com.devexperts.aprof.transformer;
 
 import com.devexperts.aprof.AProfRegistry;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodAdapter;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -28,7 +28,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 /**
  * @author Dmitry Paraschenko
  */
-abstract class AbstractMethodVisitor extends MethodAdapter {
+abstract class AbstractMethodVisitor extends MethodVisitor {
 	private static final Type BOOLEAN_ARR_T = Type.getType(boolean[].class);
 	private static final Type CHAR_ARR_T = Type.getType(char[].class);
 	private static final Type FLOAT_ARR_T = Type.getType(float[].class);
@@ -44,7 +44,7 @@ abstract class AbstractMethodVisitor extends MethodAdapter {
 	private Label startFinally;
 
 	public AbstractMethodVisitor(GeneratorAdapter mv, Context context) {
-		super(mv);
+		super(Opcodes.ASM4, mv);
 		this.mv = mv;
 		this.context = context;
 	}

@@ -22,7 +22,6 @@ import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
 import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.*;
-import org.objectweb.asm.commons.EmptyVisitor;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.commons.TryCatchBlockSorter;
@@ -37,6 +36,7 @@ import java.util.List;
 /**
  * @author Roman Elizarov
  * @author Dmitry Paraschenko
+ * @author Denis Davydov
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class AProfTransformer implements ClassFileTransformer {
@@ -108,11 +108,13 @@ public class AProfTransformer implements ClassFileTransformer {
         try {
             int flags = (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES;
 
-            ClassReader cr = new ClassReader(classfileBuffer);
-            ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
+			ClassReader cr = new ClassReader(classfileBuffer);
+			int javaVersion = cr.readShort(6);
+			ClassWriter cw =
+					javaVersion == Opcodes.V1_7 ? new FrameClassWriter(cr) : new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
             List<Context> methodContexts = new ArrayList<Context>();
-            ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyVisitor(), className, methodContexts);
+            ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyClassVisitor(), className, methodContexts);
             cr.accept(classAnalyzer, flags);
 
             ClassVisitor classTransformer = new ClassTransformer(cw, className, methodContexts);
@@ -152,12 +154,12 @@ public class AProfTransformer implements ClassFileTransformer {
 		}
 	}
 
-	private class ClassAnalyzer extends ClassAdapter {
+	private class ClassAnalyzer extends ClassVisitor {
 		private final String cname;
 		private final List<Context> contexts;
 
 		public ClassAnalyzer(final ClassVisitor cv, String cname, List<Context> contexts) {
-			super(cv);
+			super(Opcodes.ASM4, cv);
 			this.cname = cname;
 			this.contexts = contexts;
 		}
@@ -166,17 +168,17 @@ public class AProfTransformer implements ClassFileTransformer {
 		public MethodVisitor visitMethod(final int access, final String mname, final String desc, final String signature, final String[] exceptions) {
 			Context context = new Context(config, cname, mname, desc, access);
 			contexts.add(context);
-			return new MethodAnalyzer(new GeneratorAdapter(new EmptyVisitor(), access, mname, desc), context);
+			return new MethodAnalyzer(new GeneratorAdapter(new EmptyMethodVisitor(), access, mname, desc), context);
 		}
 	}
 
-	private class ClassTransformer extends ClassAdapter {
+	private class ClassTransformer extends ClassVisitor {
 		private final String locationClass;
         private final boolean isNormal;
 		private final Iterator<Context> contextIterator;
 
 		public ClassTransformer(final ClassVisitor cv, String cname, List<Context> contexts) {
-			super(cv);
+			super(Opcodes.ASM4, cv);
             this.isNormal = AProfRegistry.isNormal(cname);
 			this.locationClass = AProfRegistry.normalize(cname);
 			this.contextIterator = contexts.iterator();
@@ -211,6 +213,58 @@ public class AProfTransformer implements ClassFileTransformer {
 		public void visitEnd() {
 			super.visitEnd();
 			assert !contextIterator.hasNext();
+		}
+	}
+
+	private class EmptyMethodVisitor extends MethodVisitor {
+		public EmptyMethodVisitor() {
+			super(Opcodes.ASM4);
+		}
+	}
+
+	private class EmptyClassVisitor extends ClassVisitor {
+		public EmptyClassVisitor() {
+			super(Opcodes.ASM4);
+		}
+	}
+
+	private class FrameClassWriter extends ClassWriter {
+		private FrameClassWriter(ClassReader classReader) {
+			super(classReader, ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
+		}
+
+		/**
+		 * The reason of overriding is to avoid ClassCircularityError which occurs during processing of classes related
+		 * to java.util.TimeZone
+		 */
+		@Override
+		protected String getCommonSuperClass(String type1, String type2) {
+			ClassLoader classLoader = getClass().getClassLoader();
+			ClassInfo c, d;
+			try {
+				c = new ClassInfo(type1, classLoader);
+				d = new ClassInfo(type2, classLoader);
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+
+			if (c.isAssignableFrom(d)) {
+				return type1;
+			}
+
+			if (d.isAssignableFrom(c)) {
+				return type2;
+			}
+
+			if (c.isInterface() || d.isInterface()) {
+				return OBJECT_CLASS_NAME;
+			} else {
+				do {
+					c = c.getSuperclass();
+				} while (!c.isAssignableFrom(d));
+
+				return c.getType().getInternalName();
+			}
 		}
 	}
 }
