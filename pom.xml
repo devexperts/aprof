@@ -109,9 +109,9 @@
 				</executions>
 			</plugin>
 			<plugin>
-			        <groupId>org.codehaus.plexus</groupId>
-			        <artifactId>plexus-maven-plugin</artifactId>
-			        <extensions>true</extensions>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-maven-plugin</artifactId>
+				<extensions>true</extensions>
 			</plugin>
 		</plugins>
 		<pluginManagement>
