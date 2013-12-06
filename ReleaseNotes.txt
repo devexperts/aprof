@@ -1,9 +1,15 @@
-Release Notes - AProf - Version 22
+Aprof 23
+
+- Rebuild under Java 1.5.
+- Minor NullPointerException in AProfTransformed fixed.
+
+AProf 22
+
 ** Defect Reports
 [APROF-65] AProf does not work for code that is compiled with Java 7
 
 
-Release Notes - AProf - Version 21
+Aprof 21
 
 ** Change Request
 APROF-59: Add toString methods and other garabage-producers in standard boxing class to the default config
@@ -17,7 +23,7 @@ APROF-60: Improve aprof garbage rate by getting rid of extra location string con
 APROF-66: Improve runtime performance and memory footprint by using Unsafe instead of AtomicXXX classes
 
 
-Release Notes - AProf - Version 20
+Aprof 20
 	
 ** Change Request
 APROF-52: Core: improve performance of tracked methods
@@ -32,7 +38,7 @@ APROF-57: Core: migrate to improved version of jar class loader
 APROF-55: Core: investigate serialization/deserialization
 
 
-Release Notes - AProf - Version 19
+Aprof 19
 	
 ** Change Request
 APROF-46: Apply GPLv3 license
@@ -42,7 +48,7 @@ APROF-48: Core: track boxing methods
 APROF-49: Core: incorrect uptime duration is shown in statistics dumps
 
 
-Release Notes - AProf - Version 18
+Aprof 18
 	
 ** Change Request
 APROF-38: Add ASM licence notice
@@ -55,7 +61,7 @@ APROF-39: Core: transformer shall use EXPAND_FRAMES flag when reading classes
 APROF-44: Core: network dump does not flush its output
 
 
-Release Notes - AProf - Version 17
+Aprof 17
 	
 ** Change Request
 APROF-22: Add AProf sources to release bundle
@@ -65,7 +71,7 @@ APROF-37: Mozilla Public Licence Version 2.0 header
 APROF-34: Core: number of classes and locations is not shown
 
 
-Release Notes - AProf - Version 16
+Aprof 16
 	
 ** Change Request
 APROF-33: Core: dumper thread should not die on thrown exceptions
@@ -73,7 +79,7 @@ APROF-33: Core: dumper thread should not die on thrown exceptions
 APROF-32: Core: NPE during snapshot generation
 
 
-Release Notes - AProf - Version 15
+Aprof 15
 	
 ** Defect Report
 APROF-29: Core: no allocation statistics is collected
@@ -81,13 +87,13 @@ APROF-30: Core: memory leak on snapshot generation
 APROF-31: Core: NPE on checking overflow threshold
 
 
-Release Notes - AProf - Version 14
+Aprof 14
 	
 ** Defect Report
 APROF-28: Core: incorrect statistics is shown
 
 
-Release Notes - AProf - Version 13
+Aprof 13
 	
 ** Change Request
 APROF-23: Mozilla Public Licence Version 1.1 header
@@ -98,13 +104,13 @@ APROF-27: Core: aggregate statistics for Proxy classes
 APROF-26: Core: improve tracked classes resolving process
 
 
-Release Notes - AProf - Version 12
+Aprof 12
 	
 ** Change Request
 APROF-19: Core: add transformer configuration
 
 
-Release Notes - AProf - Version 11
+Aprof 11
 	
 ** Change Request
 APROF-21: Core: aggregate statistics for similar class names
@@ -112,7 +118,7 @@ APROF-21: Core: aggregate statistics for similar class names
 APROF-20: Core: out of memory in PermGen space
 
 
-Release Notes - AProf - Version 10
+Aprof 10
 	
 ** Change Request
 APROF-18: Core: add rotation to snapshots file
@@ -120,13 +126,13 @@ APROF-18: Core: add rotation to snapshots file
 APROF-17: Migrate to maven for release building
 
 
-Release Notes - AProf - Version build-9
+Aprof build-9
 
 ** Change Request
 APROF-16: Core: array length histograms should be disabled by default
 
 
-Release Notes - AProf - Version build-8
+Aprof build-8
 
 ** Change Request
 APROF-11: Core: all libraries should be loaded in a separate ClassLoader
