@@ -260,9 +260,9 @@ public class AProfTransformer implements ClassFileTransformer {
 			} else {
 				do {
 					c = c.getSuperclass();
-				} while (!c.isAssignableFrom(d));
+				} while (c != null && !c.isAssignableFrom(d));
 
-				return c.getType().getInternalName();
+				return c == null ? OBJECT_CLASS_NAME : c.getType().getInternalName();
 			}
 		}
 	}
