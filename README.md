@@ -13,6 +13,7 @@ Download
 --------
 
 Download binaries of the latest release 23 here: 
+
 http://svn-code.devexperts.com/code/aprof/releases/com/devexperts/aprof/agent/23/agent-23-bin.zip
 
 Using Aprof
@@ -24,7 +25,7 @@ The profiled application should be run with additional JVM argument:
 
 To get help on configuration parameters, run 
 
-    java -jar aprof.jar"
+    java -jar aprof.jar
 
 Do not rename agent file "aprof.jar"!
 
