@@ -180,16 +180,16 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 			return;
 		}
 
-        String cname = owner.replace('/', '.'); // convert owner to dot-separated class name
+		String cname = owner.replace('/', '.'); // convert owner to dot-separated class name
 
 		// check if it is eligible object.clone call (that can get dispatched to actual Object.clone method
 		boolean isClone = opcode != Opcodes.INVOKESTATIC && name.equals(AProfTransformer.CLONE) && desc.equals(AProfTransformer.NOARG_RETURNS_OBJECT);
 		boolean isArrayClone = isClone && owner.startsWith("[");
-        boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(cname);
+		boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(cname);
 
-        String locationClass = AProfRegistry.normalize(cname);
-        boolean isMethodTracked = context.isLocationTracked(locationClass,
-                context.getLocationMethod(locationClass, name, desc));
+		String locationClass = AProfRegistry.normalize(cname);
+		boolean isMethodTracked = context.isLocationTracked(locationClass,
+				context.getLocationMethod(locationClass, name, desc));
 
 		if (isMethodTracked) {
 			Label start = new Label();

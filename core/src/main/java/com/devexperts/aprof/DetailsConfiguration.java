@@ -53,25 +53,25 @@ class DetailsConfiguration {
 
 	public void addClassMethods(String[] locations) throws IOException {
 		for (String location : locations) {
-            int pos = location.lastIndexOf('.');
-            if (pos < 0)
-                throw new IllegalArgumentException("Location is <class>.<method>");
-            String className = location.substring(0, pos);
-            String methodName = location.substring(pos + 1);
-            getOrCreateClassMethods(className).add(methodName);
-        }
+			int pos = location.lastIndexOf('.');
+			if (pos < 0)
+				throw new IllegalArgumentException("Location is <class>.<method>");
+			String className = location.substring(0, pos);
+			String methodName = location.substring(pos + 1);
+			getOrCreateClassMethods(className).add(methodName);
+		}
 	}
 
-    public void reloadTrackedClasses() {
+	public void reloadTrackedClasses() {
 		reloadTrackedClasses = true;
 	}
 
 	public boolean isLocationTracked(String locationClass, String locationMethod) {
 		Map<String, Set<String>> tracked = getTrackedMethods();
 		Set<String> trackedMethods = tracked.get(locationClass);
-        return trackedMethods != null &&
-            (trackedMethods.isEmpty() || trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(locationMethod));
-    }
+		return trackedMethods != null &&
+			(trackedMethods.isEmpty() || trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(locationMethod));
+	}
 
 	private Map<String, Set<String>> getTrackedMethods() {
 		if (reloadTrackedClasses) {
@@ -102,7 +102,7 @@ class DetailsConfiguration {
 	private void addInterfaces(Class clazz, Set<String> classMethods) {
 		Set<String> methods = trackedLocations.get(clazz.getName());
 		if (methods == null)
-            trackedLocations.put(clazz.getName(), methods = new HashSet<String>());
+			trackedLocations.put(clazz.getName(), methods = new HashSet<String>());
 		methods.addAll(classMethods);
 		Class[] interfaces = clazz.getInterfaces();
 		if (interfaces != null)
@@ -110,39 +110,39 @@ class DetailsConfiguration {
 				addInterfaces(anInterface, classMethods);
 	}
 
-    private void loadFromStream(InputStream stream) throws IOException {
-        BufferedReader in = new BufferedReader(new InputStreamReader(stream));
-        try {
+	private void loadFromStream(InputStream stream) throws IOException {
+		BufferedReader in = new BufferedReader(new InputStreamReader(stream));
+		try {
 			Set<String> classMethods = null;
 			for (int lineNo = 1;; lineNo++) {
 				String line = in.readLine();
 				if (line == null)
 					break;
-                if (line.length() == 0)
-                    continue;
-                boolean indentedLine = Character.isSpaceChar(line.charAt(0));
+				if (line.length() == 0)
+					continue;
+				boolean indentedLine = Character.isSpaceChar(line.charAt(0));
 				line = line.trim();
 				if (line.length() == 0 || line.startsWith(Configuration.COMMENT))
 					continue;
-                if (indentedLine) {
-                    if (classMethods == null)
-                        throw new IOException(String.format(
-                            "Line %d: Indented line with method name shall follow a line with class name", lineNo));
-                    classMethods.add(line);
-                } else {
-                    // non-indented line with a class-name
-                    classMethods = getOrCreateClassMethods(line);
+				if (indentedLine) {
+					if (classMethods == null)
+						throw new IOException(String.format(
+							"Line %d: Indented line with method name shall follow a line with class name", lineNo));
+					classMethods.add(line);
+				} else {
+					// non-indented line with a class-name
+					classMethods = getOrCreateClassMethods(line);
 				}
 			}
 		} finally {
-    		in.close();
+			in.close();
 		}
 	}
 
-    private Set<String> getOrCreateClassMethods(String className) {
-        Set<String> classMethods = trackedLocations.get(className);
-        if (classMethods == null)
-            trackedLocations.put(className, classMethods = new HashSet<String>());
-        return classMethods;
-    }
+	private Set<String> getOrCreateClassMethods(String className) {
+		Set<String> classMethods = trackedLocations.get(className);
+		if (classMethods == null)
+			trackedLocations.put(className, classMethods = new HashSet<String>());
+		return classMethods;
+	}
 }

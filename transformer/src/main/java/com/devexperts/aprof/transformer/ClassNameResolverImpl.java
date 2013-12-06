@@ -24,7 +24,6 @@ import org.objectweb.asm.Type;
 /**
  * @author Dmitry Paraschenko
  */
-@SuppressWarnings({"UnusedDeclaration"})
 public class ClassNameResolverImpl implements ClassNameResolver {
 	public String resolve(String id) {
 		return id.startsWith("[") ? Type.getType(id.replace('.', '/')).getClassName() : id;

@@ -24,30 +24,30 @@ import java.util.Iterator;
  * @author Roman Elizarov
  */
 public final class IndexMap implements Iterable<Integer> {
-    private static final long COUNT_OFFSET;
-    private static final long SIZE_OFFSET;
-    private static final int INT_ARRAY_BASE_OFFSET;
-    private static final int INT_ARRAY_INDEX_SCALE;
+	private static final long COUNT_OFFSET;
+	private static final long SIZE_OFFSET;
+	private static final int INT_ARRAY_BASE_OFFSET;
+	private static final int INT_ARRAY_INDEX_SCALE;
 
-    static {
-        try {
-            COUNT_OFFSET = UnsafeHolder.UNSAFE.objectFieldOffset(IndexMap.class.getDeclaredField("count"));
-            SIZE_OFFSET = UnsafeHolder.UNSAFE.objectFieldOffset(IndexMap.class.getDeclaredField("size"));
-            INT_ARRAY_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(int[].class);
-            INT_ARRAY_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(int[].class);
-        } catch (Throwable t) {
-            throw new ExceptionInInitializerError(t);
-        }
-    }
+	static {
+		try {
+			COUNT_OFFSET = UnsafeHolder.UNSAFE.objectFieldOffset(IndexMap.class.getDeclaredField("count"));
+			SIZE_OFFSET = UnsafeHolder.UNSAFE.objectFieldOffset(IndexMap.class.getDeclaredField("size"));
+			INT_ARRAY_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(int[].class);
+			INT_ARRAY_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(int[].class);
+		} catch (Throwable t) {
+			throw new ExceptionInInitializerError(t);
+		}
+	}
 
-    /**
-     * Location id in AProfRegistry.locations
-     */
-    private final int location;
+	/**
+	 * Location id in AProfRegistry.locations
+	 */
+	private final int location;
 
-    /**
-     * Root index in AProfRegistry.rootIndexes
-     */
+	/**
+	 * Root index in AProfRegistry.rootIndexes
+	 */
 	private final int index;
 
 	/**
@@ -80,14 +80,14 @@ public final class IndexMap implements Iterable<Integer> {
 		this.location = location;
 		this.index = index;
 		this.histogram = histogram;
-        this.histogramCounts = histogram != null ? new int[histogram.length + 1] : null;
+		this.histogramCounts = histogram != null ? new int[histogram.length + 1] : null;
 	}
 
-    public int getLocation() {
-        return location;
-    }
+	public int getLocation() {
+		return location;
+	}
 
-    public int getIndex() {
+	public int getIndex() {
 		return index;
 	}
 
@@ -116,77 +116,77 @@ public final class IndexMap implements Iterable<Integer> {
 		return count;
 	}
 
-    public int getSize() {
-        return size;
-    }
+	public int getSize() {
+		return size;
+	}
 
-    public boolean hasHistogram() {
-        return histogramCounts != null;
-    }
+	public boolean hasHistogram() {
+		return histogramCounts != null;
+	}
 
-    public int getHistogramLength() {
-        return histogramCounts.length;
-    }
+	public int getHistogramLength() {
+		return histogramCounts.length;
+	}
 
-    public int[] getHistogramCounts() {
+	public int[] getHistogramCounts() {
 		return histogramCounts;
 	}
 
-    public int takeCount() {
-        int val;
-        do {
-            val = count;
-        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, COUNT_OFFSET, val, 0));
-        return val;
-    }
+	public int takeCount() {
+		int val;
+		do {
+			val = count;
+		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, COUNT_OFFSET, val, 0));
+		return val;
+	}
 
-    public int takeSize() {
-        int val;
-        do {
-            val = size;
-        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, SIZE_OFFSET, val, 0));
-        return val;
-    }
+	public int takeSize() {
+		int val;
+		do {
+			val = size;
+		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, SIZE_OFFSET, val, 0));
+		return val;
+	}
 
-    public int takeHistogramCount(int i) {
-        int val;
-        do {
-            val = histogramCounts[i];
-        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(histogramCounts,
-                INT_ARRAY_BASE_OFFSET + i * INT_ARRAY_INDEX_SCALE, val, 0));
-        return val;
-    }
+	public int takeHistogramCount(int i) {
+		int val;
+		do {
+			val = histogramCounts[i];
+		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(histogramCounts,
+				INT_ARRAY_BASE_OFFSET + i * INT_ARRAY_INDEX_SCALE, val, 0));
+		return val;
+	}
 
-    public void increment() {
-        int val;
-        do {
-            val = count;
-        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, COUNT_OFFSET, val, val + 1));
+	public void increment() {
+		int val;
+		do {
+			val = count;
+		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, COUNT_OFFSET, val, val + 1));
 	}
 
 	public void increment(int size) {
-        increment();
-        incrementSize(size);
+		increment();
+		incrementSize(size);
 	}
 
-    public void increment(int length, int size) {
+	public void increment(int length, int size) {
 		int i = getHistogramIndex(length);
-        int val;
-        do {
-            val = histogramCounts[i];
-        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(histogramCounts,
-                INT_ARRAY_BASE_OFFSET + i * INT_ARRAY_INDEX_SCALE, val, val + 1));
+		int val;
+		do {
+			val = histogramCounts[i];
+		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(histogramCounts,
+				INT_ARRAY_BASE_OFFSET + i * INT_ARRAY_INDEX_SCALE, val, val + 1));
 		increment(size);
 	}
 
-    private void incrementSize(int size) {
-        int val;
-        do {
-            val = this.size;
-        } while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, SIZE_OFFSET, val, val + size));
-    }
+	private void incrementSize(int size) {
+		int val;
+		do {
+			val = this.size;
+		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, SIZE_OFFSET, val, val + size));
+	}
 
-    private int getHistogramIndex(int length) {
+	private int getHistogramIndex(int length) {
 		for (int i = 0; i < histogram.length; i++) {
 			if (length <= histogram[i])
 				return i;

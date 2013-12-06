@@ -22,39 +22,39 @@ package com.devexperts.aprof.util;
  * @author Roman Elizarov
  */
 public class FastArrayList<T> {
-    private volatile T[] list;
+	private volatile T[] list;
 
-    @SuppressWarnings("unchecked")
-    public FastArrayList() {
-        list = (T[]) new Object[1024];
-    }
+	@SuppressWarnings("unchecked")
+	public FastArrayList() {
+		list = (T[]) new Object[1024];
+	}
 
-    public T getSafely(int i) {
-        // try to read w/o synchronization first
-        T result = getUnsync(i);
-        // double-checked locking
-        if (result == null)
-            synchronized (this) {
-                return list[i];
-            }
-        return result;
-    }
+	public T getSafely(int i) {
+		// try to read w/o synchronization first
+		T result = getUnsync(i);
+		// double-checked locking
+		if (result == null)
+			synchronized (this) {
+				return list[i];
+			}
+		return result;
+	}
 
-    // requires external synchronization
-    public T getUnsync(int i) {
-        T[] curList = list;
-        return i < curList.length ? curList[i] : null;
-    }
+	// requires external synchronization
+	public T getUnsync(int i) {
+		T[] curList = list;
+		return i < curList.length ? curList[i] : null;
+	}
 
-    // requires external synchronization
-    @SuppressWarnings("unchecked")
-    public void putUnsync(int i, T val) {
-        int n = list.length;
-        if (i >= n) {
-            T[] a = (T[]) new Object[Math.max(2 * n, i + 1)];
-            System.arraycopy(list, 0, a, 0, n);
-            list = a;
-        }
-        list[i] = val;
-    }
+	// requires external synchronization
+	@SuppressWarnings("unchecked")
+	public void putUnsync(int i, T val) {
+		int n = list.length;
+		if (i >= n) {
+			T[] a = (T[]) new Object[Math.max(2 * n, i + 1)];
+			System.arraycopy(list, 0, a, 0, n);
+			list = a;
+		}
+		list[i] = val;
+	}
 }

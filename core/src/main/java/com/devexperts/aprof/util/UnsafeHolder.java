@@ -28,15 +28,15 @@ import java.lang.reflect.Field;
  * Use it with great caution!
  */
 public class UnsafeHolder {
-    public static final Unsafe UNSAFE;
+	public static final Unsafe UNSAFE;
 
-    static {
-        try {
-            Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-            unsafeField.setAccessible(true);
-            UNSAFE = (Unsafe)unsafeField.get(null);
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
+	static {
+		try {
+			Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
+			unsafeField.setAccessible(true);
+			UNSAFE = (Unsafe)unsafeField.get(null);
+		} catch (Exception e) {
+			throw new ExceptionInInitializerError(e);
+		}
+	}
 }

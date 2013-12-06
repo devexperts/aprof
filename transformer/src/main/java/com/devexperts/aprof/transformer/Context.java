@@ -28,23 +28,23 @@ import org.objectweb.asm.Type;
 class Context {
 	private final Configuration config;
 	private final String locationClass;
-    private final String locationMethod;
-    private final boolean accessMethod;
+	private final String locationMethod;
+	private final boolean accessMethod;
 	private final boolean methodTracked;
 	private final boolean objectInit;
 	private final String aprofOpsImpl;
 
-    private String location; // lazily computed on first get
+	private String location; // lazily computed on first get
 
-    private boolean locationStackNeeded = false;
+	private boolean locationStackNeeded = false;
 
 	private int locationStack = -1;
 
-    public Context(Configuration config, String cname, String mname, String desc, int access) {
+	public Context(Configuration config, String cname, String mname, String desc, int access) {
 		this.config = config;
 		this.locationClass = AProfRegistry.normalize(cname);
-        this.locationMethod = getLocationMethod(locationClass, mname, desc);
-        this.accessMethod = mname.startsWith(AProfTransformer.ACCESS_METHOD);
+		this.locationMethod = getLocationMethod(locationClass, mname, desc);
+		this.accessMethod = mname.startsWith(AProfTransformer.ACCESS_METHOD);
 		this.methodTracked = !isInternalLocation() && isLocationTracked(locationClass, locationMethod);
 		this.objectInit = this.locationClass.equals(AProfTransformer.OBJECT_CLASS_NAME) && mname.equals(AProfTransformer.OBJECT_INIT);
 		this.aprofOpsImpl = isInternalLocation() ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
@@ -62,10 +62,10 @@ class Context {
 		return locationClass;
 	}
 
-    public String getLocation() {
-        if (location == null)
-            location = locationClass + "." + locationMethod;
-        return location;
+	public String getLocation() {
+		if (location == null)
+			location = locationClass + "." + locationMethod;
+		return location;
 	}
 
 	public boolean isMethodTracked() {
@@ -96,17 +96,17 @@ class Context {
 		this.locationStack = locationStack;
 	}
 
-    public String getLocationMethod(String locationClass, String mname, String desc) {
-        for (String s : config.getSignatureLocations())
-            if (locationClass.equals(s)) {
-                StringBuilder sb = new StringBuilder(mname);
-                convertDesc(sb, desc);
-                return sb.toString();
-            }
-        return mname;
-    }
+	public String getLocationMethod(String locationClass, String mname, String desc) {
+		for (String s : config.getSignatureLocations())
+			if (locationClass.equals(s)) {
+				StringBuilder sb = new StringBuilder(mname);
+				convertDesc(sb, desc);
+				return sb.toString();
+			}
+		return mname;
+	}
 
-    private void convertDesc(StringBuilder sb, String desc) {
+	private void convertDesc(StringBuilder sb, String desc) {
 		sb.append('(');
 		Type[] types = Type.getArgumentTypes(desc);
 		for (int i = 0; i < types.length; i++) {
@@ -126,6 +126,6 @@ class Context {
 	}
 
 	public boolean isLocationTracked(String locationClass, String locationMethod) {
-        return config.isLocationTracked(locationClass, locationMethod) && !accessMethod;
-    }
+		return config.isLocationTracked(locationClass, locationMethod) && !accessMethod;
+	}
 }

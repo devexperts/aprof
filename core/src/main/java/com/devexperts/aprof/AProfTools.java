@@ -76,7 +76,7 @@ public class AProfTools {
 		out.println("       Dumps statistics from a running aprof agent that listen on a port.");
 		out.println();
 		out.println("Usage: java -jar aprof.jar export [<file>]");
-        out.println("       Exports default tracked locations configuration to a file.");
+		out.println("       Exports default tracked locations configuration to a file.");
 	}
 
 	private static String padr(String s, int len) {
@@ -141,7 +141,7 @@ public class AProfTools {
 			out.close();
 		}
 	}
-	
+
 	private static void runSelfTest(String[] args) throws IOException {
 		if (args.length != 2) {
 			helpSelftest();

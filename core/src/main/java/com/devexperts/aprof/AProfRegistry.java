@@ -37,26 +37,26 @@ public class AProfRegistry {
 	private static final int OVERFLOW_THRESHOLD = 1 << 30;
 
 	/**
-     * Locations are created at transformation time
-     */
+	 * Locations are created at transformation time
+	 */
 	private static final StringIndexer LOCATIONS = new StringIndexer();
 
 	/**
-     * Datatypes are created at transformation time.
-     */
+	 * Datatypes are created at transformation time.
+	 */
 	private static final StringIndexer DATATYPE_NAMES = new StringIndexer();
 
-    /**
-     * Datatype infos are created at transformation time.
-     */
+	/**
+	 * Datatype infos are created at transformation time.
+	 */
 	private static final FastArrayList<DatatypeInfo> DATATYPE_INFOS = new FastArrayList<DatatypeInfo>();
 
 	private static final AtomicInteger LAST_ROOT_INDEX = new AtomicInteger();
 
-    /**
-     * Indexes can be created at any time.
-     */
-    private static final FastArrayList<IndexMap> ROOT_INDEXES = new FastArrayList<IndexMap>();
+	/**
+	 * Indexes can be created at any time.
+	 */
+	private static final FastArrayList<IndexMap> ROOT_INDEXES = new FastArrayList<IndexMap>();
 
 	private static final String UNKNOWN = "<unknown>";
 
@@ -79,26 +79,26 @@ public class AProfRegistry {
 	}
 
 	public static boolean isInternalLocationClass(String locationClass) {
-        return locationClass.startsWith("java.lang.ThreadLocal") ||
-                locationClass.startsWith("com.devexperts.aprof.") &&
-                        !locationClass.startsWith("com.devexperts.aprof.transformer.") &&
-                        !locationClass.startsWith("com.devexperts.aprof.dump.");
-    }
+		return locationClass.startsWith("java.lang.ThreadLocal") ||
+				locationClass.startsWith("com.devexperts.aprof.") &&
+						!locationClass.startsWith("com.devexperts.aprof.transformer.") &&
+						!locationClass.startsWith("com.devexperts.aprof.dump.");
+	}
 
-    public static boolean isNormal(String cname) {
-        int pos1 = cname.indexOf(PROXY_CLASS_TOKEN);
-        if (pos1 >= 0)
-            return false;
-        if (config != null)
-            for (String name : config.getAggregatedClasses())
-                if (cname.startsWith(name))
-                    return false;
-        return true;
-    }
+	public static boolean isNormal(String cname) {
+		int pos1 = cname.indexOf(PROXY_CLASS_TOKEN);
+		if (pos1 >= 0)
+			return false;
+		if (config != null)
+			for (String name : config.getAggregatedClasses())
+				if (cname.startsWith(name))
+					return false;
+		return true;
+	}
 
-    // converts fully qualified dot-separated class name (cname) to "locationClass"
-    // when isNormal(cname) == true, then normalize(cname).equals(cname)
-    // also isNormal(normalize(cname)) is always true
+	// converts fully qualified dot-separated class name (cname) to "locationClass"
+	// when isNormal(cname) == true, then normalize(cname).equals(cname)
+	// also isNormal(normalize(cname)) is always true
 	public static String normalize(String cname) {
 		int pos1 = cname.indexOf(PROXY_CLASS_TOKEN);
 		if (pos1 >= 0) {
@@ -107,24 +107,24 @@ public class AProfRegistry {
 			while (pos2 < cname.length() && Character.isDigit(cname.charAt(pos2))) {
 				pos2++;
 			}
-            // snip $ProxyXXX number
+			// snip $ProxyXXX number
 			return cname.substring(0, pos1) + cname.substring(pos2);
 		}
-        if (config != null) {
+		if (config != null) {
 			for (String name : config.getAggregatedClasses()) {
 				if (cname.startsWith(name)) {
 					int pos = name.length();
 					while (pos < cname.length() && Character.isDigit(cname.charAt(pos))) {
 						pos++;
 					}
-                    // Snip number after aggregated class name
+					// Snip number after aggregated class name
 					return name + cname.substring(pos);
 				}
 			}
 		}
-        // Nothing to snip.
-        // But we recreate string to trim the baggage that came with string,
-        // because those strings comes from ASM which allocates them out of big char[] chunks (really!?)
+		// Nothing to snip.
+		// But we recreate string to trim the baggage that came with string,
+		// because those strings comes from ASM which allocates them out of big char[] chunks (really!?)
 		return new String(cname);
 	}
 
@@ -153,7 +153,7 @@ public class AProfRegistry {
 		int id = DATATYPE_NAMES.get(cname);
 		if (id == 0)
 			return null;
-        return DATATYPE_INFOS.getSafely(id);
+		return DATATYPE_INFOS.getSafely(id);
 	}
 
 	// allocates memory during class transformation only
@@ -163,11 +163,11 @@ public class AProfRegistry {
 			id = DATATYPE_NAMES.register(locationClass);
 			return createDatatypeInfo(id);
 		}
-        return DATATYPE_INFOS.getSafely(id);
+		return DATATYPE_INFOS.getSafely(id);
 	}
 
 	private static DatatypeInfo getDatatypeInfo(int id) {
-        return DATATYPE_INFOS.getSafely(id);
+		return DATATYPE_INFOS.getSafely(id);
 	}
 
 	private static DatatypeInfo createDatatypeInfo(int id) {
@@ -184,7 +184,7 @@ public class AProfRegistry {
 					IndexMap map = new IndexMap(UNKNOWN_LOC, id, null);
 					datatypeInfo = new DatatypeInfo(datatype, map);
 				}
-                DATATYPE_INFOS.putUnsync(id, datatypeInfo);
+				DATATYPE_INFOS.putUnsync(id, datatypeInfo);
 			}
 			return datatypeInfo;
 		}
@@ -199,24 +199,24 @@ public class AProfRegistry {
 		IndexMap datatypeMap = datatypeInfo.getIndex();
 		IndexMap rootMap = datatypeMap.get(loc);
 		if (rootMap == null)
-            rootMap = registerRootIndexSlowPath(datatypeMap, loc);
+			rootMap = registerRootIndexSlowPath(datatypeMap, loc);
 		return rootMap;
 	}
 
-    private static IndexMap registerRootIndexSlowPath(IndexMap datatypeMap, int loc) {
-        synchronized (datatypeMap) {
-            IndexMap rootMap = datatypeMap.get(loc);
-            if (rootMap == null) {
-                int index = LAST_ROOT_INDEX.incrementAndGet();
-                rootMap = new IndexMap(loc, index, datatypeMap.getHistogram());
-                datatypeMap.put(loc, rootMap);
-                synchronized (ROOT_INDEXES) {
-                    ROOT_INDEXES.putUnsync(index, rootMap);
-                }
-            }
-            return rootMap;
-        }
-    }
+	private static IndexMap registerRootIndexSlowPath(IndexMap datatypeMap, int loc) {
+		synchronized (datatypeMap) {
+			IndexMap rootMap = datatypeMap.get(loc);
+			if (rootMap == null) {
+				int index = LAST_ROOT_INDEX.incrementAndGet();
+				rootMap = new IndexMap(loc, index, datatypeMap.getHistogram());
+				datatypeMap.put(loc, rootMap);
+				synchronized (ROOT_INDEXES) {
+					ROOT_INDEXES.putUnsync(index, rootMap);
+				}
+			}
+			return rootMap;
+		}
+	}
 
 	// allocates memory during class transformation only
 	public static int registerAllocationPoint(String cname, String location) {
@@ -248,7 +248,7 @@ public class AProfRegistry {
 			if (map == null) {
 				continue;
 			}
-            if (map.getCount() >= OVERFLOW_THRESHOLD)
+			if (map.getCount() >= OVERFLOW_THRESHOLD)
 				return true;
 			int[] counters = map.getHistogramCounts();
 			if (counters != null) {
@@ -256,7 +256,7 @@ public class AProfRegistry {
 					if (cnt >= OVERFLOW_THRESHOLD)
 						return true;
 			}
-            if (map.getSize() >= OVERFLOW_THRESHOLD)
+			if (map.getSize() >= OVERFLOW_THRESHOLD)
 				return true;
 		}
 		return false;
@@ -275,10 +275,10 @@ public class AProfRegistry {
 		IndexMap map = getRootIndex(index);
 		int loc1 = stack.invoked_method_loc;
 		int loc2 = stack.invocation_point_loc;
-        if (loc1 != UNKNOWN_LOC && loc1 != map.getLocation())
-            map = putLocation(map, loc1);
-        if (loc2 != UNKNOWN_LOC)
-            map = putLocation(map, loc2);
+		if (loc1 != UNKNOWN_LOC && loc1 != map.getLocation())
+			map = putLocation(map, loc1);
+		if (loc2 != UNKNOWN_LOC)
+			map = putLocation(map, loc2);
 		return map;
 	}
 
@@ -287,9 +287,9 @@ public class AProfRegistry {
 
 	/** Adds current snapshot information to <code>ss</code> and clears internal counters. */
 	public static void makeSnapshot(Snapshot ss) {
-        ss.sort(Snapshot.COMPARATOR_ID);
-        makeSnapshotInternal(ss);
-        compactUnknowns(ss);
+		ss.sort(Snapshot.COMPARATOR_ID);
+		makeSnapshotInternal(ss);
+		compactUnknowns(ss);
 	}
 
 	private static synchronized void makeSnapshotInternal(Snapshot ss) {
@@ -324,18 +324,18 @@ public class AProfRegistry {
 
 		Snapshot temp = total != null ? total : unknown;
 		int count = map.takeCount();
-        if (map.hasHistogram()) {
-            long size = map.takeSize() << ArraySizeHelper.SIZE_SHIFT;
-            int n = map.getHistogramLength();
-            long[] counts = new long[n];
-            for (int i = 0; i < n; i++)
-                counts[i] = map.takeHistogramCount(i);
-            temp.add(count, size, counts);
-        } else {
-            long size = (count * classSize) << ArraySizeHelper.SIZE_SHIFT;
-            temp.add(count, size);
-        }
-        if (map.size() == 0) {
+		if (map.hasHistogram()) {
+			long size = map.takeSize() << ArraySizeHelper.SIZE_SHIFT;
+			int n = map.getHistogramLength();
+			long[] counts = new long[n];
+			for (int i = 0; i < n; i++)
+				counts[i] = map.takeHistogramCount(i);
+			temp.add(count, size, counts);
+		} else {
+			long size = (count * classSize) << ArraySizeHelper.SIZE_SHIFT;
+			temp.add(count, size);
+		}
+		if (map.size() == 0) {
 			list.add(unknown);
 			unknown.clear();
 		} else {
