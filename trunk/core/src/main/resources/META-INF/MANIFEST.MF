@@ -1,0 +1,10 @@
+Premain-Class: com.devexperts.aprof.AProfAgent
+Main-Class: com.devexperts.aprof.AProfTools
+Boot-Class-Path: aprof.jar
+Can-Redefine-Classes: true
+
+Name: com/devexperts/aprof/
+Implementation-Title: Aprof
+Implementation-Version: ${project.version}
+Implementation-Vendor: Devexperts LLC
+
