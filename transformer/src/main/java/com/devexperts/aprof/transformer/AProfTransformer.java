@@ -256,13 +256,13 @@ public class AProfTransformer implements ClassFileTransformer {
 			}
 
 			if (c.isInterface() || d.isInterface()) {
-				return OBJECT_CLASS_NAME;
+				return "java/lang/Object";
 			} else {
 				do {
 					c = c.getSuperclass();
 				} while (c != null && !c.isAssignableFrom(d));
 
-				return c == null ? OBJECT_CLASS_NAME : c.getType().getInternalName();
+				return c == null ? "java/lang/Object" : c.getType().getInternalName();
 			}
 		}
 	}

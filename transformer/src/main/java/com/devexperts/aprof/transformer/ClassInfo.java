@@ -107,6 +107,6 @@ class ClassInfo {
 			return true;
 		}
 
-		return that.isInterface() && getType().getDescriptor().equals("Ljava/lang/Object;");
+		return false;
 	}
 }
