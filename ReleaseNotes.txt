@@ -1,3 +1,7 @@
+Aprof 24
+
+- NoClassDefFoundError for java.lang.Object fixed
+
 Aprof 23
 
 - Rebuild under Java 1.5.
