@@ -1,15 +1,22 @@
-Java Memory Allocation Profiler
-===============================
+Aprof - Java Memory Allocation Profiler
+=======================================
 
 What is it?
 -----------
 
-The aprof project is a Java Memory Allocation Profiler with very
+The Aprof project is a Java Memory Allocation Profiler with very
 low performance impact on profiled application.
 It acts as an agent which transforms class bytecode by inserting counter 
 increments wherever memory allocation is done. 
 
-Using aprof
+Download
+--------
+
+Download binaries of the latest release 24 here: 
+
+http://svn-code.devexperts.com/code/aprof/releases/com/devexperts/aprof/agent/24/agent-24-bin.zip
+
+Using Aprof
 -----------
 
 The profiled application should be run with additional JVM argument:
@@ -22,8 +29,8 @@ To get help on configuration parameters, run
 
 Do not rename agent file "aprof.jar"!
 
-The latest version and documentation
-------------------------------------
+Documentation
+-------------
 
 Documentation can be found at the project's homepage:
 https://code.devexperts.com/display/AProf/
