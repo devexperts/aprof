@@ -40,6 +40,13 @@ public final class IndexMap implements Iterable<Integer> {
 		}
 	}
 
+	private static final Iterator<Integer> EMPTY_ITERATOR = new FastIntObjMap<IndexMap>().iterator();
+
+	static {
+		// advance internal state of iterator to the end, so that it can be concurrently used
+		EMPTY_ITERATOR.hasNext();
+	}
+
 	/**
 	 * Location id in AProfRegistry.locations
 	 */
@@ -74,7 +81,10 @@ public final class IndexMap implements Iterable<Integer> {
 	 */
 	private final int[] histogramCounts;
 
-	private final FastIntObjMap<IndexMap> items = new FastIntObjMap<IndexMap>();
+	/**
+	 * Children map. <code>null</code> when there are no children.
+	 */
+	private FastIntObjMap<IndexMap> items;
 
 	public IndexMap(int location, int index, int[] histogram) {
 		this.location = location;
@@ -96,20 +106,26 @@ public final class IndexMap implements Iterable<Integer> {
 	}
 
 	public IndexMap get(int key) {
-		return items.get(key);
+		FastIntObjMap<IndexMap> items = this.items; // atomic read
+		return items == null ? null : items.get(key);
 	}
 
 	/* needs external synchronization */
 	public void put(int key, IndexMap value) {
+		if (items == null)
+			items = new FastIntObjMap<IndexMap>();
 		items.put(key, value);
 	}
 
 	public int size() {
-		return items.size();
+		FastIntObjMap<IndexMap> items = this.items; // atomic read
+		return items == null ? 0 : items.size();
 	}
 
 	public Iterator<Integer> iterator() {
-		return items.iterator();
+		FastIntObjMap<IndexMap> items = this.items; // atomic read
+		// note -- result is always of the same class that is retruned by FastIntObjMap.iterator() method
+		return items == null ? EMPTY_ITERATOR : items.iterator();
 	}
 
 	public int getCount() {
