@@ -18,11 +18,11 @@
 
 package com.devexperts.aprof;
 
-import com.devexperts.aprof.dump.Snapshot;
-import com.devexperts.aprof.util.*;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import com.devexperts.aprof.dump.Snapshot;
+import com.devexperts.aprof.util.*;
 
 /**
  * @author Roman Elizarov
@@ -323,9 +323,9 @@ public class AProfRegistry {
 		list.clear();
 
 		Snapshot temp = total != null ? total : unknown;
-		int count = map.takeCount();
+		long count = map.takeCount(); // SIC! Its long to avoid overflows
 		if (map.hasHistogram()) {
-			long size = map.takeSize() << ArraySizeHelper.SIZE_SHIFT;
+			long size = ((long)map.takeSize()) << ArraySizeHelper.SIZE_SHIFT;
 			int n = map.getHistogramLength();
 			long[] counts = new long[n];
 			for (int i = 0; i < n; i++)
