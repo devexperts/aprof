@@ -21,7 +21,7 @@ package com.devexperts.aprof;
 import com.devexperts.aprof.util.IndexMap;
 
 import static com.devexperts.aprof.AProfRegistry.*;
-import static com.devexperts.aprof.ArraySizeHelper.*;
+import static com.devexperts.aprof.AProfSizeUtil.*;
 
 /**
  * @author Dmitry Paraschenko

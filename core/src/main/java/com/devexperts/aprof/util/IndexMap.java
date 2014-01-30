@@ -18,12 +18,10 @@
 
 package com.devexperts.aprof.util;
 
-import java.util.Iterator;
-
 /**
  * @author Roman Elizarov
  */
-public final class IndexMap implements Iterable<Integer> {
+public final class IndexMap {
 	private static final long COUNT_OFFSET;
 	private static final long SIZE_OFFSET;
 	private static final int INT_ARRAY_BASE_OFFSET;
@@ -40,7 +38,7 @@ public final class IndexMap implements Iterable<Integer> {
 		}
 	}
 
-	private static final Iterator<Integer> EMPTY_ITERATOR = new FastIntObjMap<IndexMap>().iterator();
+	private static final IntIterator EMPTY_ITERATOR = new FastIntObjMap<IndexMap>().iterator();
 
 	static {
 		// advance internal state of iterator to the end, so that it can be concurrently used
@@ -122,7 +120,7 @@ public final class IndexMap implements Iterable<Integer> {
 		return items == null ? 0 : items.size();
 	}
 
-	public Iterator<Integer> iterator() {
+	public IntIterator iterator() {
 		FastIntObjMap<IndexMap> items = this.items; // atomic read
 		// note -- result is always of the same class that is retruned by FastIntObjMap.iterator() method
 		return items == null ? EMPTY_ITERATOR : items.iterator();

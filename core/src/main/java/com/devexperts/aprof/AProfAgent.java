@@ -18,23 +18,15 @@
 
 package com.devexperts.aprof;
 
-import com.devexperts.aprof.dump.ConnectionListenerThread;
-import com.devexperts.aprof.dump.DumpPeriodicThread;
-import com.devexperts.aprof.dump.DumpShutdownThread;
-import com.devexperts.aprof.dump.Dumper;
-import com.devexperts.aprof.util.InnerJarClassLoader;
-import com.devexperts.aprof.util.Log;
-
 import java.io.*;
-import java.lang.instrument.ClassDefinition;
-import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.Instrumentation;
+import java.lang.instrument.*;
 import java.lang.reflect.Constructor;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+
+import com.devexperts.aprof.dump.*;
+import com.devexperts.aprof.util.InnerJarClassLoader;
+import com.devexperts.aprof.util.Log;
 
 /**
  * @author Roman Elizarov
@@ -94,7 +86,7 @@ public class AProfAgent {
 
 		Class<ClassNameResolver> resolverClass = (Class<ClassNameResolver>)classLoader.loadClass(RESOLVER_CLASS);
 
-		ArraySizeHelper.init(inst);
+		AProfSizeUtil.init(inst);
 		AProfRegistry.init(config, resolverClass.newInstance());
 
 		Class<ClassFileTransformer> transformerClass = (Class<ClassFileTransformer>)classLoader.loadClass(TRANSFORMER_CLASS);

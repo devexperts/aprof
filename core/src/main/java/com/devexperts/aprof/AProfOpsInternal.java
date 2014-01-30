@@ -21,8 +21,8 @@ package com.devexperts.aprof;
 import com.devexperts.aprof.util.IndexMap;
 
 import static com.devexperts.aprof.AProfRegistry.getRootIndex;
-import static com.devexperts.aprof.ArraySizeHelper.getArraySize;
-import static com.devexperts.aprof.ArraySizeHelper.getArraySizeMultiRec;
+import static com.devexperts.aprof.AProfSizeUtil.getArraySize;
+import static com.devexperts.aprof.AProfSizeUtil.getArraySizeMultiRec;
 
 /**
  * @author Dmitry Paraschenko

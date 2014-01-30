@@ -18,7 +18,6 @@
 
 package com.devexperts.aprof.util;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -98,27 +97,21 @@ public class FastIntObjMap<V> {
 		core = newCore;
 	}
 
-	public Iterator<Integer> iterator() {
-		return new Iterator<Integer>() {
+	public IntIterator iterator() {
+		return new IntIterator() {
 			private int i = 0;
 			private Core savedCore = core;
 
 			public boolean hasNext() {
-				while (i < savedCore.length && (savedCore.keys[i] == 0 || savedCore.values[i] == null)) {
+				while (i < savedCore.length && (savedCore.keys[i] == 0 || savedCore.values[i] == null))
 					i++;
-				}
 				return i < savedCore.length;
 			}
 
-			public Integer next() {
-				if (!hasNext()) {
+			public int next() {
+				if (!hasNext())
 					throw new NoSuchElementException();
-				}
 				return savedCore.keys[i++];
-			}
-
-			public void remove() {
-				throw new UnsupportedOperationException();
 			}
 		};
 	}

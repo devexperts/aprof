@@ -325,14 +325,14 @@ public class AProfRegistry {
 		Snapshot temp = total != null ? total : unknown;
 		long count = map.takeCount(); // SIC! Its long to avoid overflows
 		if (map.hasHistogram()) {
-			long size = ((long)map.takeSize()) << ArraySizeHelper.SIZE_SHIFT;
+			long size = ((long)map.takeSize()) << AProfSizeUtil.SIZE_SHIFT;
 			int n = map.getHistogramLength();
 			long[] counts = new long[n];
 			for (int i = 0; i < n; i++)
 				counts[i] = map.takeHistogramCount(i);
 			temp.add(count, size, counts);
 		} else {
-			long size = (count * classSize) << ArraySizeHelper.SIZE_SHIFT;
+			long size = (count * classSize) << AProfSizeUtil.SIZE_SHIFT;
 			temp.add(count, size);
 		}
 		if (map.size() == 0) {
@@ -352,17 +352,16 @@ public class AProfRegistry {
 				unknown.clear();
 			}
 			// unknown is empty now
-			for (int key : map) {
-				if (key == UNKNOWN_LOC) {
+			for (IntIterator it = map.iterator(); it.hasNext();) {
+				int key = it.next();
+				if (key == UNKNOWN_LOC)
 					continue;
-				}
 				String id = LOCATIONS.get(key);
 				IndexMap childMap = map.get(key);
 				Snapshot childList = list.get(list.move(0, id), id);
 				makeSnapshotRec(childList, childMap, classSize, unknown, null);
-				if (childList.isEmpty()) {
+				if (childList.isEmpty())
 					continue;
-				}
 				if (!id.endsWith(CLONE_SUFFIX)) {
 					// do not count "clone" calls because they do not invoke constructor
 					list.add(childList);

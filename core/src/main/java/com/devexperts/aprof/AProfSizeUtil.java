@@ -23,7 +23,7 @@ import java.lang.instrument.Instrumentation;
 /**
  * @author Dmitry Paraschenko
  */
-class ArraySizeHelper {
+public class AProfSizeUtil {
 	public static final int SIZE_SHIFT = 3;
 
 	private static final int SIZE_CACHE = 1024;
@@ -40,9 +40,11 @@ class ArraySizeHelper {
 
 	private static Instrumentation inst;
 
+	private AProfSizeUtil() {} // do not create
+
 	public static void init(Instrumentation instrumentation) {
 		if (inst != null)
-			throw new IllegalStateException("ArraySizeHelper is already initialized");
+			throw new IllegalStateException("AProfSizeUtil is already initialized");
 		inst = instrumentation;
 	}
 
