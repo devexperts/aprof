@@ -12,9 +12,9 @@ increments wherever memory allocation is done.
 Download
 --------
 
-Download binaries of the latest release 24 here: 
+Download binaries of the latest release 25 here: 
 
-http://svn-code.devexperts.com/code/aprof/releases/com/devexperts/aprof/agent/24/agent-24-bin.zip
+http://svn-code.devexperts.com/code/aprof/releases/com/devexperts/aprof/agent/25/agent-25-bin.zip
 
 Using Aprof
 -----------
