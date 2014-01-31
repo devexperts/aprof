@@ -18,9 +18,7 @@
 
 package com.devexperts.aprof;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -41,6 +39,13 @@ class HistogramConfiguration {
 	public int[] getHistogram(String className) {
 		int[] histogram = classHistograms.get(className);
 		return histogram != null ? histogram : commonHistogram;
+	}
+
+	public int getMaxHistogramLength() {
+		int result = commonHistogram.length;
+		for (int[] histogram : classHistograms.values())
+			result = Math.max(result, histogram.length);
+		return result;
 	}
 
 	private void loadFromFile(String fileName) throws IOException {

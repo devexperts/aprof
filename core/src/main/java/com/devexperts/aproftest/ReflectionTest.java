@@ -18,14 +18,19 @@
 
 package com.devexperts.aproftest;
 
+import java.lang.reflect.Constructor;
+
+import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
 
-import java.lang.reflect.Constructor;
+import static com.devexperts.aproftest.TestUtil.fmt;
 
 /**
  * @author Dmitry Paraschenko
  */
 class ReflectionTest implements TestCase {
+	private static final int COUNT = 1000000;
+
 	public String name() {
 		return "reflection";
 	}
@@ -39,23 +44,24 @@ class ReflectionTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		return STATISTICS;
+		int objSize = AProfSizeUtil.getObjectSize(new Entity()) << AProfSizeUtil.SIZE_SHIFT;
+		return fmt(
+			"Allocated {size} bytes in {count} objects in 1 locations of 1 classes\n" +
+			"-------------------------------------------------------------------------------\n" +
+			"{class}$Entity: {size} (_%) bytes in {count} (_%) objects (avg size {objSize} bytes)\n" +
+			"\tsun.reflect.GeneratedConstructorAccessor.newInstance: {size} (_%) bytes in {count} (_%) objects\n" +
+			"\t\tjava.lang.reflect.Constructor.newInstance: {size} (_%) bytes in {count} (_%) objects\n" +
+			"\t\t\t{class}.doTest: {size} (_%) bytes in {count} (_%) objects\n",
+			"class=" + getClass().getName(),
+			"size=" + fmt(objSize * COUNT),
+			"count=" + fmt(COUNT),
+			"objSize=" + objSize);
 	}
 
-	public void doTest() {
-		long time = System.currentTimeMillis();
-		try {
-			Constructor<Entity> constructor = Entity.class.getConstructor();
-			for (int i = 0; i < 10000000; i++) {
-				if (i % 1000000 == 0)
-					System.out.print('.');
-				constructor.newInstance();
-			}
-			System.out.printf(" Test took %d ms\n", System.currentTimeMillis() - time);
-		} catch (Exception e) {
-			System.out.printf(" Test failed in %d ms\n", System.currentTimeMillis() - time);
-			e.printStackTrace();
-		}
+	public void doTest() throws Exception {
+		Constructor<Entity> constructor = Entity.class.getConstructor();
+		for (int i = 0; i < COUNT; i++)
+			constructor.newInstance();
 	}
 
 	private static class Entity {
@@ -63,12 +69,4 @@ class ReflectionTest implements TestCase {
 		}
 	}
 
-	private static String STATISTICS = "" +
-			"Allocated 80,000,000 bytes in 10,000,000 objects in 1 locations of 1 classes\n" +
-			"-------------------------------------------------------------------------------\n" +
-			"com.devexperts.aproftest.ReflectionTest$Entity: 80,000,000 (100%) bytes in 10,000,000 (100%) objects (avg size 8 bytes)\n" +
-			"\tsun.reflect.GeneratedConstructorAccessor.newInstance: 80,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
-			"\t\tjava.lang.reflect.Constructor.newInstance: 80,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
-			"\t\t\tcom.devexperts.aproftest.ReflectionTest.doTest: 80,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
-			"";
 }

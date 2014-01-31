@@ -18,12 +18,17 @@
 
 package com.devexperts.aproftest;
 
+import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
+
+import static com.devexperts.aproftest.TestUtil.fmt;
 
 /**
  * @author Dmitry Paraschenko
  */
 class TryTest implements TestCase {
+	private static final int COUNT = 100000;
+
 	public String name() {
 		return "try";
 	}
@@ -37,31 +42,34 @@ class TryTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		return STATISTICS;
+		int doubleObjSize = AProfSizeUtil.getObjectSize(new Double(0)) << AProfSizeUtil.SIZE_SHIFT;
+		int floatObjSize = AProfSizeUtil.getObjectSize(new Float(0)) << AProfSizeUtil.SIZE_SHIFT;
+		return fmt(
+			"Allocated {size2} bytes in {count2} objects in 2 locations of 2 classes\n" +
+			"-------------------------------------------------------------------------------\n" +
+			"java.lang.Double: {doubleSize} (_%) bytes in {count} (_%) objects (avg size {doubleObjSize} bytes)\n" +
+			"\tjava.lang.Double.valueOf: {doubleSize} (_%) bytes in {count} (_%) objects\n" +
+			"\t\t{class}.doTest: {doubleSize} (_%) bytes in {count} (_%) objects\n" +
+			"\n" +
+			"java.lang.Float: {floatSize} (_%) bytes in {count} (_%) objects (avg size {floatObjSize} bytes)\n" +
+			"\t{class}.doTest: {floatSize} (_%) bytes in {count} (_%) objects\n",
+			"class=" + getClass().getName(),
+			"doubleSize=" + fmt(doubleObjSize * COUNT),
+			"floatSize=" + fmt(floatObjSize * COUNT),
+			"count=" + fmt(COUNT),
+			"size2=" + fmt((doubleObjSize + floatObjSize) * COUNT),
+			"count2=" + fmt(2 * COUNT),
+			"doubleObjSize=" + doubleObjSize,
+			"floatObjSize=" + floatObjSize);
 	}
 
 	public void doTest() {
-		long time = System.currentTimeMillis();
-		for (int i = 0; i < 1000000; i++) {
-			if (i % 100000 == 0)
-				System.out.print('.');
+		for (int i = 0; i < COUNT; i++) {
 			try {
 				Double.valueOf("16r7");
 			} catch (NumberFormatException e) {
 				new Float(10.6);
 			}
 		}
-		System.out.printf(" Test took %d ms\n", System.currentTimeMillis() - time);
 	}
-
-	private static String STATISTICS = "" +
-            "Allocated 32,000,000 bytes in 2,000,000 objects in 2 locations of 2 classes\n" +
-            "-------------------------------------------------------------------------------\n" +
-            "java.lang.Double: 16,000,000 (50%) bytes in 1,000,000 (50%) objects (avg size 16 bytes)\n" +
-            "\tjava.lang.Double.valueOf: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-            "\t\tcom.devexperts.aproftest.TryTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-            "\n" +
-            "java.lang.Float: 16,000,000 (50%) bytes in 1,000,000 (50%) objects (avg size 16 bytes)\n" +
-            "\tcom.devexperts.aproftest.TryTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"";
 }

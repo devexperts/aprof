@@ -26,11 +26,11 @@ import static com.devexperts.aproftest.TestUtil.fmt;
 /**
  * @author Dmitry Paraschenko
  */
-class CloneTest implements TestCase {
+class IntegerTest implements TestCase {
 	private static final int COUNT = 1000000;
 
 	public String name() {
-		return "clone";
+		return "integer";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -38,38 +38,30 @@ class CloneTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] {getClass().getName() + "$"};
+		return new String[] {Integer.class.getName()};
 	}
 
 	public String getExpectedStatistics() {
-		int objSize = AProfSizeUtil.getObjectSize(new Entity()) << AProfSizeUtil.SIZE_SHIFT;
+		int objSize = AProfSizeUtil.getObjectSize(new Integer(0)) << AProfSizeUtil.SIZE_SHIFT;
 		return fmt(
-			"Allocated {size1} bytes in {count1} objects in 2 locations of 1 classes\n" +
+			"Allocated {size} bytes in {count} objects in 1 locations of 1 classes\n" +
 			"-------------------------------------------------------------------------------\n" +
-			"{class}$Entity: {size1} (_%) bytes in {count1} (_%) objects (avg size {objSize} bytes)\n" +
-			"\t{class}$Entity.dup*: {size} (_%) bytes in {count} (_%) objects\n" +
-			"\t{class}.doTest: {objSize} (_%) bytes in 1 (_%) objects\n",
+			"java.lang.Integer: {size} (_%) bytes in {count} (_%) objects (avg size {objSize} bytes)\n" +
+			"\tjava.lang.Integer.valueOf: {size} (_%) bytes in {count} (_%) objects\n" +
+			"\t\t{class}.doTest: {size} (_%) bytes in {count} (_%) objects\n",
 			"class=" + getClass().getName(),
 			"size=" + fmt(objSize * COUNT),
 			"count=" + fmt(COUNT),
-			"size1=" + fmt(objSize * (COUNT + 1)),
-			"count1=" + fmt(COUNT + 1),
 			"objSize=" + objSize);
 	}
 
 	public void doTest() {
-		Entity entity = new Entity();
-		for (int i = 0; i < COUNT; i++)
-			entity.dup();
-	}
-
-	private static class Entity implements Cloneable {
-		public Entity dup() {
-			try {
-				return (Entity) clone();
-			} catch (CloneNotSupportedException e) {
-				throw new InternalError();
-			}
+		for (int i = 0; i < COUNT; i++) {
+			if (i % 2 == 0)
+				Integer.valueOf(i + 10000);
+			else
+				Integer.valueOf(Integer.toString(i + 10000));
 		}
 	}
+
 }

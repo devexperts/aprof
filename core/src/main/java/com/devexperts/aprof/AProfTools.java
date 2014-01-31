@@ -18,15 +18,15 @@
 
 package com.devexperts.aprof;
 
-import com.devexperts.aprof.dump.DumpFormatter;
-import com.devexperts.aprof.dump.Snapshot;
-import com.devexperts.aprof.util.FastOutputStreamWriter;
-import com.devexperts.aproftest.TestCase;
-import com.devexperts.aproftest.TestSuite;
-
 import java.io.*;
 import java.net.Socket;
 import java.util.Locale;
+
+import com.devexperts.aprof.dump.DumpFormatter;
+import com.devexperts.aprof.dump.SnapshotDeep;
+import com.devexperts.aprof.util.FastOutputStreamWriter;
+import com.devexperts.aproftest.TestCase;
+import com.devexperts.aproftest.TestSuite;
 
 /**
  * @author Denis Davydov
@@ -77,6 +77,9 @@ public class AProfTools {
 		out.println();
 		out.println("Usage: java -jar aprof.jar export [<file>]");
 		out.println("       Exports default tracked locations configuration to a file.");
+		out.println();
+		out.println("Usage: java -ea -javaagent:aprof.jar -jar aprof.jar selftest [<test> ...]");
+		out.println("       Runs built-in self tests. Use 'all' for <test> to run all of them.");
 	}
 
 	private static String padr(String s, int len) {
@@ -85,11 +88,11 @@ public class AProfTools {
 		return s;
 	}
 
-	private static void helpSelftest() throws IOException {
+	private static void helpSelfTest() throws IOException {
 		PrintWriter out = new PrintWriter(new FastOutputStreamWriter(System.out), true);
 		out.println(STARTUP_NOTICE);
 		out.println();
-		out.println("Usage: java -jar aprof.jar selftest <test>");
+		out.println("Usage: java -ea -javaagent:aprof.jar -jar aprof.jar selftest [<test> ...]");
 		out.println("Where <test> is 'all' or one of tests:");
 		for (TestCase test : TestSuite.getTestCases()) {
 			out.println("\t" + test.name());
@@ -110,7 +113,7 @@ public class AProfTools {
 		outputStream.write("DUMP\r\n".getBytes(ENCODING));
 		outputStream.flush();
 		ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-		Snapshot totalSnapshot = (Snapshot)ois.readObject();
+		SnapshotDeep totalSnapshot = (SnapshotDeep)ois.readObject();
 		ois.close();
 		socket.close();
 		DumpFormatter formatter = new DumpFormatter(new Configuration());
@@ -143,24 +146,34 @@ public class AProfTools {
 	}
 
 	private static void runSelfTest(String[] args) throws IOException {
-		if (args.length != 2) {
-			helpSelftest();
+		if (args.length < 2) {
+			helpSelfTest();
 			return;
 		}
-		String testName = args[1].trim().toLowerCase(Locale.US);
-		if ("all".equals(testName)) {
-			TestSuite.testAllApplicableCases();
-			return;
-		}
-		boolean done = false;
-		for (TestCase test : TestSuite.getTestCases()) {
-			if (test.name().equals(testName)) {
-				TestSuite.testSingleCase(test);
-				done = true;
+		boolean ok = true;
+		for (int i = 1; i < args.length; i++) {
+			String testName = args[i].trim().toLowerCase(Locale.US);
+			if ("all".equals(testName)) {
+				if (!TestSuite.testAllApplicableCases())
+					ok = false;
+				continue;
+			}
+			boolean done = false;
+			for (TestCase test : TestSuite.getTestCases()) {
+				if (test.name().equals(testName)) {
+					if (!TestSuite.testSingleCase(test))
+						ok = false;
+					done = true;
+				}
+			}
+			if (!done) {
+				helpSelfTest();
+				return;
 			}
 		}
-		if (!done) {
-			help();
-		}
+		if (ok)
+			System.out.println("==== TESTS HAVE PASSED");
+		else
+			System.out.println("==== SOME TESTS HAVE FAILED !!!");
 	}
 }

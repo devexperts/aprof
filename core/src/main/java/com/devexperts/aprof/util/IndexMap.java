@@ -134,6 +134,9 @@ public final class IndexMap {
 		return size;
 	}
 
+	/**
+	 * Returns {@code true} for array data types.
+	 */
 	public boolean hasHistogram() {
 		return histogramCounts != null;
 	}

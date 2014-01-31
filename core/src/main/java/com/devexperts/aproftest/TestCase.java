@@ -28,7 +28,7 @@ public interface TestCase {
 	public String name();
 
 	/** Tested method. */
-	public void doTest();
+	public void doTest() throws Exception;
 
 	/** Verifies AProf configuration and returns <code>null</code> if it's valid or the reason otherwise. */
 	public String verifyConfiguration(Configuration configuration);

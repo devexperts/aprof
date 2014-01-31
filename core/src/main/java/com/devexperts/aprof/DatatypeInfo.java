@@ -18,9 +18,9 @@
 
 package com.devexperts.aprof;
 
-import com.devexperts.aprof.util.IndexMap;
-
 import java.util.Comparator;
+
+import com.devexperts.aprof.util.IndexMap;
 
 /**
 * @author Dmitry Paraschenko
@@ -38,6 +38,10 @@ final class DatatypeInfo {
 
 	public String getName() {
 		return name;
+	}
+
+	public boolean isArray() {
+		return index.hasHistogram();
 	}
 
 	public IndexMap getIndex() {

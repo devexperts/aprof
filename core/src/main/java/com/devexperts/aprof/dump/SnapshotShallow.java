@@ -1,0 +1,161 @@
+package com.devexperts.aprof.dump;
+
+import java.io.*;
+import java.util.Arrays;
+import java.util.Comparator;
+
+/**
+ * @author Roman Elizarov
+ */
+public class SnapshotShallow implements Serializable {
+	private static final long serialVersionUID = 0;
+
+	public static final Comparator<SnapshotShallow> COMPARATOR_NAME = new Comparator<SnapshotShallow>() {
+		public int compare(SnapshotShallow o1, SnapshotShallow o2) {
+			return o1.name.compareTo(o2.name);
+		}
+	};
+
+	public static final Comparator<SnapshotShallow> COMPARATOR_COUNT = new Comparator<SnapshotShallow>() {
+		public int compare(SnapshotShallow o1, SnapshotShallow o2) {
+			if (o2.getTotalCount() > o1.getTotalCount())
+				return 1;
+			if (o2.getTotalCount() < o1.getTotalCount())
+				return -1;
+			return o1.name.compareTo(o2.name);
+		}
+	};
+
+	public static final Comparator<SnapshotShallow> COMPARATOR_SIZE = new Comparator<SnapshotShallow>() {
+		public int compare(SnapshotShallow o1, SnapshotShallow o2) {
+			if (o2.size > o1.size)
+				return 1;
+			if (o2.size < o1.size)
+				return -1;
+			return o1.name.compareTo(o2.name);
+		}
+	};
+
+	protected static final long[] EMPTY_HISTO_COUNTS = new long[0];
+
+	// --------- instance fields ---------
+
+	protected final String name;
+	protected long count;
+	protected long size;
+	protected final long[] histoCounts;
+	protected transient long histoCountsSum; // recomputes on deserialization
+
+	public SnapshotShallow() {
+		name = null;
+		histoCounts = EMPTY_HISTO_COUNTS;
+	}
+
+	public SnapshotShallow(String name, int histoCountsLength) {
+		this.name = name;
+		this.histoCounts = histoCountsLength == 0 ? EMPTY_HISTO_COUNTS : new long[histoCountsLength];
+	}
+
+	public boolean hasChildren() {
+		return false;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public long getCount() {
+		return count;
+	}
+
+	public long getTotalCount() {
+		return count + histoCountsSum;
+	}
+
+	public long getSize() {
+		return size;
+	}
+
+	public long[] getCounts() {
+		return histoCounts;
+	}
+
+	public boolean isEmpty() {
+		if (count != 0 || size != 0)
+			return false;
+		for (long count : histoCounts)
+			if (count != 0)
+				return false;
+		return true;
+	}
+
+	public void clearShallow() {
+		count = 0;
+		size = 0;
+		Arrays.fill(histoCounts, 0);
+		histoCountsSum = 0;
+	}
+
+	public void ensurePositive() {
+		count = Math.max(0, count);
+		size = Math.max(0, size);
+		histoCountsSum = 0;
+		for (int i = 0; i < histoCounts.length; i++) {
+			histoCounts[i] = Math.max(0, histoCounts[i]);
+			histoCountsSum += histoCounts[i];
+		}
+	}
+
+	public void add(long count, long size) {
+		this.count += count;
+		this.size += size;
+	}
+
+	public void addHistoCount(int i, long histoCount) {
+		histoCounts[i] += histoCount;
+		histoCountsSum += histoCount;
+	}
+
+	public void subHistoCount(int i, long histoCount) {
+		this.histoCounts[i] -= histoCount;
+		this.histoCountsSum -= histoCount;
+	}
+
+	public void add(long count, long size, long[] histoCounts) {
+		add(count, size);
+		int n = Math.min(this.histoCounts.length, histoCounts.length);
+		for (int i = 0; i < n; i++)
+			addHistoCount(i, histoCounts[i]);
+	}
+
+	public void sub(long count, long size, long[] histoCounts) {
+		this.count -= count;
+		this.size -= size;
+		int n = Math.min(this.histoCounts.length, histoCounts.length);
+		for (int i = 0; i < n; i++)
+			subHistoCount(i, histoCounts[i]);
+	}
+
+	public void addShallow(SnapshotShallow ss) {
+		add(ss.count, ss.size, ss.histoCounts);
+	}
+
+	public void subShallow(SnapshotDeep ss) {
+		sub(ss.count, ss.size, ss.histoCounts);
+	}
+
+	public boolean exceedsThreshold(double threshold, SnapshotShallow total) {
+		return exceeds(threshold, getTotalCount(), total.getTotalCount()) || exceeds(threshold, getSize(), total.getSize());
+	}
+
+	private boolean exceeds(double threshold, long count, long total) {
+		return count > total * threshold / 100;
+	}
+
+	/** Deserialization. */
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+		in.defaultReadObject();
+		for (long cnt : histoCounts)
+			histoCountsSum += cnt;
+	}
+}

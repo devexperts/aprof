@@ -18,14 +18,19 @@
 
 package com.devexperts.aproftest;
 
+import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
+
+import static com.devexperts.aproftest.TestUtil.fmt;
 
 /**
  * @author Dmitry Paraschenko
  */
-class BoxingTest implements TestCase {
+class DoubleTest implements TestCase {
+	private static final int COUNT = 1000000;
+
 	public String name() {
-		return "boxing";
+		return "double";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -37,24 +42,26 @@ class BoxingTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		return STATISTICS;
+		int objSize = AProfSizeUtil.getObjectSize(new Double(0)) << AProfSizeUtil.SIZE_SHIFT;
+		return fmt(
+			"Allocated {size} bytes in {count} objects in 1 locations of 1 classes\n" +
+			"-------------------------------------------------------------------------------\n" +
+			"java.lang.Double: {size} (_%) bytes in {count} (_%) objects (avg size {objSize} bytes)\n" +
+			"\tjava.lang.Double.valueOf: {size} (_%) bytes in {count} (_%) objects\n" +
+			"\t\t{class}.doTest: {size} (_%) bytes in {count} (_%) objects\n",
+			"class=" + getClass().getName(),
+			"size=" + fmt(objSize * COUNT),
+			"count=" + fmt(COUNT),
+			"objSize=" + objSize);
 	}
 
 	public void doTest() {
-		long time = System.currentTimeMillis();
-		for (int i = 0; i < 10000000; i++) {
-			if (i % 1000000 == 0)
-				System.out.print('.');
-			Double.valueOf(10000 + i);
+		for (int i = 0; i < COUNT; i++) {
+			if (i % 2 == 0)
+				Double.valueOf(10000 + i);
+			else
+				Double.valueOf(Double.toString(10000 + i));
 		}
-		System.out.printf(" Test took %d ms\n", System.currentTimeMillis() - time);
 	}
 
-	private static String STATISTICS = "" +
-            "Allocated 160,000,000 bytes in 10,000,000 objects in 1 locations of 1 classes\n" +
-            "-------------------------------------------------------------------------------\n" +
-            "java.lang.Double: 160,000,000 (100%) bytes in 10,000,000 (100%) objects (avg size 16 bytes)\n" +
-            "\tjava.lang.Double.valueOf: 160,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
-            "\t\tcom.devexperts.aproftest.BoxingTest.doTest: 160,000,000 (100%) bytes in 10,000,000 (100%) objects\n" +
-			"";
 }

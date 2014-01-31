@@ -18,12 +18,10 @@
 
 package com.devexperts.aprof;
 
-import com.devexperts.aprof.dump.Snapshot;
-import junit.framework.TestCase;
+import java.util.*;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Random;
+import com.devexperts.aprof.dump.SnapshotDeep;
+import junit.framework.TestCase;
 
 /**
  * @author Roman Elizarov
@@ -31,17 +29,17 @@ import java.util.Random;
 public class QSortTest extends TestCase {
 	public void testQSort() {
 		Random r = new Random(1);
-		Snapshot cs = new Snapshot("test", 0);
+		SnapshotDeep cs = new SnapshotDeep("test", 0);
 		int cnt = 1000;
-		cs.ensureCapacity(cnt);
+		cs.ensureChildrenCapacity(cnt);
 		for (int i = 0; i < cnt; i++)
-			cs.get(0, String.valueOf(i));
+			cs.getChild(0, String.valueOf(i));
 		for (int k = 0; k < 100; k++) {
-			Collections.shuffle(Arrays.asList(cs.getItems()), r);
-			cs.sort(Snapshot.COMPARATOR_ID);
-			Snapshot[] lsa = cs.getItems();
+			Collections.shuffle(Arrays.asList(cs.getChildren()), r);
+			cs.sortChildrenDeep(SnapshotDeep.COMPARATOR_NAME);
+			SnapshotDeep[] lsa = cs.getChildren();
 			for (int i = 1; i < cnt; i++)
-				if (lsa[i - 1].getId().compareTo(lsa[i].getId()) >= 0)
+				if (lsa[i - 1].getName().compareTo(lsa[i].getName()) >= 0)
 					fail("Failed to sort at #" + i);
 		}
 	}

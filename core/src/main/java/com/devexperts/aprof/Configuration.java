@@ -21,13 +21,8 @@ package com.devexperts.aprof;
 import java.io.*;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.StringTokenizer;
+import java.lang.reflect.*;
+import java.util.*;
 
 /**
  * @author Roman Elizarov
@@ -230,6 +225,10 @@ public class Configuration {
 
 	public int[] getHistogram(String className) {
 		return histogramConfig.getHistogram(className);
+	}
+
+	public int getMaxHistogramLength() {
+		return histogramConfig.getMaxHistogramLength();
 	}
 
 	public int getPort() {

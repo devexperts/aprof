@@ -19,10 +19,7 @@
 package com.devexperts.aprof.transformer;
 
 import com.devexperts.aprof.AProfRegistry;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
 /**
@@ -92,7 +89,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 				if (context.isObjectInit() && context.getConfig().isUnknown()) {
 					visitObjectInit();
 				}
-				if (context.isMethodTracked()) {
+					if (context.isMethodTracked()) {
 					visitUnmarkInvokedMethod();
 				}
 				break;

@@ -18,27 +18,23 @@
 
 package com.devexperts.aproftest;
 
-import com.devexperts.aprof.AProfRegistry;
-import com.devexperts.aprof.Configuration;
-import com.devexperts.aprof.Version;
-import com.devexperts.aprof.dump.DumpFormatter;
-import com.devexperts.aprof.dump.Snapshot;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
+import java.util.regex.Pattern;
+
+import com.devexperts.aprof.*;
+import com.devexperts.aprof.dump.DumpFormatter;
+import com.devexperts.aprof.dump.SnapshotDeep;
 
 /**
  * @author Dmitry Paraschenko
  */
 public class TestSuite {
 	private static final List<TestCase> TEST_CASES = Arrays.asList(
-			new GenericTest(),
 			new NewTest(),
-			new BoxingTest(),
+			new DoubleTest(),
+			new IntegerTest(),
 			new ReflectionTest(),
 			new CloneTest(),
 			new TryTest(),
@@ -49,61 +45,63 @@ public class TestSuite {
 		return TEST_CASES;
 	}
 
-	public static void testAllApplicableCases() {
-		Configuration configuration = AProfRegistry.getConfiguration();
-		if (configuration == null) {
-			System.out.println("Tests should be run under Aprof: -javaagent:aprof.jar");
-		}
+	public static boolean testAllApplicableCases() {
+		Configuration configuration = checkConfiguration();
+		if (configuration == null)
+			return false;
+		boolean ok = true;
 		for (TestCase test : getTestCases()) {
 			if (test.verifyConfiguration(configuration) == null) {
-				testSingleCase(test);
+				if (!testSingleCase(test))
+					ok = false;
 			}
 		}
+		return ok;
 	}
 
-	public static void testSingleCase(TestCase test) {
-		System.out.printf("Testing %s on test '%s'\n", Version.compact(), test.name());
+	public static boolean testSingleCase(TestCase test) {
+		Configuration configuration = checkConfiguration();
+		if (configuration == null)
+			return false;
 
-		Snapshot snapshot = new Snapshot();
+		System.out.printf("==== Testing %s on test '%s'%n", Version.compact(), test.name());
+
+		SnapshotDeep snapshot = new SnapshotDeep();
 		for (int i = 0; i < 5; i++) {
 			if (i == 1) {
 				// clearing STATISTICS
-				AProfRegistry.makeSnapshot(new Snapshot());
-				test.doTest();
+				AProfRegistry.takeSnapshot(new SnapshotDeep());
+				if (!doTestOnce(test))
+					return false;
 				// retrieving STATISTICS
-				AProfRegistry.makeSnapshot(snapshot);
+				AProfRegistry.takeSnapshot(snapshot);
 			} else {
-				test.doTest();
+				if (!doTestOnce(test))
+					return false;
 			}
 		}
 		String[] prefixes = test.getCheckedClasses();
 		if (prefixes != null) {
 			for (int i = 0; i < snapshot.getUsed(); i++) {
-				Snapshot child = snapshot.getItem(i);
+				SnapshotDeep child = snapshot.getChild(i);
 				boolean tracked = false;
 				for (String prefix : prefixes) {
-					if (child.getId().startsWith(prefix)) {
+					if (child.getName().startsWith(prefix)) {
 						tracked = true;
 						break;
 					}
 				}
 				if (!tracked) {
-					snapshot.sub(child);
+					snapshot.subShallow(child);
 					child.clearDeep();
 				}
 			}
 		}
 
-		Configuration configuration = AProfRegistry.getConfiguration();
-		if (configuration == null) {
-			System.out.println("Tests should be run under Aprof: -javaagent:aprof.jar");
-			return;
-		}
-
 		String reason = test.verifyConfiguration(configuration);
 		if (reason != null) {
-			System.out.printf("Test '%s' should be run with options: %s\n", test.name(), reason);
-			return;
+			System.out.printf("Test '%s' should be run with options: %s%n", test.name(), reason);
+			return false;
 		}
 
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -112,27 +110,66 @@ public class TestSuite {
 		out.flush();
 		String received = new String(bos.toByteArray());
 
-		if (!compareStatistics(received, test.getExpectedStatistics())) {
-			System.err.printf("Test '%s' failed. Collected allocations:\n", test.name());
-			System.err.println(received);
-			System.out.printf("Test '%s' failed. Collected allocations were printed to stderr\n", test.name());
+		String expected = test.getExpectedStatistics();
+		String result = compareStatistics(received, expected);
+		if (result != null) {
+			System.out.println(result);
+			System.out.println("-- Expected allocations:");
+			System.out.println(expected);
+			System.out.println("-- Collected allocations:");
+			System.out.println(received);
+			System.out.printf("-- Test '%s' FAILED !!!%n", test.name());
+			return false;
 		} else {
-			System.out.printf("Test '%s' passed\n", test.name());
+			System.out.printf("-- Test '%s' PASSED%n", test.name());
+			return true;
 		}
 	}
 
-	public static boolean compareStatistics(String received, String expected) {
+	private static boolean doTestOnce(TestCase test) {
+		long time = System.currentTimeMillis();
+		try {
+			test.doTest();
+		} catch (Throwable t) {
+			System.out.printf("-- Test '%s' FAILED with exception !!!%n", test.name());
+			t.printStackTrace(System.out);
+			return false;
+		}
+		System.out.printf("Test took %d ms\n", System.currentTimeMillis() - time);
+		return true;
+	}
+
+	public static String compareStatistics(String received, String expected) {
 		if (expected == null)
-			return true;
+			return null;
 		StringTokenizer out = new StringTokenizer(received, "\n\r");
 		StringTokenizer ans = new StringTokenizer(expected, "\n\r");
+		int lineNo = 0;
 		while (out.hasMoreTokens() && ans.hasMoreTokens()) {
+			lineNo++;
 			String outToken = out.nextToken();
 			String ansToken = ans.nextToken();
-			if (!outToken.equals(ansToken)) {
-				return false;
-			}
+			if (!compile(ansToken).matcher(outToken).matches())
+				return String.format("Line %d does not match. Expected vs collected:%n%s%n%s", lineNo, ansToken, outToken);
 		}
-		return out.hasMoreTokens() == ans.hasMoreTokens();
+		lineNo++;
+		if (out.hasMoreTokens())
+			return String.format("Extra line %d. Collected:%n%s", lineNo, out.nextToken());
+		if (ans.hasMoreTokens())
+			return String.format("Missing line %d. Expected:%n%s", lineNo, ans.nextToken());
+		return null;
+	}
+
+	private static Pattern compile(String expected) {
+		return Pattern.compile("\\Q" + expected.replace("_", "\\E[.,0-9]+\\Q") + "\\E");
+	}
+
+	private static Configuration checkConfiguration() {
+		Configuration configuration = AProfRegistry.getConfiguration();
+		if (configuration == null) {
+			System.out.println("Tests should be run under Aprof: -javaagent:aprof.jar");
+			return null;
+		}
+		return configuration;
 	}
 }

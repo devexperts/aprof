@@ -21,7 +21,8 @@ package com.devexperts.aprof;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.devexperts.aprof.dump.Snapshot;
+import com.devexperts.aprof.dump.SnapshotDeep;
+import com.devexperts.aprof.dump.SnapshotShallow;
 import com.devexperts.aprof.util.*;
 
 /**
@@ -58,6 +59,26 @@ public class AProfRegistry {
 	 */
 	private static final FastArrayList<IndexMap> ROOT_INDEXES = new FastArrayList<IndexMap>();
 
+	/**
+	 * Allocated and reused in makeSnapshotInternal.
+	 */
+	private static DatatypeInfo[] SORTED_DATATYPES;
+
+	/**
+	 * Temporary object to collect unknowns.
+	 */
+	private static SnapshotShallow UNKNOWN_TEMP;
+
+	/**
+	 * Temporary object to collect totals per data-type.
+	 */
+	private static SnapshotShallow DATATYPE_TOTAL_TEMP;
+
+	/**
+	 * Temporary object to collect totals for clone invocations.
+	 */
+	private static SnapshotShallow CLONE_TOTAL_TEMP;
+
 	private static final String UNKNOWN = "<unknown>";
 
 	public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
@@ -76,6 +97,12 @@ public class AProfRegistry {
 		registerDatatypeInfo(Object.class.getName());
 		registerDatatypeInfo(IndexMap.class.getName());
 		registerDatatypeInfo(FastIntObjMap.class.getName());
+
+		// allocate memory for temp snapshots
+		int histoCountsLength = config.getMaxHistogramLength() + 1;
+		UNKNOWN_TEMP = new SnapshotShallow(null, histoCountsLength);
+		DATATYPE_TOTAL_TEMP = new SnapshotShallow(null, histoCountsLength);
+		CLONE_TOTAL_TEMP = new SnapshotShallow(null, histoCountsLength);
 	}
 
 	public static boolean isInternalLocationClass(String locationClass) {
@@ -285,129 +312,145 @@ public class AProfRegistry {
 
 	//==================== SNAPSHOTS ======================
 
-	/** Adds current snapshot information to <code>ss</code> and clears internal counters. */
-	public static void makeSnapshot(Snapshot ss) {
-		ss.sort(Snapshot.COMPARATOR_ID);
-		makeSnapshotInternal(ss);
+	/**
+	 * Adds current snapshot information to <code>ss</code> and clears internal counters.
+	 */
+	public static void takeSnapshot(SnapshotDeep ss) {
+		ss.sortChildrenDeep(SnapshotDeep.COMPARATOR_NAME);
+		takeSnapshotInternalSync(ss);
 		compactUnknowns(ss);
 	}
 
-	private static synchronized void makeSnapshotInternal(Snapshot ss) {
+	private static synchronized void takeSnapshotInternalSync(SnapshotDeep ss) {
 		int size = DATATYPE_NAMES.size();
-		DatatypeInfo[] datatypes = new DatatypeInfo[size];
+		if (SORTED_DATATYPES == null || SORTED_DATATYPES.length < size)
+			SORTED_DATATYPES = new DatatypeInfo[(int)(1.5 * size)]; // reserve for the future growth
 		int count = 0;
 		for (int i = 0; i < size; i++) {
 			DatatypeInfo datatypeInfo = getDatatypeInfo(i);
-			if (datatypeInfo == null) {
+			if (datatypeInfo == null)
 				continue;
-			}
-			datatypes[count++] = datatypeInfo;
+			SORTED_DATATYPES[count++] = datatypeInfo;
 		}
-		QuickSort.sort(datatypes, 0, count, DatatypeInfo.COMPARATOR_NAME);
-		ss.ensureCapacity(count);
+		QuickSort.sort(SORTED_DATATYPES, 0, count, DatatypeInfo.COMPARATOR_NAME);
+		ss.ensureChildrenCapacity(count);
+		ss.clearShallow(); // will recompute sum here
 		int idx = 0;
 		for (int i = 0 ; i < count; i++) {
-			DatatypeInfo datatypeInfo = datatypes[i];
+			// process datatype
+			DatatypeInfo datatypeInfo = SORTED_DATATYPES[i];
 			String name = datatypeInfo.getName();
 			IndexMap map = datatypeInfo.getIndex();
+			int classSize = datatypeInfo.getSize();
 			int[] histogram = map.getHistogram();
-			int histogramLength = histogram == null ? 0 : histogram.length + 1;
-			Snapshot cs = ss.get(idx = ss.move(idx, name), name, histogramLength);
-			makeSnapshotRec(cs, map, datatypeInfo.getSize(), new Snapshot(null, histogramLength), new Snapshot(null, histogramLength));
-			ss.add(cs);
+			int histoCountsLength = histogram == null ? 0 : histogram.length + 1;
+			boolean trackClassUnknown = config.isUnknown() && !datatypeInfo.isArray();
+			// find child snapshot corresponding to this datatype
+			SnapshotDeep cs = ss.getChild(idx = ss.findChild(idx, name), name, histoCountsLength);
+			// take snapshot
+			assert DATATYPE_TOTAL_TEMP.isEmpty();
+			takeSnapshotShallow(DATATYPE_TOTAL_TEMP, map, classSize);
+			// datatypes must allays have children -- location from were allocations were performed
+			assert CLONE_TOTAL_TEMP.isEmpty();
+			takeSnapshotDeepOnly(cs, map, classSize, trackClassUnknown ? CLONE_TOTAL_TEMP : null);
+			// create unknown node for datatype if tracked them (was enabled in config for non-array datatypes)
+			if (trackClassUnknown) {
+				DATATYPE_TOTAL_TEMP.subShallow(cs); // compute unknown remainder
+				DATATYPE_TOTAL_TEMP.ensurePositive();
+				addToUnknown(cs, DATATYPE_TOTAL_TEMP);
+				cs.addShallow(CLONE_TOTAL_TEMP); // add clone totals to overall totals
+				DATATYPE_TOTAL_TEMP.clearShallow();
+				CLONE_TOTAL_TEMP.clearShallow();
+			} else
+				assert DATATYPE_TOTAL_TEMP.isEmpty(); // otherwise, datatype counters should not have anything in them
+			 // add this datatype to the total sum
+			ss.addShallow(cs);
 		}
 	}
 
-	private static void makeSnapshotRec(Snapshot list, IndexMap map, int classSize, Snapshot unknown, Snapshot total) {
-		list.ensureCapacity(map.size());
-		list.clear();
-
-		Snapshot temp = total != null ? total : unknown;
+	private static void takeSnapshotShallow(SnapshotShallow ss, IndexMap map, int classSize) {
 		long count = map.takeCount(); // SIC! Its long to avoid overflows
 		if (map.hasHistogram()) {
+			// Array (dynamically tracked sum size with histograms)
 			long size = ((long)map.takeSize()) << AProfSizeUtil.SIZE_SHIFT;
-			int n = map.getHistogramLength();
-			long[] counts = new long[n];
-			for (int i = 0; i < n; i++)
-				counts[i] = map.takeHistogramCount(i);
-			temp.add(count, size, counts);
+			ss.add(count, size);
+			for (int i = 0; i < map.getHistogramLength(); i++)
+				ss.addHistoCount(i, map.takeHistogramCount(i));
 		} else {
+			// Regular object (fixed size)
 			long size = (count * classSize) << AProfSizeUtil.SIZE_SHIFT;
-			temp.add(count, size);
+			ss.add(count, size);
 		}
-		if (map.size() == 0) {
-			list.add(unknown);
-			unknown.clear();
-		} else {
-			IndexMap unknownMap = map.get(UNKNOWN_LOC);
-			if (unknownMap != null) {
-				Snapshot childList = list.get(list.move(0, UNKNOWN), UNKNOWN);
-				makeSnapshotRec(childList, unknownMap, classSize, unknown, null);
-				list.add(childList);
-				unknown.clear();
-			} else if (!unknown.isEmpty()) {
-				Snapshot childList = list.get(list.move(0, UNKNOWN), UNKNOWN);
-				childList.add(unknown);
-				list.add(childList);
-				unknown.clear();
+	}
+
+	/**
+	 * Recursively adds snapshot from {@code map} to {@code ss} for a class of a known size {@code classSize}
+	 * (which is zero for arrays or when size is not being tracked).
+	 */
+	private static void takeSnapshotDeepOnly(SnapshotDeep ss, IndexMap map, int classSize, SnapshotShallow cloneTotal) {
+		ss.ensureChildrenCapacity(map.size());
+		ss.clearShallow(); // will recompute sum here from children
+
+		for (IntIterator it = map.iterator(); it.hasNext();) {
+			int key = it.next();
+			String name = LOCATIONS.get(key);
+			IndexMap childMap = map.get(key);
+			SnapshotDeep cs = ss.getChild(ss.findChild(0, name), name);
+			if (childMap.size() > 0) {
+				// if child has children, then move its shallow snapshot to UNKNOWN and go recursively into its children
+				assert UNKNOWN_TEMP.isEmpty();
+				takeSnapshotShallow(UNKNOWN_TEMP, childMap, classSize);
+				addToUnknown(cs, UNKNOWN_TEMP);
+				UNKNOWN_TEMP.clearShallow();
+				takeSnapshotDeepOnly(cs, childMap, classSize, null);
+			} else {
+				// child has no children of its own -- just take its shallow snapshot
+				takeSnapshotShallow(cs, childMap, classSize);
 			}
-			// unknown is empty now
-			for (IntIterator it = map.iterator(); it.hasNext();) {
-				int key = it.next();
-				if (key == UNKNOWN_LOC)
-					continue;
-				String id = LOCATIONS.get(key);
-				IndexMap childMap = map.get(key);
-				Snapshot childList = list.get(list.move(0, id), id);
-				makeSnapshotRec(childList, childMap, classSize, unknown, null);
-				if (childList.isEmpty())
-					continue;
-				if (!id.endsWith(CLONE_SUFFIX)) {
-					// do not count "clone" calls because they do not invoke constructor
-					list.add(childList);
-				}
-			}
-		}
-		if (total != null) {
-			total.sub(list);
-			total.positive();
-			if (!total.isEmpty()) {
-				// now we should add <unknown> node
-				list.add(total);
-				list = list.get(list.move(0, UNKNOWN), UNKNOWN);
-				list.add(total);
+			if (name.endsWith(CLONE_SUFFIX) && cloneTotal != null) {
+				// count clone invocation separately and do not count them in overall totals
+				// because they do not invoke constructor when unknown tracking is enabled
+				cloneTotal.addShallow(cs);
+			} else {
+				ss.addShallow(cs);
 			}
 		}
 	}
 
-	/** Returns whether the snapshot contains non-unknown subnode.*/
-	private static boolean compactUnknowns(Snapshot list) {
-		Snapshot unknown = null;
+	private static void addToUnknown(SnapshotDeep ss, SnapshotShallow unknown) {
+		if (unknown.isEmpty())
+			return;
+		SnapshotDeep cs = ss.getChild(ss.findChild(0, UNKNOWN), UNKNOWN);
+		cs.addShallow(unknown);
+		ss.addShallow(cs);
+	}
+
+	/**
+	 * Compacts unknown nodes and returns {@code true} when the snapshot
+	 * contains non-unknown children.
+	 */
+	private static boolean compactUnknowns(SnapshotDeep ss) {
+		SnapshotDeep unknown = null;
 		boolean unknownsOnly = true;
-		for (int i = 0; i < list.getUsed(); i++) {
-			Snapshot item = list.getItem(i);
-			if (item.isEmpty()) {
+		for (int i = 0; i < ss.getUsed(); i++) {
+			SnapshotDeep cs = ss.getChild(i);
+			if (cs.isEmpty())
 				continue;
-			}
-			if (UNKNOWN.equals(item.getId())) {
-				unknown = item;
+			if (UNKNOWN.equals(cs.getName())) {
+				unknown = cs;
 			} else {
-				compactUnknowns(item);
+				compactUnknowns(cs);
 				unknownsOnly = false;
 			}
 		}
-		if (unknown == null) {
+		if (unknown == null)
 			return !unknownsOnly;
-		}
-		if (compactUnknowns(unknown)) {
+		if (compactUnknowns(unknown))
 			return true;
-		}
-		if (unknownsOnly) {
-			unknown.clear();
-		}
+		if (unknownsOnly)
+			unknown.clearShallow();
 		return !unknownsOnly;
 	}
-
 
 	//=================== COUNT & TIME ====================
 

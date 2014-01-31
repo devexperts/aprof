@@ -18,33 +18,37 @@
 
 package com.devexperts.aproftest;
 
-import com.devexperts.aprof.Configuration;
-
 import java.io.*;
 import java.util.ArrayList;
+
+import com.devexperts.aprof.AProfSizeUtil;
+import com.devexperts.aprof.Configuration;
+
+import static com.devexperts.aproftest.TestUtil.fmt;
 
 /**
  * @author Dmitry Paraschenko
  */
 class DeserializationTest implements TestCase {
-	private final ArrayList<Entity> serializedObject;
+	private static final int READS = 10;
+	private static final int LIST_SIZE = 100000;
+	private static final int COUNT = READS * LIST_SIZE;
+
 	private final byte[] serializedData;
 
 	public DeserializationTest() {
-		serializedObject = new ArrayList<Entity>();
-		for (int i = 0; i < 100000; i++) {
+		ArrayList<Entity> serializedObject = new ArrayList<Entity>();
+		for (int i = 0; i < LIST_SIZE; i++)
 			serializedObject.add(new Entity(i));
-		}
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream(baos);
 			oos.writeObject(serializedObject);
 			serializedData = baos.toByteArray();
 		} catch (IOException e) {
-			throw new IllegalStateException(e);
+			throw new AssertionError(e);
 		}
 	}
-
 
 	public String name() {
 		return "deserialization";
@@ -59,39 +63,33 @@ class DeserializationTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		return STATISTICS;
+		int objSize = AProfSizeUtil.getObjectSize(new Entity(0)) << AProfSizeUtil.SIZE_SHIFT;
+		return fmt(
+			"Allocated {size} bytes in {count} objects in 1 locations of 1 classes\n" +
+			"-------------------------------------------------------------------------------\n" +
+			"{class}$Entity: {size} (_%) bytes in {count} (_%) objects (avg size {objSize} bytes)\n" +
+			"\tsun.reflect.GeneratedSerializationConstructorAccessor.newInstance: {size} (_%) bytes in {count} (_%) objects\n" +
+			"\t\tjava.io.ObjectInputStream.readObject: {size} (_%) bytes in {count} (_%) objects\n" +
+			"\t\t\t{class}.doTest: {size} (_%) bytes in {count} (_%) objects\n",
+			"class=" + getClass().getName(),
+			"size=" + fmt(objSize * COUNT),
+			"count=" + fmt(COUNT),
+			"objSize=" + objSize);
 	}
 
-	public void doTest() {
-		long time = System.currentTimeMillis();
-		try {
-			for (int i = 0; i < 10; i++) {
-				System.out.print('.');
-				ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serializedData));
-				ois.readObject();
-				ois.close();
-			}
-			System.out.printf(" Test took %d ms\n", System.currentTimeMillis() - time);
-		} catch (Exception e) {
-			System.out.printf(" Test failed in %d ms\n", System.currentTimeMillis() - time);
-			e.printStackTrace();
+	public void doTest() throws Exception {
+		for (int i = 0; i < READS; i++) {
+			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serializedData));
+			ois.readObject();
+			ois.close();
 		}
 	}
 
 	private static class Entity implements Serializable {
 		private final int value;
-		
+
 		private Entity(int value) {
 			this.value = value;
 		}
 	}
-
-	private static String STATISTICS = "" +
-            "Allocated 16,000,000 bytes in 1,000,000 objects in 1 locations of 1 classes\n" +
-            "-------------------------------------------------------------------------------\n" +
-            "com.devexperts.aproftest.DeserializationTest$Entity: 16,000,000 (100%) bytes in 1,000,000 (100%) objects (avg size 16 bytes)\n" +
-            "\tsun.reflect.GeneratedSerializationConstructorAccessor.newInstance: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-            "\t\tjava.io.ObjectInputStream.readObject: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-            "\t\t\tcom.devexperts.aproftest.DeserializationTest.doTest: 16,000,000 (100%) bytes in 1,000,000 (100%) objects\n" +
-			"";
 }

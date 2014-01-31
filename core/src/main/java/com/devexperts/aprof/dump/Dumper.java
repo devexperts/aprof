@@ -18,17 +18,12 @@
 
 package com.devexperts.aprof.dump;
 
-import com.devexperts.aprof.AProfRegistry;
-import com.devexperts.aprof.Configuration;
-import com.devexperts.aprof.Version;
+import java.io.*;
+import java.util.Date;
+
+import com.devexperts.aprof.*;
 import com.devexperts.aprof.util.FastOutputStreamWriter;
 import com.devexperts.aprof.util.Log;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
-import java.util.Date;
 
 /**
  * @author Roman Elizarov
@@ -37,9 +32,9 @@ public class Dumper {
 	private final Configuration config;
 	private final String argsStr;
 	private final long start;
-	private final Snapshot total = new Snapshot();
-	private final Snapshot last = new Snapshot();
-	private final Snapshot temp = new Snapshot();
+	private final SnapshotDeep total = new SnapshotDeep();
+	private final SnapshotDeep last = new SnapshotDeep();
+	private final SnapshotDeep temp = new SnapshotDeep();
 	private long lastTime = System.currentTimeMillis();
 
 	private final DumpFormatter formatter;
@@ -58,17 +53,17 @@ public class Dumper {
 
 	public synchronized void makeOverflowSnapshot() {
 		Log.out.println("Making snapshot to prevent overflow...");
-		AProfRegistry.makeSnapshot(last);
+		AProfRegistry.takeSnapshot(last);
 		overflowCount++;
 	}
 
 
 	public synchronized void sendDumpTo(ObjectOutputStream oos, String address) throws IOException {
 		Log.out.println("Sending dump over socket connection to " + address + " ...");
-		AProfRegistry.makeSnapshot(last);
+		AProfRegistry.takeSnapshot(last);
 		temp.clearDeep();
-		temp.addAll(total);
-		temp.addAll(last);
+		temp.addDeep(total);
+		temp.addDeep(last);
 		oos.writeObject(temp);
 	}
 
@@ -96,8 +91,8 @@ public class Dumper {
 		}
 
 		Log.out.println("Writing dump to file " + fileName + "...");
-		AProfRegistry.makeSnapshot(last);
-		total.addAll(last);
+		AProfRegistry.takeSnapshot(last);
+		total.addDeep(last);
 		snapshotCount++;
 
 		PrintWriter out = null;
