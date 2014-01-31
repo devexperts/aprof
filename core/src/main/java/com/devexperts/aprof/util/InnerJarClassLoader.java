@@ -1,6 +1,6 @@
 /*
  * Aprof - Java Memory Allocation Profiler
- * Copyright (C) 2002-2013  Devexperts LLC
+ * Copyright (C) 2002-2014  Devexperts LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,12 +23,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.*;
 import java.security.cert.Certificate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
-import java.util.jar.Manifest;
+import java.util.*;
+import java.util.jar.*;
 
 /**
  * This ClassLoader allows to load classes from URLs located inside JAR or ZIP files.

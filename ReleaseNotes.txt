@@ -1,3 +1,14 @@
+AProf 25
+
+- Updated Copyright dates to 2014
+** Change Request
+APROF-76: Print total allocation percentages
+** Defect Report
+APROF-73: Broken reports (totals do not add up)
+APROF-75: Selftest does not pass on 64bit JVM
+** Improvement
+APROF-74: Improve memory consumption
+
 Aprof 24
 
 - NoClassDefFoundError for java.lang.Object fixed
@@ -12,7 +23,6 @@ AProf 22
 ** Defect Reports
 [APROF-65] AProf does not work for code that is compiled with Java 7
 
-
 Aprof 21
 
 ** Change Request
@@ -25,7 +35,6 @@ APROF-62: Failed to transform while tracking java.lang.Integer methods
 ** Improvement
 APROF-60: Improve aprof garbage rate by getting rid of extra location string concatenation and parsing
 APROF-66: Improve runtime performance and memory footprint by using Unsafe instead of AtomicXXX classes
-
 
 Aprof 20
 	
@@ -41,7 +50,6 @@ APROF-57: Core: migrate to improved version of jar class loader
 ** Task
 APROF-55: Core: investigate serialization/deserialization
 
-
 Aprof 19
 	
 ** Change Request
@@ -50,7 +58,6 @@ APROF-47: Core: by default 'fileconfig' parameter shall be zero
 APROF-48: Core: track boxing methods
 ** Defect Report
 APROF-49: Core: incorrect uptime duration is shown in statistics dumps
-
 
 Aprof 18
 	
@@ -64,7 +71,6 @@ APROF-45: Core: add ability to store multiple snapshot dumps in one file
 APROF-39: Core: transformer shall use EXPAND_FRAMES flag when reading classes
 APROF-44: Core: network dump does not flush its output
 
-
 Aprof 17
 	
 ** Change Request
@@ -74,14 +80,12 @@ APROF-37: Mozilla Public Licence Version 2.0 header
 ** Defect Report
 APROF-34: Core: number of classes and locations is not shown
 
-
 Aprof 16
 	
 ** Change Request
 APROF-33: Core: dumper thread should not die on thrown exceptions
 ** Defect Report
 APROF-32: Core: NPE during snapshot generation
-
 
 Aprof 15
 	
@@ -90,12 +94,10 @@ APROF-29: Core: no allocation statistics is collected
 APROF-30: Core: memory leak on snapshot generation
 APROF-31: Core: NPE on checking overflow threshold
 
-
 Aprof 14
 	
 ** Defect Report
 APROF-28: Core: incorrect statistics is shown
-
 
 Aprof 13
 	
@@ -107,12 +109,10 @@ APROF-27: Core: aggregate statistics for Proxy classes
 ** Improvement
 APROF-26: Core: improve tracked classes resolving process
 
-
 Aprof 12
 	
 ** Change Request
 APROF-19: Core: add transformer configuration
-
 
 Aprof 11
 	
@@ -121,7 +121,6 @@ APROF-21: Core: aggregate statistics for similar class names
 ** Defect Report
 APROF-20: Core: out of memory in PermGen space
 
-
 Aprof 10
 	
 ** Change Request
@@ -129,12 +128,10 @@ APROF-18: Core: add rotation to snapshots file
 ** Task
 APROF-17: Migrate to maven for release building
 
-
 Aprof build-9
 
 ** Change Request
 APROF-16: Core: array length histograms should be disabled by default
-
 
 Aprof build-8
 

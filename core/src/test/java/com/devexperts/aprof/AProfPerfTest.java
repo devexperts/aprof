@@ -1,6 +1,6 @@
 /*
  * Aprof - Java Memory Allocation Profiler
- * Copyright (C) 2002-2013  Devexperts LLC
+ * Copyright (C) 2002-2014  Devexperts LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,7 @@
 
 package com.devexperts.aprof;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 /**
  * @author Roman Elizarov

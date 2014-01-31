@@ -1,6 +1,6 @@
 /*
  * Aprof - Java Memory Allocation Profiler
- * Copyright (C) 2002-2013  Devexperts LLC
+ * Copyright (C) 2002-2014  Devexperts LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,20 +18,16 @@
 
 package com.devexperts.aprof.transformer;
 
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.IllegalClassFormatException;
+import java.security.ProtectionDomain;
+import java.util.*;
+
 import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
 import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.*;
-import org.objectweb.asm.commons.GeneratorAdapter;
-import org.objectweb.asm.commons.JSRInlinerAdapter;
-import org.objectweb.asm.commons.TryCatchBlockSorter;
-
-import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
-import java.security.ProtectionDomain;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import org.objectweb.asm.commons.*;
 
 /**
  * @author Roman Elizarov

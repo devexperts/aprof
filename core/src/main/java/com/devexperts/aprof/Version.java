@@ -1,6 +1,6 @@
 /*
  * Aprof - Java Memory Allocation Profiler
- * Copyright (C) 2002-2013  Devexperts LLC
+ * Copyright (C) 2002-2014  Devexperts LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,17 +33,14 @@ public class Version {
 		return fullVersion;
 	}
 
-	private static String createVersion(boolean with_vendor) {
+	private static String createVersion(boolean full) {
 		Package p = Package.getPackage("com.devexperts.aprof");
-		String title = p.getImplementationTitle();
 		String version = p.getImplementationVersion();
-		String vendor = p.getImplementationVendor();
 		StringBuilder sb = new StringBuilder();
-		sb.append(title == null ? "Aprof" : title).append(" ");
+		sb.append("Aprof ");
 		sb.append(version == null ? "version unknown" : version);
-		if (with_vendor) {
-			sb.append(", Copyright (C) ").append(vendor == null ? "unknown" : vendor);
-		}
+		if (full)
+			sb.append(", Copyright (C) 2002-2014 Devexperts LLC");
 		return sb.toString();
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * Aprof - Java Memory Allocation Profiler
- * Copyright (C) 2002-2013  Devexperts LLC
+ * Copyright (C) 2002-2014  Devexperts LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,9 +45,9 @@ class NewTest implements TestCase {
 		int objSize = AProfSizeUtil.getObjectSize(new Entity()) << AProfSizeUtil.SIZE_SHIFT;
 		return fmt(
 			"Allocated {size} bytes in {count} objects in 1 locations of 1 classes\n" +
-			"-------------------------------------------------------------------------------\n" +
-			"{class}$Entity: {size} (_%) bytes in {count} (_%) objects (avg size {objSize} bytes)\n" +
-			"\t{class}.doTest: {size} (_%) bytes in {count} (_%) objects\n",
+				"-------------------------------------------------------------------------------\n" +
+				"{class}$Entity: {size} (_%) bytes in {count} (_%) objects (avg size {objSize} bytes)\n" +
+				"\t{class}.doTest: {size} (_%) bytes in {count} (_%) objects\n",
 			"class=" + getClass().getName(),
 			"size=" + fmt(objSize * COUNT),
 			"count=" + fmt(COUNT),
