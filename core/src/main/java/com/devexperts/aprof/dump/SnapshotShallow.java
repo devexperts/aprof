@@ -144,7 +144,7 @@ public class SnapshotShallow implements Serializable {
 		sub(ss.count, ss.size, ss.histoCounts);
 	}
 
-	public boolean exceedsThreshold(double threshold, SnapshotShallow total) {
+	public boolean exceedsThreshold(SnapshotShallow total, double threshold) {
 		return exceeds(threshold, getTotalCount(), total.getTotalCount()) || exceeds(threshold, getSize(), total.getSize());
 	}
 

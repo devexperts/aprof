@@ -68,7 +68,7 @@ public class DumpFormatter {
 		classLevel.fill(Integer.MAX_VALUE);
 		for (int csi = 0; csi < ss.getUsed(); csi++) {
 			SnapshotDeep cs = ss.getChild(csi);
-			classLevel.put(cs.getName(), cs.exceedsThreshold(threshold, ss) ? 0 : Integer.MAX_VALUE);
+			classLevel.put(cs.getName(), cs.exceedsThreshold(ss, threshold) ? 0 : Integer.MAX_VALUE);
 		}
 		// compute progressive higher levels
 		for (int level = 0; level < config.getLevel(); level++)
@@ -86,8 +86,8 @@ public class DumpFormatter {
 			if (!cs.isEmpty() && classLevel.get(cs.getName()) <= config.getLevel()) {
 				boolean isArray = cs.getName().indexOf('[') >= 0;
 				out.print(cs.getName());
-				printlnDetails(out, cs, ss, true);
-				printLocationsRec(out, 1, cs, threshold, isArray);
+				printlnDetailsShallow(out, cs, ss, true);
+				printLocationsDeep(out, 1, cs, ss, threshold, isArray);
 				out.println();
 			} else if (!cs.isEmpty()) {
 				cskipped++;
@@ -98,11 +98,11 @@ public class DumpFormatter {
 			out.print("... ");
 			printnum(out, cskipped);
 			out.print(" more below threshold");
-			printlnDetails(out, rest[0], ss, true);
+			printlnDetailsShallow(out, rest[0], ss, true);
 		}
 	}
 
-	private void printlnDetails(PrintWriter out, SnapshotDeep item, SnapshotDeep total, boolean printAvg) {
+	private void printlnDetailsShallow(PrintWriter out, SnapshotShallow item, SnapshotShallow total, boolean printAvg) {
 		out.print(": ");
 		if (config.isSize()) {
 			printp(out, item.getSize(), total.getSize());
@@ -142,11 +142,11 @@ public class DumpFormatter {
 			out.print("\t");
 	}
 
-	private void markClassLevelRec(SnapshotDeep list, double threshold, int level) {
-		for (int i = 0; i < list.getUsed(); i++) {
-			SnapshotDeep item = list.getChild(i);
+	private void markClassLevelRec(SnapshotDeep ss, double threshold, int level) {
+		for (int i = 0; i < ss.getUsed(); i++) {
+			SnapshotDeep item = ss.getChild(i);
 			String className = item.getName();
-			if (item.exceedsThreshold(threshold, list) && className != null) {
+			if (item.exceedsThreshold(ss, threshold) && className != null) {
 				int oldLevel = classLevel.get(className);
 				if (oldLevel > level + 1)
 					classLevel.put(className, level + 1);
@@ -156,28 +156,40 @@ public class DumpFormatter {
 		}
 	}
 
-	private void printLocationsRec(PrintWriter out, int depth, SnapshotDeep list, double threshold, boolean isArray) {
+	private void printLocationsDeep(PrintWriter out, int depth, SnapshotDeep ss, SnapshotShallow total,
+		double threshold, boolean isArray)
+	{
 		// count how many below threshold (1st pass)
+		int shown = 0;
 		int skipped = 0;
-		for (int i = 0; i < list.getUsed(); i++) {
-			SnapshotDeep item = list.getChild(i);
-			if (!item.exceedsThreshold(threshold, list) && !item.isEmpty())
+		for (int i = 0; i < ss.getUsed(); i++) {
+			SnapshotDeep item = ss.getChild(i);
+			if (item.isEmpty())
+				continue; // ignore empty items
+			// always show 1st item and all that exceed threshold
+			if (shown == 0 || item.exceedsThreshold(total, threshold))
+				shown++;
+			else
 				skipped++;
 		}
 		boolean printAll = skipped <= 2; // avoid ... 1 more and ... 2 more messages
 
 		// print (2nd pass)
+		shown = 0;
 		skipped = 0;
 		rest[depth].clearShallow();
-		for (int i = 0; i < list.getUsed(); i++) {
-			SnapshotDeep item = list.getChild(i);
-			if ((printAll && !item.isEmpty()) || item.exceedsThreshold(threshold, list)) {
+		for (int i = 0; i < ss.getUsed(); i++) {
+			SnapshotDeep item = ss.getChild(i);
+			if (item.isEmpty())
+				continue; // ignore empty items
+			if (shown == 0 || printAll || item.exceedsThreshold(total, threshold)) {
+				shown++;
 				printIndent(out, depth);
 				out.print(item.getName());
-				printlnDetails(out, item, list, isArray);
+				printlnDetailsShallow(out, item, total, isArray);
 				if (item.hasChildren())
-					printLocationsRec(out, depth + 1, item, threshold, isArray);
-			} else if (!item.isEmpty()) {
+					printLocationsDeep(out, depth + 1, item, total, threshold, isArray);
+			} else {
 				skipped++;
 				rest[depth].addShallow(item);
 			}
@@ -187,7 +199,7 @@ public class DumpFormatter {
 			out.print("... ");
 			printnum(out, skipped);
 			out.print(" more below threshold");
-			printlnDetails(out, rest[depth], list, isArray);
+			printlnDetailsShallow(out, rest[depth], total, isArray);
 		}
 	}
 
@@ -228,7 +240,10 @@ public class DumpFormatter {
 		printnum(out, count);
 		if (total > 0) {
 			out.print(" (");
-			printnum(out, count * 100 / total);
+			long pp = count * 10000 / total;
+			printnum(out, pp / 100);
+			out.print(".");
+			print2(out, (int)(pp % 100), true);
 			out.print("%)");
 		}
 	}
