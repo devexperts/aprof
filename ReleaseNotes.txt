@@ -1,3 +1,13 @@
+AProf 26
+
+** Change Request
+APROF-78: Add more methods to the default tracked list (formatting, i/o, thread)
+APROF-81: Report top allocation-inducing locations with data types allocated from them
+** Defect Report
+APROF-80: Counters in <unknown> locations are incorrectly tracked (forgotten)
+** Improvement
+APROF-79: Reduce garbage during report generation
+
 AProf 25
 
 - Updated Copyright dates to 2014
