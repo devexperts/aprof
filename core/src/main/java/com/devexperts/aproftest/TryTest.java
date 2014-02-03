@@ -45,20 +45,16 @@ class TryTest implements TestCase {
 		int doubleObjSize = AProfSizeUtil.getObjectSize(new Double(0)) << AProfSizeUtil.SIZE_SHIFT;
 		int floatObjSize = AProfSizeUtil.getObjectSize(new Float(0)) << AProfSizeUtil.SIZE_SHIFT;
 		return fmt(
-			"Allocated {size2} bytes in {count2} objects in 2 locations of 2 classes\n" +
-			"-------------------------------------------------------------------------------\n" +
-			"java.lang.Double: {doubleSize} (_%) bytes in {count} (_%) objects (avg size {doubleObjSize} bytes)\n" +
-			"\tjava.lang.Double.valueOf: {doubleSize} (_%) bytes in {count} (_%) objects\n" +
-			"\t\t{class}.doTest: {doubleSize} (_%) bytes in {count} (_%) objects\n" +
+			"java.lang.Double: {doubleSize} bytes in {count} objects (avg size {doubleObjSize} bytes)\n" +
+			"\tjava.lang.Double.valueOf: {doubleSize} bytes in {count} objects\n" +
+			"\t\t{class}.doTest: {doubleSize} bytes in {count} objects\n" +
 			"\n" +
-			"java.lang.Float: {floatSize} (_%) bytes in {count} (_%) objects (avg size {floatObjSize} bytes)\n" +
-			"\t{class}.doTest: {floatSize} (_%) bytes in {count} (_%) objects\n",
+			"java.lang.Float: {floatSize} bytes in {count} objects (avg size {floatObjSize} bytes)\n" +
+			"\t{class}.doTest: {floatSize} bytes in {count} objects\n",
 			"class=" + getClass().getName(),
 			"doubleSize=" + fmt(doubleObjSize * COUNT),
 			"floatSize=" + fmt(floatObjSize * COUNT),
 			"count=" + fmt(COUNT),
-			"size2=" + fmt((doubleObjSize + floatObjSize) * COUNT),
-			"count2=" + fmt(2 * COUNT),
 			"doubleObjSize=" + doubleObjSize,
 			"floatObjSize=" + floatObjSize);
 	}

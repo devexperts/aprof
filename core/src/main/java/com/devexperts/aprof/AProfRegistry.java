@@ -74,14 +74,7 @@ public class AProfRegistry {
 	 */
 	private static SnapshotShallow DATATYPE_TOTAL_TEMP;
 
-	/**
-	 * Temporary object to collect totals for clone invocations.
-	 */
-	private static SnapshotShallow CLONE_TOTAL_TEMP;
-
-	private static final String UNKNOWN = "<unknown>";
-
-	public static final int UNKNOWN_LOC = registerLocation(UNKNOWN);
+	public static final int UNKNOWN_LOC = registerLocation(SnapshotDeep.UNKNOWN);
 
 	private static Configuration config;
 	private static ClassNameResolver classNameResolver;
@@ -102,7 +95,6 @@ public class AProfRegistry {
 		int histoCountsLength = config.getMaxHistogramLength() + 1;
 		UNKNOWN_TEMP = new SnapshotShallow(null, histoCountsLength);
 		DATATYPE_TOTAL_TEMP = new SnapshotShallow(null, histoCountsLength);
-		CLONE_TOTAL_TEMP = new SnapshotShallow(null, histoCountsLength);
 	}
 
 	public static boolean isInternalLocationClass(String locationClass) {
@@ -150,10 +142,6 @@ public class AProfRegistry {
 			}
 		}
 		return cname;
-	}
-
-	public static Configuration getConfiguration() {
-		return config;
 	}
 
 	public static int getLocationCount() {
@@ -315,9 +303,9 @@ public class AProfRegistry {
 	public static void takeSnapshot(SnapshotDeep ss) {
 		ss.sortChildrenDeep(SnapshotDeep.COMPARATOR_NAME);
 		takeSnapshotInternalSync(ss);
-		compactUnknowns(ss);
 	}
 
+	// PRE-CONDITION: ss.sortChildrenDeep(SnapshotDeep.COMPARATOR_NAME)
 	private static synchronized void takeSnapshotInternalSync(SnapshotDeep ss) {
 		int size = DATATYPE_NAMES.size();
 		if (SORTED_DATATYPES == null || SORTED_DATATYPES.length < size)
@@ -343,23 +331,59 @@ public class AProfRegistry {
 			int histoCountsLength = histogram == null ? 0 : histogram.length + 1;
 			boolean trackClassUnknown = config.isUnknown() && !datatypeInfo.isArray();
 			// find child snapshot corresponding to this datatype
-			SnapshotDeep cs = ss.getChild(idx = ss.findChild(idx, name), name, histoCountsLength);
-			// take snapshot
-			assert DATATYPE_TOTAL_TEMP.isEmpty();
-			takeSnapshotShallow(DATATYPE_TOTAL_TEMP, map, classSize);
-			// datatypes must allays have children -- location from were allocations were performed
-			assert CLONE_TOTAL_TEMP.isEmpty();
-			takeSnapshotDeepOnly(cs, map, classSize, trackClassUnknown ? CLONE_TOTAL_TEMP : null);
+			SnapshotDeep cs = ss.getOrCreateChildAt(idx = ss.findChildInSortedFrom(idx, name), name, histoCountsLength);
+
+			// NOTATION HERE FOR THIS DATA TYPE:
+			//   a[t] = all recorded allocations up to time "t" (unknown and known locations, including from clone)
+			//   c[t] = recorded allocations from "clone" up to time "t"
+			//   k[t] = recorded allocations from known locations other than clone
+			// So, a[t] - c[t] - k[t] is a total for unknown locations
+			// where t = 0 for prev snapshot, t = 1 for this snapshot
+			// NOW: cs = a[0]
+
+			// take snapshot for data type itself (unknown locations)
+			if (trackClassUnknown) {
+				assert DATATYPE_TOTAL_TEMP.isEmpty();
+				DATATYPE_TOTAL_TEMP.addShallow(cs);
+				takeSnapshotShallow(DATATYPE_TOTAL_TEMP, map, classSize);
+				// Data type shallow snapshot contains delta for a[t] - c[t], because all allocations but clone invoke Object.<init>
+				// NOW: DATATYPE_TOTAL_TEMP = a[0] + (a[1] - c[1]) - (a[0] - c[0]) = a[1] - c[1] + c[0]
+
+				// Remove the number of clones we had
+				subCloneLocationsShallow(cs, DATATYPE_TOTAL_TEMP);
+				// NOW: DATATYPE_TOTAL_TEMP = a[1] - c[1]
+			}
+
+			// take snapshot for data type children (known locations)
+			takeSnapshotDeepOnly(cs, map, classSize);
+			cs.updateSnapshotSumShallow();
+
 			// create unknown node for datatype if tracked them (was enabled in config for non-array datatypes)
 			if (trackClassUnknown) {
-				DATATYPE_TOTAL_TEMP.subShallow(cs); // compute unknown remainder
+				// Snapshot sum was recomputed, so we've added total from all known locations including clones
+				// NOW: cs = a[0] + (c[1] - c[0]) + (k[1] - k[0])
+
+				// Add clone count to temp to figure out the overall datatype total
+				addCloneLocationsShallow(cs, DATATYPE_TOTAL_TEMP);
+				// NOW: DATATYPE_TOTAL_TEMP = a[1]
+
+				// Figure out our new unknown addition
+				DATATYPE_TOTAL_TEMP.subShallow(cs);
+				// NOW: DATATYPE_TOTAL_TEMP = a[1] - a[0] - (c[1] - c[0]) - (k[1] - k[0])
+				//       = (a[1] - c[1] - k[1]) - (a[0] - c[0] - k[0])  [THESE ARE OUR NEW UNKNOWN FRIENDS!]
+
+				// We can get negative unknown counters, when object was allocated via "new" and its allocation
+				// was recorded, but exception has happened before execution had reached Object.<init>,
+				// so we clamp unknown counters to positions value
 				DATATYPE_TOTAL_TEMP.ensurePositive();
-				addToUnknown(cs, DATATYPE_TOTAL_TEMP);
-				cs.addShallow(CLONE_TOTAL_TEMP); // add clone totals to overall totals
+
+				cs.addToUnknown(DATATYPE_TOTAL_TEMP);
+				cs.addShallow(DATATYPE_TOTAL_TEMP); // add unknown totals to overall totals
 				DATATYPE_TOTAL_TEMP.clearShallow();
-				CLONE_TOTAL_TEMP.clearShallow();
+				// NOW: cs = a[1]
 			} else
 				assert DATATYPE_TOTAL_TEMP.isEmpty(); // otherwise, datatype counters should not have anything in them
+
 			 // add this datatype to the total sum
 			ss.addShallow(cs);
 		}
@@ -384,69 +408,52 @@ public class AProfRegistry {
 	 * Recursively adds snapshot from {@code map} to {@code ss} for a class of a known size {@code classSize}
 	 * (which is zero for arrays or when size is not being tracked).
 	 */
-	private static void takeSnapshotDeepOnly(SnapshotDeep ss, IndexMap map, int classSize, SnapshotShallow cloneTotal) {
+	// PRE-CONDITION: ss.sortChildrenDeep(SnapshotDeep.COMPARATOR_NAME)
+	private static void takeSnapshotDeepOnly(SnapshotDeep ss, IndexMap map, int classSize) {
 		ss.ensureChildrenCapacity(map.size());
-		ss.clearShallow(); // will recompute sum here from children
-
+		// process all children in map
 		for (IntIterator it = map.iterator(); it.hasNext();) {
 			int key = it.next();
 			String name = LOCATIONS.get(key);
 			IndexMap childMap = map.get(key);
-			SnapshotDeep cs = ss.getChild(ss.findChild(0, name), name);
+			// Use "findChild" for UNKNOWN_LOC, because UNKNOWN child might get created by "addToUnknown" for other
+			// reasons, so it will be appended to the end of the children list and will not be findable by
+			// "findChildInSorted" method that is used to find all other children
+			SnapshotDeep cs = ss.getOrCreateChildAt(key == UNKNOWN_LOC ? ss.findChild(name) : ss.findChildInSorted(name), name);
 			if (childMap.size() > 0) {
-				// if child has children, then move its shallow snapshot to UNKNOWN and go recursively into its children
+				// if child will have children, then move whatever counters it had while it had no children to UNKNOWN
+				if (!cs.hasChildren())
+					cs.addToUnknown(cs);
+				// and move its shallow snapshot to UNKNOWN
 				assert UNKNOWN_TEMP.isEmpty();
 				takeSnapshotShallow(UNKNOWN_TEMP, childMap, classSize);
-				addToUnknown(cs, UNKNOWN_TEMP);
+				cs.addToUnknown(UNKNOWN_TEMP);
 				UNKNOWN_TEMP.clearShallow();
-				takeSnapshotDeepOnly(cs, childMap, classSize, null);
+				// and go recursively into its children
+				takeSnapshotDeepOnly(cs, childMap, classSize);
+				// and update an overall sum from its children
+				cs.updateSnapshotSumShallow();
 			} else {
 				// child has no children of its own -- just take its shallow snapshot
 				takeSnapshotShallow(cs, childMap, classSize);
 			}
-			if (name.endsWith(CLONE_SUFFIX) && cloneTotal != null) {
-				// count clone invocation separately and do not count them in overall totals
-				// because they do not invoke constructor when unknown tracking is enabled
-				cloneTotal.addShallow(cs);
-			} else {
-				ss.addShallow(cs);
-			}
 		}
 	}
 
-	private static void addToUnknown(SnapshotDeep ss, SnapshotShallow unknown) {
-		if (unknown.isEmpty())
-			return;
-		SnapshotDeep cs = ss.getChild(ss.findChild(0, UNKNOWN), UNKNOWN);
-		cs.addShallow(unknown);
-		ss.addShallow(cs);
-	}
-
-	/**
-	 * Compacts unknown nodes and returns {@code true} when the snapshot
-	 * contains non-unknown children.
-	 */
-	private static boolean compactUnknowns(SnapshotDeep ss) {
-		SnapshotDeep unknown = null;
-		boolean unknownsOnly = true;
+	private static void addCloneLocationsShallow(SnapshotDeep ss, SnapshotShallow cloneTotal) {
 		for (int i = 0; i < ss.getUsed(); i++) {
 			SnapshotDeep cs = ss.getChild(i);
-			if (cs.isEmpty())
-				continue;
-			if (UNKNOWN.equals(cs.getName())) {
-				unknown = cs;
-			} else {
-				compactUnknowns(cs);
-				unknownsOnly = false;
-			}
+			if (cs.getName().endsWith(CLONE_SUFFIX))
+				cloneTotal.addShallow(cs);
 		}
-		if (unknown == null)
-			return !unknownsOnly;
-		if (compactUnknowns(unknown))
-			return true;
-		if (unknownsOnly)
-			unknown.clearShallow();
-		return !unknownsOnly;
+	}
+
+	private static void subCloneLocationsShallow(SnapshotDeep ss, SnapshotShallow cloneTotal) {
+		for (int i = 0; i < ss.getUsed(); i++) {
+			SnapshotDeep cs = ss.getChild(i);
+			if (cs.getName().endsWith(CLONE_SUFFIX))
+				cloneTotal.subShallow(cs);
+		}
 	}
 
 	//=================== COUNT & TIME ====================

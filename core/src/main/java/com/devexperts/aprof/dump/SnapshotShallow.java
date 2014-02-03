@@ -94,8 +94,12 @@ public class SnapshotShallow implements Serializable {
 		return size;
 	}
 
-	public long[] getCounts() {
+	public long[] getHistoCounts() {
 		return histoCounts;
+	}
+
+	public int getHistoCountsLength() {
+		return histoCounts.length;
 	}
 
 	public boolean isEmpty() {
@@ -129,6 +133,11 @@ public class SnapshotShallow implements Serializable {
 		this.size += size;
 	}
 
+	public void sub(long count, long size) {
+		this.count -= count;
+		this.size -= size;
+	}
+
 	public void addHistoCount(int i, long histoCount) {
 		histoCounts[i] += histoCount;
 		histoCountsSum += histoCount;
@@ -147,8 +156,7 @@ public class SnapshotShallow implements Serializable {
 	}
 
 	public void sub(long count, long size, long[] histoCounts) {
-		this.count -= count;
-		this.size -= size;
+		sub(count, size);
 		int n = Math.min(this.histoCounts.length, histoCounts.length);
 		for (int i = 0; i < n; i++)
 			subHistoCount(i, histoCounts[i]);
@@ -158,7 +166,7 @@ public class SnapshotShallow implements Serializable {
 		add(ss.count, ss.size, ss.histoCounts);
 	}
 
-	public void subShallow(SnapshotDeep ss) {
+	public void subShallow(SnapshotShallow ss) {
 		sub(ss.count, ss.size, ss.histoCounts);
 	}
 

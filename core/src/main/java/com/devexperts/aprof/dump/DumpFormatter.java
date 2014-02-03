@@ -25,45 +25,111 @@ import com.devexperts.aprof.Configuration;
 import com.devexperts.aprof.util.FastObjIntMap;
 
 /**
+ * Formats collected dump snapshots.
+ * <b>This class is not thread-safe</b>.
+ *
  * @author Denis Davydov
  */
 public class DumpFormatter {
+	private static final int TEAR_LINE_LENGTH = 120;
 	private static final int MAX_DEPTH = 5;
 
 	private final Configuration config;
 
-	private final SnapshotDeep[] rest = new SnapshotDeep[MAX_DEPTH];
+	private final SnapshotShallow[] rest = new SnapshotShallow[MAX_DEPTH];
 	private final FastObjIntMap<String> classLevel = new FastObjIntMap<String>();
+	private final SnapshotDeep locations = new SnapshotDeep();
+	private final FastObjIntMap<String> locationIndex = new FastObjIntMap<String>();
 
 	public DumpFormatter(Configuration config) {
 		this.config = config;
 		for (int i = 0; i < MAX_DEPTH; i++)
-			rest[i] = new SnapshotDeep();
+			rest[i] = new SnapshotShallow();
 	}
 
-	public void dumpSection(PrintWriter out, SnapshotDeep ss, double threshold) {
-		Comparator<SnapshotShallow> comparator = config.isSize() ? SnapshotShallow.COMPARATOR_SIZE : SnapshotShallow.COMPARATOR_COUNT;
-		ss.sortChildrenDeep(comparator);
-		printlnSummary(out, ss);
-		out.println("-------------------------------------------------------------------------------");
-		dumpSnapshot(out, ss, threshold);
+	public void dumpSnapshot(PrintWriter out, SnapshotRoot ss, String kind, double threshold) {
+		dumpSnapshotHeader(out, ss, kind);
+		out.println("Top allocation-inducing locations with data types allocated from them");
+		printlnTearLine(out, '-');
+		dumpSnapshotByLocations(out, ss, threshold);
+		out.println("Top allocated data types with reverse location traces");
+		printlnTearLine(out, '-');
+		dumpSnapshotByDataTypes(out, ss, threshold);
 	}
 
-	private void printlnSummary(PrintWriter out, SnapshotDeep ss) {
+	private Comparator<SnapshotShallow> getOutputComparator() {
+		return config.isSize() ? SnapshotShallow.COMPARATOR_SIZE : SnapshotShallow.COMPARATOR_COUNT;
+	}
+
+	private void dumpSnapshotByLocations(PrintWriter out, SnapshotRoot ss, double threshold) {
+		// rebuild locations
+		locations.clearDeep();
+		locations.sortChildrenDeep(SnapshotShallow.COMPARATOR_NAME);
+		locationIndex.fill(-1);
+		for (int i = 0; i < ss.getUsed(); i++) {
+			SnapshotDeep cs = ss.getChild(i);
+			String dataTypeName = cs.getName();
+			findLocationsDeep(cs, dataTypeName, cs.getHistoCountsLength());
+		}
+		locations.updateSnapshotSumDeep();
+		// sort them and print
+		locations.sortChildrenDeep(getOutputComparator());
+		printLocationsDeep(out, 0, locations, ss, threshold, false);
+	}
+
+	private void findLocationsDeep(SnapshotDeep ss, String dataTypeName, int histoCountsLength) {
+		if (ss.getName().equals(SnapshotDeep.UNKNOWN))
+			return;
+		if (!ss.hasChildren()) {
+			// leaf location
+			String name = ss.getName();
+			// use hash index to find location (fast path)
+			int i = locationIndex.get(name, -1);
+			if (i < 0) {
+				// if that does not work, then binary-search existing node (or create new one) and remember index in hash index
+				i = locations.findOrCreateChildInSorted(name);
+				locationIndex.put(name, i);
+			}
+			SnapshotDeep cs = locations.getChild(i);
+			// append data type info for this location
+			cs.getOrCreateChild(dataTypeName, histoCountsLength).addShallow(ss);
+			return;
+		}
+		// has children -- go recursive
+		for (int i = 0; i < ss.getUsed(); i++)
+			findLocationsDeep(ss.getChild(i), dataTypeName, histoCountsLength);
+	}
+
+	public void dumpSnapshotHeader(PrintWriter out, SnapshotRoot ss, String kind) {
+		out.println();
+		//------ start with tear line
+		printlnTearLine(out, '=');
+		//------ Line #1
+		out.print(kind + " allocation dump for ");
+		DumpFormatter.printNum(out, ss.getTime());
+		out.print(" ms (");
+		DumpFormatter.printTime(out, ss.getTime());
+		out.println(")");
+		//------ Line #2
 		out.print("Allocated ");
 		if (config.isSize()) {
-			printnum(out, ss.getSize());
+			printNum(out, ss.getSize());
 			out.print(" bytes in ");
 		}
-		printnum(out, ss.getTotalCount());
+		printNum(out, ss.getTotalCount());
 		out.print(" objects in ");
-		printnum(out, ss.countNonEmptyLeafs());
+		printNum(out, ss.countNonEmptyLeafs());
 		out.print(" locations of ");
-		printnum(out, ss.countNonEmptyChildrenShallow());
+		printNum(out, ss.countNonEmptyChildrenShallow());
 		out.println(" classes");
+		//------ end with tear line
+		printlnTearLine(out, '=');
+		out.println();
 	}
 
-	private void dumpSnapshot(PrintWriter out, SnapshotDeep ss, double threshold) {
+	public void dumpSnapshotByDataTypes(PrintWriter out, SnapshotRoot ss, double threshold) {
+		// sort snapshot (deep)
+		ss.sortChildrenDeep(getOutputComparator());
 		// compute class levels -- classes of level 0 are classes that exceed threshold
 		classLevel.fill(Integer.MAX_VALUE);
 		for (int csi = 0; csi < ss.getUsed(); csi++) {
@@ -96,7 +162,7 @@ public class DumpFormatter {
 		}
 		if (cskipped > 0) {
 			out.print("... ");
-			printnum(out, cskipped);
+			printNum(out, cskipped);
 			out.print(" more below threshold");
 			printlnDetailsShallow(out, rest[0], ss, true);
 		}
@@ -105,16 +171,16 @@ public class DumpFormatter {
 	private void printlnDetailsShallow(PrintWriter out, SnapshotShallow item, SnapshotShallow total, boolean printAvg) {
 		out.print(": ");
 		if (config.isSize()) {
-			printp(out, item.getSize(), total.getSize());
+			printNumPercent(out, item.getSize(), total.getSize());
 			out.print(" bytes in ");
 		}
-		printp(out, item.getTotalCount(), total.getTotalCount());
+		printNumPercent(out, item.getTotalCount(), total.getTotalCount());
 		out.print(" objects");
 		if (printAvg) {
 			out.print(" ");
-			printavg(out, item.getSize(), item.getTotalCount());
+			printAvg(out, item.getSize(), item.getTotalCount());
 		}
-		long[] counts = item.getCounts();
+		long[] counts = item.getHistoCounts();
 		if (counts != null && counts.length > 1) {
 			out.print(" [histogram: ");
 			int lastNonZero = counts.length - 1;
@@ -189,6 +255,8 @@ public class DumpFormatter {
 				printlnDetailsShallow(out, item, total, isArray);
 				if (item.hasChildren())
 					printLocationsDeep(out, depth + 1, item, total, threshold, isArray);
+				if (depth == 0)
+					out.println(); // empty lines on top level
 			} else {
 				skipped++;
 				rest[depth].addShallow(item);
@@ -197,13 +265,19 @@ public class DumpFormatter {
 		if (skipped > 0) {
 			printIndent(out, depth);
 			out.print("... ");
-			printnum(out, skipped);
+			printNum(out, skipped);
 			out.print(" more below threshold");
 			printlnDetailsShallow(out, rest[depth], total, isArray);
+			if (depth == 0)
+				out.println(); // empty lines on top level
 		}
 	}
 
-	static void printnum(PrintWriter out, long value) {
+	static void printNum(PrintWriter out, long value) {
+		if (value < 0) {
+			out.print('-');
+			value = -value;
+		}
 		boolean fill = false;
 		for (long x = 1000000000000000000L; x >= 1; x /= 1000) {
 			if (value >= x || fill) {
@@ -230,33 +304,39 @@ public class DumpFormatter {
 		out.print((char)(value % 10 + '0'));
 	}
 
-	private static void printavg(PrintWriter out, long size, long count) {
+	private static void printAvg(PrintWriter out, long size, long count) {
 		out.print("(avg size ");
-		printnum(out, Math.round((double)size / count));
+		printNum(out, Math.round((double)size / count));
 		out.print(" bytes)");
 	}
 
-	static void printp(PrintWriter out, long count, long total) {
-		printnum(out, count);
-		if (total > 0) {
+	static void printNumPercent(PrintWriter out, long count, long total) {
+		printNum(out, count);
+		if (count > 0 && total > 0) {
 			out.print(" (");
 			long pp = count * 10000 / total;
-			printnum(out, pp / 100);
+			printNum(out, pp / 100);
 			out.print(".");
 			print2(out, (int)(pp % 100), true);
 			out.print("%)");
 		}
 	}
 
-	static void printtime(PrintWriter out, long millis) {
+	static void printTime(PrintWriter out, long millis) {
 		long hour = millis / (60 * 60000);
 		int min = (int)(millis / 60000 % 60);
 		int sec = (int)(millis / 1000 % 60);
-		printnum(out, hour);
+		printNum(out, hour);
 		out.print("h");
 		print2(out, min, true);
 		out.print("m");
 		print2(out, sec, true);
 		out.print("s");
+	}
+
+	static void printlnTearLine(PrintWriter out, char c) {
+		for (int i = 0; i < TEAR_LINE_LENGTH; i++)
+			out.print(c);
+		out.println();
 	}
 }

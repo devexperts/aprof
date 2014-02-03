@@ -44,11 +44,9 @@ class CloneTest implements TestCase {
 	public String getExpectedStatistics() {
 		int objSize = AProfSizeUtil.getObjectSize(new Entity()) << AProfSizeUtil.SIZE_SHIFT;
 		return fmt(
-			"Allocated {size1} bytes in {count1} objects in 2 locations of 1 classes\n" +
-			"-------------------------------------------------------------------------------\n" +
-			"{class}$Entity: {size1} (_%) bytes in {count1} (_%) objects (avg size {objSize} bytes)\n" +
-			"\t{class}$Entity.dup*: {size} (_%) bytes in {count} (_%) objects\n" +
-			"\t{class}.doTest: {objSize} (_%) bytes in 1 (_%) objects\n",
+			"{class}$Entity: {size1} bytes in {count1} objects (avg size {objSize} bytes)\n" +
+			"\t{class}$Entity.dup*: {size} bytes in {count} objects\n" +
+			"\t{class}.doTest: {objSize} bytes in 1 objects\n",
 			"class=" + getClass().getName(),
 			"size=" + fmt(objSize * COUNT),
 			"count=" + fmt(COUNT),

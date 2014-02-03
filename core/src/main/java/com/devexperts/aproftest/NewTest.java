@@ -44,10 +44,8 @@ class NewTest implements TestCase {
 	public String getExpectedStatistics() {
 		int objSize = AProfSizeUtil.getObjectSize(new Entity()) << AProfSizeUtil.SIZE_SHIFT;
 		return fmt(
-			"Allocated {size} bytes in {count} objects in 1 locations of 1 classes\n" +
-				"-------------------------------------------------------------------------------\n" +
-				"{class}$Entity: {size} (_%) bytes in {count} (_%) objects (avg size {objSize} bytes)\n" +
-				"\t{class}.doTest: {size} (_%) bytes in {count} (_%) objects\n",
+			"{class}$Entity: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
+			"\t{class}.doTest: {size} bytes in {count} objects\n",
 			"class=" + getClass().getName(),
 			"size=" + fmt(objSize * COUNT),
 			"count=" + fmt(COUNT),

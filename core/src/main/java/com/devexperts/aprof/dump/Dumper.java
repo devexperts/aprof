@@ -32,9 +32,9 @@ public class Dumper {
 	private final Configuration config;
 	private final String argsStr;
 	private final long start;
-	private final SnapshotDeep total = new SnapshotDeep();
-	private final SnapshotDeep last = new SnapshotDeep();
-	private final SnapshotDeep temp = new SnapshotDeep();
+	private final SnapshotRoot total = new SnapshotRoot();
+	private final SnapshotRoot last = new SnapshotRoot();
+	private final SnapshotRoot temp = new SnapshotRoot();
 	private long lastTime = System.currentTimeMillis();
 
 	private final DumpFormatter formatter;
@@ -57,13 +57,18 @@ public class Dumper {
 		overflowCount++;
 	}
 
+	public synchronized void copyTotalSnapshotTo(SnapshotRoot ss) {
+		AProfRegistry.takeSnapshot(last);
+		long now = System.currentTimeMillis();
+		ss.clearDeep();
+		ss.addDeep(total);
+		ss.addDeep(last);
+		ss.setTime(now - start);
+	}
 
 	public synchronized void sendDumpTo(ObjectOutputStream oos, String address) throws IOException {
 		Log.out.println("Sending dump over socket connection to " + address + " ...");
-		AProfRegistry.takeSnapshot(last);
-		temp.clearDeep();
-		temp.addDeep(total);
-		temp.addDeep(last);
+		copyTotalSnapshotTo(temp);
 		oos.writeObject(temp);
 	}
 
@@ -128,61 +133,54 @@ public class Dumper {
 
 	private void dumpAll(PrintWriter out, boolean dumpAll) {
 		long now = System.currentTimeMillis();
+		dumpReportHeader(out, now);
+
+		if (!dumpAll) {
+			last.setTime(now - lastTime);
+			lastTime = now;
+			formatter.dumpSnapshot(out, last, "LAST", config.getThreshold());
+		}
+
+		total.setTime(now - start);
+		formatter.dumpSnapshot(out, total, "TOTAL", dumpAll ? 0 : config.getThreshold());
+		out.println();
+	}
+
+	private long dumpReportHeader(PrintWriter out, long now) {
 		long uptime = now - start;
+		//------ start with tear line
+		DumpFormatter.printlnTearLine(out, '#');
 		//------ Line #1
-		out.println("===============================================================================");
 		out.println(Version.full());
 		//------ Line #2
 		out.print("Allocation dump at ");
 		out.print(new Date(now));
 		out.print(". Uptime ");
-		DumpFormatter.printnum(out, uptime);
+		DumpFormatter.printNum(out, uptime);
 		out.print(" ms (");
-		DumpFormatter.printtime(out, uptime);
+		DumpFormatter.printTime(out, uptime);
 		out.println(")");
 		//------ Line #3
 		out.print("Arguments ");
 		out.println(argsStr);
 		//------ Line #4
 		out.print("Transformed ");
-		DumpFormatter.printnum(out, AProfRegistry.getCount());
+		DumpFormatter.printNum(out, AProfRegistry.getCount());
 		out.print(" classes and registered ");
-		DumpFormatter.printnum(out, AProfRegistry.getLocationCount());
+		DumpFormatter.printNum(out, AProfRegistry.getLocationCount());
 		out.print(" locations in ");
-		DumpFormatter.printp(out, AProfRegistry.getTime(), uptime);
+		DumpFormatter.printNumPercent(out, AProfRegistry.getTime(), uptime);
 		out.print(" ms");
 		out.println();
 		//------ Line #4
 		out.print("Snapshot of counters was made ");
-		DumpFormatter.printnum(out, snapshotCount);
+		DumpFormatter.printNum(out, snapshotCount);
 		out.print(" times to write file and ");
-		DumpFormatter.printnum(out, overflowCount);
+		DumpFormatter.printNum(out, overflowCount);
 		out.println(" times to prevent overflow");
-		//------ last line
-		out.print("===============================================================================");
-
-		if (!dumpAll) {
-			out.println();
-			out.println();
-			out.print("LAST allocation dump for ");
-			long delta = now - lastTime;
-			DumpFormatter.printnum(out, delta);
-			lastTime = now;
-			out.print(" ms (");
-			DumpFormatter.printtime(out, delta);
-			out.println(")");
-			formatter.dumpSection(out, last, config.getThreshold());
-		}
-
-		out.println();
-		out.println();
-		out.print("TOTAL allocation dump for ");
-		DumpFormatter.printnum(out, uptime);
-		out.print(" ms (");
-		DumpFormatter.printtime(out, uptime);
-		out.println(")");
-		formatter.dumpSection(out, total, dumpAll ? 0 : config.getThreshold());
-		out.println();
-		out.println();
+		//------ end with tear line
+		DumpFormatter.printlnTearLine(out, '#');
+		return uptime;
 	}
+
 }

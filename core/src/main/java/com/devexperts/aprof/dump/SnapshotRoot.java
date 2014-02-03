@@ -16,31 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aprof;
-
-import java.util.*;
-
-import com.devexperts.aprof.dump.SnapshotDeep;
-import junit.framework.TestCase;
+package com.devexperts.aprof.dump;
 
 /**
  * @author Roman Elizarov
  */
-public class QSortTest extends TestCase {
-	public void testQSort() {
-		Random r = new Random(1);
-		SnapshotDeep cs = new SnapshotDeep("test", 0);
-		int cnt = 1000;
-		cs.ensureChildrenCapacity(cnt);
-		for (int i = 0; i < cnt; i++)
-			cs.getOrCreateChildAt(0, String.valueOf(i));
-		for (int k = 0; k < 100; k++) {
-			Collections.shuffle(Arrays.asList(cs.getChildren()), r);
-			cs.sortChildrenDeep(SnapshotDeep.COMPARATOR_NAME);
-			SnapshotDeep[] lsa = cs.getChildren();
-			for (int i = 1; i < cnt; i++)
-				if (lsa[i - 1].getName().compareTo(lsa[i].getName()) >= 0)
-					fail("Failed to sort at #" + i);
-		}
+public class SnapshotRoot extends SnapshotDeep {
+	private static final long serialVersionUID = 0;
+
+	private long time;
+
+	public long getTime() {
+		return time;
+	}
+
+	public void setTime(long time) {
+		this.time = time;
 	}
 }

@@ -45,6 +45,7 @@ public class AProfAgent {
 	);
 
 	private static InnerJarClassLoader classLoader;
+	private static AProfAgent INSTANCE;
 
 	private synchronized static InnerJarClassLoader getClassLoader() throws IOException, ClassNotFoundException {
 		if (classLoader == null) {
@@ -64,19 +65,37 @@ public class AProfAgent {
 		Configuration config = new Configuration(agentArgs);
 		File configFile = new File(config.getConfigFile());
 		config = new Configuration(configFile, agentArgs);
-		new AProfAgent(config, inst).go();
+		INSTANCE = new AProfAgent(config, inst);
+		INSTANCE.go();
 	}
 
+	public static AProfAgent getInstance() {
+		return INSTANCE;
+	}
+
+// -------------------- instance members --------------------
+
+	private final long start;
 	private final Configuration config;
 	private final Instrumentation inst;
+	private final Dumper dumper;
 
 	public AProfAgent(Configuration config, Instrumentation inst) {
+		this.start = System.currentTimeMillis();
 		this.config = config;
 		this.inst = inst;
+		this.dumper = new Dumper(config, start);
+	}
+
+	public Configuration getConfig() {
+		return config;
+	}
+
+	public Dumper getDumper() {
+		return dumper;
 	}
 
 	public void go() throws Exception {
-		long start = System.currentTimeMillis();
 		StringBuilder sb = new StringBuilder();
 		sb.append("Loading ").append(Version.full()).append("...");
 		Log.out.println(sb);
@@ -157,7 +176,6 @@ public class AProfAgent {
 
 		// dumping
 		log("Making first dump...");
-		Dumper dumper = new Dumper(config, start);
 		dumper.makeDump(false);
 
 		DumpPeriodicThread dpt = null;

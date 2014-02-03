@@ -47,12 +47,17 @@ public class FastObjIntMap<T> {
 
 	// does not need external synchronization
 	public int get(T key) {
+		return get(key, 0);
+	}
+
+	// does not need external synchronization
+	public int get(T key, int defaultValue) {
 		Core core = this.core; // atomic read;
 		int i = (key.hashCode() * MAGIC) >>> core.shift;
 		Object k;
 		while (key != (k = core.keys[i])) {
 			if (k == null)
-				return 0;
+				return defaultValue;
 			if (i == 0)
 				i = core.length;
 			i--;

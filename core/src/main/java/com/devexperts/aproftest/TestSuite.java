@@ -21,16 +21,16 @@ package com.devexperts.aproftest;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.util.*;
-import java.util.regex.Pattern;
 
 import com.devexperts.aprof.*;
-import com.devexperts.aprof.dump.DumpFormatter;
-import com.devexperts.aprof.dump.SnapshotDeep;
+import com.devexperts.aprof.dump.*;
 
 /**
  * @author Dmitry Paraschenko
  */
 public class TestSuite {
+	private static final int TEST_RUNS = 3;
+
 	private static final List<TestCase> TEST_CASES = Arrays.asList(
 			new NewTest(),
 			new DoubleTest(),
@@ -46,12 +46,12 @@ public class TestSuite {
 	}
 
 	public static boolean testAllApplicableCases() {
-		Configuration configuration = checkConfiguration();
-		if (configuration == null)
+		AProfAgent agent = checkAgent();
+		if (agent == null)
 			return false;
 		boolean ok = true;
 		for (TestCase test : getTestCases()) {
-			if (test.verifyConfiguration(configuration) == null) {
+			if (test.verifyConfiguration(agent.getConfig()) == null) {
 				if (!testSingleCase(test))
 					ok = false;
 			}
@@ -60,58 +60,34 @@ public class TestSuite {
 	}
 
 	public static boolean testSingleCase(TestCase test) {
-		Configuration configuration = checkConfiguration();
-		if (configuration == null)
+		AProfAgent agent = checkAgent();
+		if (agent == null)
 			return false;
 
 		System.out.printf("==== Testing %s on test '%s'%n", Version.compact(), test.name());
 
-		SnapshotDeep snapshot = new SnapshotDeep();
-		for (int i = 0; i < 5; i++) {
-			if (i == 1) {
-				// clearing STATISTICS
-				AProfRegistry.takeSnapshot(new SnapshotDeep());
-				if (!doTestOnce(test))
-					return false;
-				// retrieving STATISTICS
-				AProfRegistry.takeSnapshot(snapshot);
-			} else {
-				if (!doTestOnce(test))
-					return false;
-			}
-		}
-		String[] prefixes = test.getCheckedClasses();
-		if (prefixes != null) {
-			for (int i = 0; i < snapshot.getUsed(); i++) {
-				SnapshotDeep child = snapshot.getChild(i);
-				boolean tracked = false;
-				for (String prefix : prefixes) {
-					if (child.getName().startsWith(prefix)) {
-						tracked = true;
-						break;
-					}
-				}
-				if (!tracked) {
-					snapshot.subShallow(child);
-					child.clearDeep();
-				}
-			}
-		}
-
-		String reason = test.verifyConfiguration(configuration);
+		Configuration config = agent.getConfig();
+		String reason = test.verifyConfiguration(config);
 		if (reason != null) {
 			System.out.printf("Test '%s' should be run with options: %s%n", test.name(), reason);
 			return false;
 		}
 
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		PrintWriter out = new PrintWriter(bos);
-		new DumpFormatter(configuration).dumpSection(out, snapshot, 0);
-		out.flush();
-		String received = new String(bos.toByteArray());
+		SnapshotRoot snapshot0 = new SnapshotRoot();
+		SnapshotRoot snapshot1 = new SnapshotRoot();
+		for (int i = 0; i < TEST_RUNS; i++) {
+			if (i == TEST_RUNS - 1) // STATISTICS before test
+				agent.getDumper().copyTotalSnapshotTo(snapshot0);
+			if (!doTestOnce(test))
+				return false;
+			if (i == TEST_RUNS - 1) // STATISTICS after test
+				agent.getDumper().copyTotalSnapshotTo(snapshot1);
+		}
 
+		String received = snapshotToString(config, getCheckedClassesSnapshot(test, snapshot0, snapshot1));
 		String expected = test.getExpectedStatistics();
 		String result = compareStatistics(received, expected);
+
 		if (result != null) {
 			System.out.println(result);
 			System.out.println("-- Expected allocations:");
@@ -124,6 +100,40 @@ public class TestSuite {
 			System.out.printf("-- Test '%s' PASSED%n", test.name());
 			return true;
 		}
+	}
+
+	private static SnapshotRoot getCheckedClassesSnapshot(TestCase test, SnapshotRoot snapshot0, SnapshotRoot snapshot1) {
+		snapshot0.sortChildrenDeep(SnapshotShallow.COMPARATOR_NAME);
+		SnapshotRoot result = new SnapshotRoot();
+		String[] prefixes = test.getCheckedClasses();
+		if (prefixes != null) {
+			for (int i = 0; i < snapshot1.getUsed(); i++) {
+				SnapshotDeep child = snapshot1.getChild(i);
+				boolean tracked = false;
+				for (String prefix : prefixes) {
+					if (child.getName().startsWith(prefix)) {
+						tracked = true;
+						break;
+					}
+				}
+				if (!tracked)
+					continue;
+				// add delta to result
+				SnapshotDeep child0 = snapshot0.getOrCreateChild(child.getName(),child.getHistoCountsLength());
+				SnapshotDeep resultChild = result.getOrCreateChild(child.getName(), child.getHistoCountsLength());
+				resultChild.addDeep(child);
+				resultChild.subDeep(child0);
+			}
+		}
+		return result;
+	}
+
+	private static String snapshotToString(Configuration config, SnapshotRoot snapshot) {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		PrintWriter out = new PrintWriter(bos);
+		new DumpFormatter(config).dumpSnapshotByDataTypes(out, snapshot, 0);
+		out.flush();
+		return new String(bos.toByteArray());
 	}
 
 	private static boolean doTestOnce(TestCase test) {
@@ -149,7 +159,7 @@ public class TestSuite {
 			lineNo++;
 			String outToken = out.nextToken();
 			String ansToken = ans.nextToken();
-			if (!compile(ansToken).matcher(outToken).matches())
+			if (!ansToken.equals(outToken))
 				return String.format("Line %d does not match. Expected vs collected:%n%s%n%s", lineNo, ansToken, outToken);
 		}
 		lineNo++;
@@ -160,16 +170,10 @@ public class TestSuite {
 		return null;
 	}
 
-	private static Pattern compile(String expected) {
-		return Pattern.compile("\\Q" + expected.replace("_", "\\E[.,0-9]+\\Q") + "\\E");
-	}
-
-	private static Configuration checkConfiguration() {
-		Configuration configuration = AProfRegistry.getConfiguration();
-		if (configuration == null) {
+	private static AProfAgent checkAgent() {
+		AProfAgent agent = AProfAgent.getInstance();
+		if (agent == null)
 			System.out.println("Tests should be run under Aprof: -javaagent:aprof.jar");
-			return null;
-		}
-		return configuration;
+		return agent;
 	}
 }

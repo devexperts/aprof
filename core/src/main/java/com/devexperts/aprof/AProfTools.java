@@ -23,7 +23,7 @@ import java.net.Socket;
 import java.util.Locale;
 
 import com.devexperts.aprof.dump.DumpFormatter;
-import com.devexperts.aprof.dump.SnapshotDeep;
+import com.devexperts.aprof.dump.SnapshotRoot;
 import com.devexperts.aprof.util.FastOutputStreamWriter;
 import com.devexperts.aproftest.TestCase;
 import com.devexperts.aproftest.TestSuite;
@@ -113,12 +113,12 @@ public class AProfTools {
 		outputStream.write("DUMP\r\n".getBytes(ENCODING));
 		outputStream.flush();
 		ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-		SnapshotDeep totalSnapshot = (SnapshotDeep)ois.readObject();
+		SnapshotRoot totalSnapshot = (SnapshotRoot)ois.readObject();
 		ois.close();
 		socket.close();
 		DumpFormatter formatter = new DumpFormatter(new Configuration());
 		PrintWriter out = new PrintWriter(System.out);
-		formatter.dumpSection(out, totalSnapshot, 0);
+		formatter.dumpSnapshot(out, totalSnapshot, "DUMP", 0);
 		out.flush();
 	}
 
