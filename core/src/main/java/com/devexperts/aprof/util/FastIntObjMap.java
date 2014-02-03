@@ -24,6 +24,11 @@ import java.util.NoSuchElementException;
  * @author Dmitry Paraschenko
  */
 public class FastIntObjMap<V> {
+	/**
+	 * Empty iterator of the same type that {@link #iterator()} method returns.
+	 */
+	public static final IntIterator EMPTY_ITERATOR = new Iterator<Object>(null);
+
 	private static final int MAGIC = 0xB46394CD;
 	private static final int MAX_SHIFT = 29;
 	private static final int THRESHOLD = (int)((1L << 32) * 0.5); // 50% fill factor for speed
@@ -44,6 +49,7 @@ public class FastIntObjMap<V> {
 
 	private volatile Core core = new Core(MAX_SHIFT);
 	private volatile int size;
+	private Iterator pooledIterator; // reused when iteration is over
 
 	public int size() {
 		return size;
@@ -97,22 +103,51 @@ public class FastIntObjMap<V> {
 		core = newCore;
 	}
 
+	/**
+	 * Returns iterator that is reused when iteration is over.
+	 * This method is <b>not thread-safe</b>.
+	 */
 	public IntIterator iterator() {
-		return new IntIterator() {
-			private int i = 0;
-			private Core savedCore = core;
+		Iterator iterator = pooledIterator;
+		if (iterator == null)
+			iterator = new Iterator<V>(this);
+		else
+			pooledIterator = null;
+		iterator.start();
+		return iterator;
+	}
 
-			public boolean hasNext() {
-				while (i < savedCore.length && (savedCore.keys[i] == 0 || savedCore.values[i] == null))
-					i++;
-				return i < savedCore.length;
-			}
+	private static class Iterator<V> implements IntIterator {
+		private FastIntObjMap<V> map;
+		private int i;
+		private Core savedCore;
 
-			public int next() {
-				if (!hasNext())
-					throw new NoSuchElementException();
-				return savedCore.keys[i++];
+		public Iterator(FastIntObjMap<V> map) {
+			this.map = map;
+		}
+
+		void start() {
+			i = 0;
+			savedCore = map.core;
+		}
+
+		public boolean hasNext() {
+			if (savedCore == null)
+				return false;
+			while (i < savedCore.length && (savedCore.keys[i] == 0 || savedCore.values[i] == null))
+				i++;
+			boolean hasNext = i < savedCore.length;
+			if (!hasNext) {
+				savedCore = null;
+				map.pooledIterator = this;
 			}
-		};
+			return hasNext;
+		}
+
+		public int next() {
+			if (!hasNext())
+				throw new NoSuchElementException();
+			return savedCore.keys[i++];
+		}
 	}
 }

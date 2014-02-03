@@ -38,13 +38,6 @@ public final class IndexMap {
 		}
 	}
 
-	private static final IntIterator EMPTY_ITERATOR = new FastIntObjMap<IndexMap>().iterator();
-
-	static {
-		// advance internal state of iterator to the end, so that it can be concurrently used
-		EMPTY_ITERATOR.hasNext();
-	}
-
 	/**
 	 * Location id in AProfRegistry.locations
 	 */
@@ -120,10 +113,14 @@ public final class IndexMap {
 		return items == null ? 0 : items.size();
 	}
 
+	/**
+	 * Returns iterator that is reused when iteration is over.
+	 * This method is <b>not thread-safe</b>.
+	 */
 	public IntIterator iterator() {
 		FastIntObjMap<IndexMap> items = this.items; // atomic read
-		// note -- result is always of the same class that is retruned by FastIntObjMap.iterator() method
-		return items == null ? EMPTY_ITERATOR : items.iterator();
+		// note -- result is always of the same class that is returned by FastIntObjMap.iterator() method
+		return items == null ? FastIntObjMap.EMPTY_ITERATOR : items.iterator();
 	}
 
 	public int getCount() {

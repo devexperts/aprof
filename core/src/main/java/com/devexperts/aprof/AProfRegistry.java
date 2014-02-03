@@ -149,10 +149,7 @@ public class AProfRegistry {
 				}
 			}
 		}
-		// Nothing to snip.
-		// But we recreate string to trim the baggage that came with string,
-		// because those strings comes from ASM which allocates them out of big char[] chunks (really!?)
-		return new String(cname);
+		return cname;
 	}
 
 	public static Configuration getConfiguration() {
