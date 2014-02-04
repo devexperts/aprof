@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ Aprof - Java Memory Allocation Profiler
   ~ Copyright (C) 2002-2014  Devexperts LLC
@@ -14,9 +15,7 @@
   ~
   ~ You should have received a copy of the GNU General Public License
   ~ along with this program.  If not, see <http://www.gnu.org/licenses />.
-  -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.devexperts.aprof</groupId>
@@ -41,6 +40,7 @@
 		<module>transformer</module>
 		<module>core</module>
 		<module>agent</module>
+		<module>benchmark</module>
 	</modules>
 
 	<dependencies>
@@ -117,7 +117,7 @@
 				<artifactId>maven-enforcer-plugin</artifactId>
 				<configuration>
 					<rules>
-						<DependencyConvergence />
+						<DependencyConvergence/>
 						<requireMavenVersion>
 							<version>3.0.4</version>
 						</requireMavenVersion>
