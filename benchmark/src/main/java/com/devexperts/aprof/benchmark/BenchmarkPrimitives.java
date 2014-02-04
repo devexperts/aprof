@@ -20,7 +20,7 @@ package com.devexperts.aprof.benchmark;
 
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 
-public class Benchmark {
+public class BenchmarkPrimitives {
 	@GenerateMicroBenchmark
 	public Box testNew() {
 		return newBox();
@@ -34,6 +34,8 @@ public class Benchmark {
 	private static Box newBox() {
 		return new Box(1);
 	}
+
+
 
 	private static class Box {
 		private int value;
