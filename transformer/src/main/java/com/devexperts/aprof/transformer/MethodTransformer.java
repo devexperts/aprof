@@ -64,6 +64,10 @@ class MethodTransformer extends AbstractMethodVisitor {
 		mv.visitLabel(done);
 	}
 
+	private void pushClass(String desc) {
+		mv.visitLdcInsn(Type.getObjectType(desc));
+	}
+
 	@Override
 	protected void visitMarkDeclareLocationStack() {
 		if (context.isLocationStackNeeded()) {
@@ -145,7 +149,11 @@ class MethodTransformer extends AbstractMethodVisitor {
 		assert context.getConfig().isLocation();
 		pushLocationStack();
 		pushAllocationPoint(desc);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", AProfTransformer.STACK_INT_VOID);
+		if (context.getConfig().isSize()) {
+			pushClass(desc);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocateSize", AProfTransformer.STACK_INT_CLASS_VOID);
+		} else
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", AProfTransformer.STACK_INT_VOID);
 	}
 
 	/**

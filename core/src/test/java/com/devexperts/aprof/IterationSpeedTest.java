@@ -111,7 +111,7 @@ public class IterationSpeedTest {
 
 		time = System.currentTimeMillis();
 		for (int i = 0; i < length; i++)
-			AProfOps.allocate(location);
+			AProfOps.allocate(LocationStack.get(), location);
 		System.out.printf("allocate=%d\n", System.currentTimeMillis() - time);
 	}
 
@@ -127,7 +127,7 @@ public class IterationSpeedTest {
 			try {
 				LocationStack.get().addInvokedMethod(invMethod);
 				Integer.valueOf(i);
-				AProfOps.allocate(location);
+				AProfOps.allocate(LocationStack.get(), location);
 				LocationStack.get().removeInvokedMethod();
 			} finally {
 				LocationStack.get().removeInvocationPoint();

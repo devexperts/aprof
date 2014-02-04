@@ -77,8 +77,8 @@ public class Configuration {
 	@Description("Instrument object allocations via 'new' operation.")
 	private boolean location = true;
 
-	@Description("Instrument java.lang.Object constructor to track object allocations from unknown locations.")
-	private boolean unknown = true;
+	@Description("Instrument java.lang.Object constructor to track object allocations from unknown locations. Prevents stack-allocation of objects.")
+	private boolean unknown = false;
 
 	@Description("Keep track of allocated object sizes.")
 	private boolean size = true;
@@ -295,8 +295,6 @@ public class Configuration {
 	public void showNotes(PrintWriter out, boolean all) {
 		if (all || histogram.length > 0 && (!arrays || !size))
 			out.println("Note: 'histogram' option does not work without 'arrays' and 'size'.");
-		if (all || size && location && !unknown)
-			out.println("Note: 'size' with 'location' does not work without 'unknown'.");
 		if (all || verbose_redefinition && !verbose)
 			out.println("Note: 'verbose.redefinition' does not work without 'verbose'.");
 	}

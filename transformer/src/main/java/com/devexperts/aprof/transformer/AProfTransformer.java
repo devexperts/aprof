@@ -36,6 +36,8 @@ import org.objectweb.asm.commons.*;
  * @author Denis Davydov
  */
 public class AProfTransformer implements ClassFileTransformer {
+	static final int MIN_CLASS_VERSION = Opcodes.V1_5; // needed to support ldc <class> and avoid "Illegal type in constant pool"
+
 	static final String APROF_OPS = "com/devexperts/aprof/AProfOps";
 	static final String APROF_OPS_INTERNAL = "com/devexperts/aprof/AProfOpsInternal";
 	static final String LOCATION_STACK = "com/devexperts/aprof/LocationStack";
@@ -52,6 +54,7 @@ public class AProfTransformer implements ClassFileTransformer {
 	static final String NOARG_VOID = "()V";
 	static final String INT_VOID = "(I)V";
 	static final String STACK_INT_VOID = "(Lcom/devexperts/aprof/LocationStack;I)V";
+	static final String STACK_INT_CLASS_VOID = "(Lcom/devexperts/aprof/LocationStack;ILjava/lang/Class;)V";
 	static final String OBJECT_VOID = "(Ljava/lang/Object;)V";
 	static final String OBJECT_INT_VOID = "(Ljava/lang/Object;I)V";
 	static final String CLASS_INT_RETURNS_OBJECT = "(Ljava/lang/Class;I)Ljava/lang/Object;";
@@ -102,8 +105,9 @@ public class AProfTransformer implements ClassFileTransformer {
 
 			ClassReader cr = new ClassReader(classfileBuffer);
 			int javaVersion = cr.readShort(6);
-			ClassWriter cw =
-					javaVersion == Opcodes.V1_7 ? new FrameClassWriter(cr) : new ClassWriter(ClassWriter.COMPUTE_MAXS);
+			ClassWriter cw = javaVersion >= Opcodes.V1_7 ?
+				new FrameClassWriter(cr) :
+				new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
 			List<Context> methodContexts = new ArrayList<Context>();
 			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyClassVisitor(), className, methodContexts);
@@ -209,7 +213,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 		@Override
 		public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
-			super.visit(version, access, name, signature, superName, interfaces);
+			super.visit(Math.max(MIN_CLASS_VERSION, version), access, name, signature, superName, interfaces);
 			AProfRegistry.registerDatatypeInfo(locationClass);
 			if (superName != null && isNormal && AProfRegistry.isDirectCloneClass(superName.replace('/', '.')))
 				// candidate for direct clone

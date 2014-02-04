@@ -16,12 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aprof.util;
+package com.devexperts.aprof;
 
-/**
- * @author Roman Elizarov
- */
-public final class IndexMap {
+import com.devexperts.aprof.util.*;
+
+class IndexMap {
 	private static final long COUNT_OFFSET;
 	private static final long SIZE_OFFSET;
 	private static final int INT_ARRAY_BASE_OFFSET;

@@ -18,86 +18,82 @@
 
 package com.devexperts.aprof;
 
-import com.devexperts.aprof.util.IndexMap;
-
 import static com.devexperts.aprof.AProfRegistry.*;
 import static com.devexperts.aprof.AProfSizeUtil.*;
 
 /**
- * @author Dmitry Paraschenko
+ * Methods that are instrumented into target code by aprof method transformer.
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class AProfOps {
-	private static IndexMap getIndex(int index) {
-		return getDetailedIndex(LocationStack.get(), index);
-	}
-
-	public static void allocate(int index) {
-		IndexMap map = getIndex(index);
-		map.increment();
-	}
-
 	public static void allocate(LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
-		map.increment();
+		getDetailedIndex(stack, getRootIndex(index)).increment();
+	}
+
+	public static void allocateSize(LocationStack stack, int index, Class objectClass) {
+		RootIndexMap rootIndex = getRootIndex(index);
+		getDetailedIndex(stack, rootIndex).increment();
+		DatatypeInfo datatypeInfo = rootIndex.getDatatypeInfo();
+		if (datatypeInfo.getSize() == 0)
+			datatypeInfo.setSize(getObjectSizeByClass(objectClass));
 	}
 
 	public static void allocateArraySize(boolean[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySize(o);
 		map.increment(o.length, size);
 	}
 
 	public static void allocateArraySize(byte[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySize(o);
 		map.increment(o.length, size);
 	}
 
 	public static void allocateArraySize(char[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySize(o);
 		map.increment(o.length, size);
 	}
 
 	public static void allocateArraySize(short[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySize(o);
 		map.increment(o.length, size);
 	}
 
 	public static void allocateArraySize(int[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySize(o);
 		map.increment(o.length, size);
 	}
 
 	public static void allocateArraySize(long[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySize(o);
 		map.increment(o.length, size);
 	}
 
 	public static void allocateArraySize(float[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySize(o);
 		map.increment(o.length, size);
 	}
 
 	public static void allocateArraySize(double[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySize(o);
 		map.increment(o.length, size);
 	}
 
 	public static void allocateArraySize(Object[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySize(o);
 		map.increment(o.length, size);
 	}
 
 	public static void allocateArraySizeMulti(Object[] o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, index);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		int size = getArraySizeMultiRec(o);
 		map.increment(o.length, size);
 	}
@@ -115,6 +111,11 @@ public class AProfOps {
 			map.increment(getArraySizeMultiRec(o));
 		} else {
 			map.increment();
+			DatatypeInfo datatypeInfo = getDatatypeInfo(name);
+			if (datatypeInfo == null)
+				return;
+			if (datatypeInfo.getSize() == 0)
+				datatypeInfo.setSize(getObjectSize(o));
 		}
 	}
 
@@ -129,20 +130,19 @@ public class AProfOps {
 	}
 
 	public static void objectInit(Object o) {
-		String cname = o.getClass().getName();
-		DatatypeInfo datatypeInfo = getDatatypeInfo(cname);
+		String name = o.getClass().getName();
+		DatatypeInfo datatypeInfo = getDatatypeInfo(name);
 		if (datatypeInfo == null)
 			return;
 		datatypeInfo.getIndex().increment();
 	}
 
 	public static void objectInitSize(Object o) {
-		String cname = o.getClass().getName();
-		DatatypeInfo datatypeInfo = getDatatypeInfo(cname);
+		DatatypeInfo datatypeInfo = getDatatypeInfo(o.getClass().getName());
 		if (datatypeInfo == null)
 			return;
+		datatypeInfo.getIndex().increment();
 		if (datatypeInfo.getSize() == 0)
 			datatypeInfo.setSize(getObjectSize(o));
-		datatypeInfo.getIndex().increment();
 	}
 }

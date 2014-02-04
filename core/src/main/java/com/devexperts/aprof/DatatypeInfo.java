@@ -20,8 +20,6 @@ package com.devexperts.aprof;
 
 import java.util.Comparator;
 
-import com.devexperts.aprof.util.IndexMap;
-
 /**
 * @author Dmitry Paraschenko
 */
@@ -31,9 +29,9 @@ final class DatatypeInfo {
 	private volatile int size;
 	private volatile boolean directClone;
 
-	public DatatypeInfo(String name, IndexMap index) {
+	public DatatypeInfo(String name, int id, int[] histogram) {
 		this.name = name;
-		this.index = index;
+		this.index = new IndexMap(AProfRegistry.UNKNOWN_LOC, id, histogram);
 	}
 
 	public String getName() {

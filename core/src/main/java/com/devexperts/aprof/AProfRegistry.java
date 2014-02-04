@@ -57,7 +57,7 @@ public class AProfRegistry {
 	/**
 	 * Indexes can be created at any time.
 	 */
-	private static final FastArrayList<IndexMap> ROOT_INDEXES = new FastArrayList<IndexMap>();
+	private static final FastArrayList<RootIndexMap> ROOT_INDEXES = new FastArrayList<RootIndexMap>();
 
 	/**
 	 * Allocated and reused in makeSnapshotInternal.
@@ -189,12 +189,10 @@ public class AProfRegistry {
 				String datatype = DATATYPE_NAMES.get(id);
 				if (datatype.startsWith("[")) {
 					datatype = resolveClassName(datatype);
-					IndexMap map = new IndexMap(UNKNOWN_LOC, id, config.getHistogram(datatype));
-					datatypeInfo = new DatatypeInfo(datatype, map);
+					datatypeInfo = new DatatypeInfo(datatype, id, config.getHistogram(datatype));
 				} else {
 					datatype = resolveClassName(datatype);
-					IndexMap map = new IndexMap(UNKNOWN_LOC, id, null);
-					datatypeInfo = new DatatypeInfo(datatype, map);
+					datatypeInfo = new DatatypeInfo(datatype, id, null);
 				}
 				DATATYPE_INFOS.putUnsync(id, datatypeInfo);
 			}
@@ -202,25 +200,26 @@ public class AProfRegistry {
 		}
 	}
 
-	static IndexMap getRootIndex(int id) {
+	static RootIndexMap getRootIndex(int id) {
 		return ROOT_INDEXES.getSafely(id);
 	}
 
 	// allocates memory during class transformation and reflection calls
 	public static IndexMap registerRootIndex(DatatypeInfo datatypeInfo, int loc) {
 		IndexMap datatypeMap = datatypeInfo.getIndex();
-		IndexMap rootMap = datatypeMap.get(loc);
+		RootIndexMap rootMap = (RootIndexMap)datatypeMap.get(loc);
 		if (rootMap == null)
-			rootMap = registerRootIndexSlowPath(datatypeMap, loc);
+			rootMap = registerRootIndexSlowPath(datatypeInfo, loc);
 		return rootMap;
 	}
 
-	private static IndexMap registerRootIndexSlowPath(IndexMap datatypeMap, int loc) {
+	private static RootIndexMap registerRootIndexSlowPath(DatatypeInfo datatypeInfo, int loc) {
+		IndexMap datatypeMap = datatypeInfo.getIndex();
 		synchronized (datatypeMap) {
-			IndexMap rootMap = datatypeMap.get(loc);
+			RootIndexMap rootMap = (RootIndexMap)datatypeMap.get(loc);
 			if (rootMap == null) {
 				int index = LAST_ROOT_INDEX.incrementAndGet();
-				rootMap = new IndexMap(loc, index, datatypeMap.getHistogram());
+				rootMap = new RootIndexMap(loc, index, datatypeMap.getHistogram(), datatypeInfo);
 				datatypeMap.put(loc, rootMap);
 				synchronized (ROOT_INDEXES) {
 					ROOT_INDEXES.putUnsync(index, rootMap);
@@ -282,16 +281,15 @@ public class AProfRegistry {
 	}
 
 	// can allocate memory during execution
-	static IndexMap getDetailedIndex(LocationStack stack, int index) {
+	static IndexMap getDetailedIndex(LocationStack stack, IndexMap rootIndex) {
 		assert stack != null;
-		IndexMap map = getRootIndex(index);
 		int loc1 = stack.invoked_method_loc;
 		int loc2 = stack.invocation_point_loc;
-		if (loc1 != UNKNOWN_LOC && loc1 != map.getLocation())
-			map = putLocation(map, loc1);
+		if (loc1 != UNKNOWN_LOC && loc1 != rootIndex.getLocation())
+			rootIndex = putLocation(rootIndex, loc1);
 		if (loc2 != UNKNOWN_LOC)
-			map = putLocation(map, loc2);
-		return map;
+			rootIndex = putLocation(rootIndex, loc2);
+		return rootIndex;
 	}
 
 
@@ -327,6 +325,8 @@ public class AProfRegistry {
 			String name = datatypeInfo.getName();
 			IndexMap map = datatypeInfo.getIndex();
 			int classSize = datatypeInfo.getSize();
+			if (classSize < 0) // If failed to compute size
+				classSize = 0;
 			int[] histogram = map.getHistogram();
 			int histoCountsLength = histogram == null ? 0 : histogram.length + 1;
 			boolean trackClassUnknown = config.isUnknown() && !datatypeInfo.isArray();

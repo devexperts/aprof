@@ -20,6 +20,8 @@ package com.devexperts.aprof;
 
 import java.lang.instrument.Instrumentation;
 
+import com.devexperts.aprof.util.UnsafeHolder;
+
 /**
  * @author Dmitry Paraschenko
  */
@@ -147,6 +149,16 @@ public class AProfSizeUtil {
 
 	public static int getObjectSize(Object o) {
 		return (int)(inst.getObjectSize(o) >> SIZE_SHIFT);
+	}
+
+	public static int getObjectSizeByClass(Class objectClass) {
+		int size;
+		try {
+			size = getObjectSize(UnsafeHolder.UNSAFE.allocateInstance(objectClass));
+		} catch (InstantiationException e) {
+			size = -1;
+		}
+		return size;
 	}
 
 	public static int getArraySizeMultiRec(Object o) {

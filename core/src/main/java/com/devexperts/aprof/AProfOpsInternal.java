@@ -18,25 +18,24 @@
 
 package com.devexperts.aprof;
 
-import com.devexperts.aprof.util.IndexMap;
-
 import static com.devexperts.aprof.AProfRegistry.getRootIndex;
-import static com.devexperts.aprof.AProfSizeUtil.getArraySize;
-import static com.devexperts.aprof.AProfSizeUtil.getArraySizeMultiRec;
+import static com.devexperts.aprof.AProfSizeUtil.*;
 
 /**
- * @author Dmitry Paraschenko
+ * Methods that are instrumented into "internal" target code by aprof method transformer.
  */
 @SuppressWarnings({"UnusedDeclaration"})
-public class AProfOpsInternal {
-	public static void allocate(int index) {
-		IndexMap map = getRootIndex(index);
-		map.increment();
+public class AProfOpsInternal extends AProfOps {
+	public static void allocate(LocationStack stack, int index) {
+		getRootIndex(index).increment();
 	}
 
-	public static void allocate(LocationStack stack, int index) {
-		IndexMap map = getRootIndex(index);
-		map.increment();
+	public static void allocateSize(LocationStack stack, int index, Class objectClass) {
+		RootIndexMap rootIndex = getRootIndex(index);
+		rootIndex.increment();
+		DatatypeInfo datatypeInfo = rootIndex.getDatatypeInfo();
+		if (datatypeInfo.getSize() == 0)
+			datatypeInfo.setSize(getObjectSizeByClass(objectClass));
 	}
 
 	public static void allocateArraySize(boolean[] o, LocationStack stack, int index) {
