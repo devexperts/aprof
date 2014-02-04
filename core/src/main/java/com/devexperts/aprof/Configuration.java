@@ -62,6 +62,9 @@ public class Configuration {
 	@Description("Be verbose about class redefinitions too.")
 	private boolean verbose_redefinition = false;
 
+	@Description("Dump aprof-instrumented class into a specified directory.")
+	private String dump_classes_dir = "";
+
 	@Description("Skip debug information (line numbers and local variables) during class transformation.")
 	private boolean skipdebug = false;
 
@@ -185,6 +188,10 @@ public class Configuration {
 
 	public boolean isVerboseRedefinition() {
 		return verbose_redefinition;
+	}
+
+	public String getDumpClassesDir() {
+		return dump_classes_dir;
 	}
 
 	public boolean isSkipDebug() {

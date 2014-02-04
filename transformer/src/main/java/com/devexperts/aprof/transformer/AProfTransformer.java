@@ -18,6 +18,7 @@
 
 package com.devexperts.aprof.transformer;
 
+import java.io.*;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
@@ -91,11 +92,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		int classNo = AProfRegistry.incrementCount();
 		if (config.isVerbose()) {
 			synchronized (sharedStringBuilder) {
-				sharedStringBuilder.setLength(0);
-				sharedStringBuilder.append("Transforming class #");
-				sharedStringBuilder.append(classNo);
-				sharedStringBuilder.append(": ");
-				sharedStringBuilder.append(className);
+				describeTransformation(sharedStringBuilder, classNo, className);
 				describeClassLoader(sharedStringBuilder, loader);
 				Log.out.println(sharedStringBuilder);
 			}
@@ -114,13 +111,12 @@ public class AProfTransformer implements ClassFileTransformer {
 
 			ClassVisitor classTransformer = new ClassTransformer(cw, className, methodContexts);
 			cr.accept(classTransformer, flags);
-			return cw.toByteArray();
+			byte[] bytes = cw.toByteArray();
+			dumpClass(classNo, className, bytes);
+			return bytes;
 		} catch (Throwable t) {
 			synchronized (sharedStringBuilder) {
-				sharedStringBuilder.setLength(0);
-				sharedStringBuilder.append("Transforming class #");
-				sharedStringBuilder.append(classNo);
-				sharedStringBuilder.append(" (").append(className).append(")");
+				describeTransformation(sharedStringBuilder, classNo, className);
 				describeClassLoader(sharedStringBuilder, loader);
 				sharedStringBuilder.append(" failed with error: ");
 				sharedStringBuilder.append(t.getLocalizedMessage());
@@ -130,6 +126,38 @@ public class AProfTransformer implements ClassFileTransformer {
 			return null;
 		} finally {
 			AProfRegistry.incrementTime(System.currentTimeMillis() - start);
+		}
+	}
+
+	private static void describeTransformation(StringBuilder sb, int classNo, String className) {
+		sb.setLength(0);
+		sb.append("Transforming class #");
+		sb.append(classNo);
+		sb.append(": ");
+		sb.append(className);
+	}
+
+	private void dumpClass(int classNo, String className, byte[] bytes) {
+		String dir = config.getDumpClassesDir();
+		if (dir.length() == 0)
+			return;
+		File file = new File(dir, className.replace('.', File.separatorChar) + ".class");
+		file.getParentFile().mkdirs();
+		try {
+			FileOutputStream out = new FileOutputStream(file);
+			try {
+				out.write(bytes);
+			} finally {
+	            out.close();
+			}
+		} catch (IOException e) {
+			synchronized (sharedStringBuilder) {
+				describeTransformation(sharedStringBuilder, classNo, className);
+				sharedStringBuilder.append(" dump failed with error: ");
+				sharedStringBuilder.append(e.getLocalizedMessage());
+				Log.out.println(sharedStringBuilder);
+			}
+			e.printStackTrace();
 		}
 	}
 
