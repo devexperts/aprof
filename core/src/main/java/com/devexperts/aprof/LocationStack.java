@@ -77,4 +77,25 @@ public final class LocationStack {
 			invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
 		}
 	}
+
+	public LocationStack pushStackAndForceInvokedMethod(int loc) {
+		LocationStack savedCopy = new LocationStack();
+		savedCopy.copyFrom(this);
+		invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
+		invocation_point_count = 1;
+		invoked_method_loc = loc;
+		invoked_method_count = 1;
+		return savedCopy;
+	}
+
+	public void popStack(LocationStack savedCopy) {
+		copyFrom(savedCopy);
+	}
+
+	private void copyFrom(LocationStack other) {
+		invocation_point_loc = other.invoked_method_loc;
+		invocation_point_count = other.invocation_point_count;
+		invoked_method_loc = other.invoked_method_loc;
+		invoked_method_count = other.invoked_method_count;
+	}
 }

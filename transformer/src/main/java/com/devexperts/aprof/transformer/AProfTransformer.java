@@ -24,8 +24,7 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.*;
 
-import com.devexperts.aprof.AProfRegistry;
-import com.devexperts.aprof.Configuration;
+import com.devexperts.aprof.*;
 import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.*;
@@ -36,6 +35,8 @@ import org.objectweb.asm.commons.*;
  * @author Denis Davydov
  */
 public class AProfTransformer implements ClassFileTransformer {
+	private static final int TRANSFORM_LOC = AProfRegistry.registerLocation(AProfTransformer.class.getName() + ".transform") ;
+
 	private final Configuration config;
 	private final StringBuilder sharedStringBuilder = new StringBuilder();
 
@@ -46,6 +47,19 @@ public class AProfTransformer implements ClassFileTransformer {
 
 	public byte[] transform(ClassLoader loader, String binaryClassName,
 							Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
+			throws IllegalClassFormatException {
+		// always track invocations of transform method as a separate location
+		LocationStack locationStack = LocationStack.get();
+		LocationStack savedCopy = locationStack.pushStackAndForceInvokedMethod(TRANSFORM_LOC);
+		try {
+			return transformImpl(loader, binaryClassName, classBeingRedefined, protectionDomain, classfileBuffer);
+		} finally {
+			locationStack.popStack(savedCopy);
+		}
+	}
+
+	private byte[] transformImpl(ClassLoader loader, String binaryClassName,
+						Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
 			throws IllegalClassFormatException {
 		config.reloadTrackedClasses();
 		long start = System.currentTimeMillis();
