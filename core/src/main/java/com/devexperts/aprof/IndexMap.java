@@ -38,12 +38,12 @@ class IndexMap {
 	}
 
 	/**
-	 * Location id in AProfRegistry.locations
+	 * Location id in AProfRegistry locations.
 	 */
 	private final int location;
 
 	/**
-	 * Root index in AProfRegistry.rootIndexes
+	 * Root index in AProfRegistry rootIndexes.
 	 */
 	private final int index;
 
@@ -56,7 +56,7 @@ class IndexMap {
 
 	/**
 	 * For non-arrays acts as an ordinal instance counter.
-	 * For arrays counts instances created via {@link #increment(int size)}.
+	 * For arrays counts instances created via {@link #increment(int size)} and this count is always 0.
 	 */
 	private int count;
 
@@ -189,7 +189,7 @@ class IndexMap {
 			val = histogramCounts[i];
 		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(histogramCounts,
 				INT_ARRAY_BASE_OFFSET + i * INT_ARRAY_INDEX_SCALE, val, val + 1));
-		increment(size);
+		incrementSize(size);
 	}
 
 	private void incrementSize(int size) {

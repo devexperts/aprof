@@ -35,6 +35,7 @@ public class TestSuite {
 			new NewTest(),
 			new DoubleTest(),
 			new IntegerTest(),
+			new StringTest(),
 			new ReflectionTest(),
 			new CloneTest(),
 			new TryTest(),
@@ -76,12 +77,14 @@ public class TestSuite {
 		SnapshotRoot snapshot0 = new SnapshotRoot();
 		SnapshotRoot snapshot1 = new SnapshotRoot();
 		for (int i = 0; i < TEST_RUNS; i++) {
+			long time = System.currentTimeMillis();
 			if (i == TEST_RUNS - 1) // STATISTICS before test
 				agent.getDumper().copyTotalSnapshotTo(snapshot0);
 			if (!doTestOnce(test))
 				return false;
 			if (i == TEST_RUNS - 1) // STATISTICS after test
 				agent.getDumper().copyTotalSnapshotTo(snapshot1);
+			System.out.printf("Test took %d ms\n", System.currentTimeMillis() - time);
 		}
 
 		String received = snapshotToString(config, getCheckedClassesSnapshot(test, snapshot0, snapshot1));
@@ -137,7 +140,6 @@ public class TestSuite {
 	}
 
 	private static boolean doTestOnce(TestCase test) {
-		long time = System.currentTimeMillis();
 		try {
 			test.doTest();
 		} catch (Throwable t) {
@@ -145,7 +147,6 @@ public class TestSuite {
 			t.printStackTrace(System.out);
 			return false;
 		}
-		System.out.printf("Test took %d ms\n", System.currentTimeMillis() - time);
 		return true;
 	}
 
