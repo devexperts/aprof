@@ -23,6 +23,7 @@ import static com.devexperts.aprof.AProfSizeUtil.*;
 
 /**
  * Methods that are instrumented into "internal" target code by aprof method transformer.
+ * The difference is that they don't use {@link LocationStack} parameter.
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class AProfOpsInternal extends AProfOps {

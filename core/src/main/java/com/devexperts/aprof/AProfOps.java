@@ -98,15 +98,15 @@ public class AProfOps {
 		map.increment(o.length, size);
 	}
 
-	public static void allocateReflect(Object o, int loc) {
+	public static void allocateReflect(Object o, LocationStack stack, int index) {
 		String name = o.getClass().getName();
-		IndexMap map = getDetailedIndex(name, loc);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(name, index));
 		map.increment();
 	}
 
-	public static void allocateReflectSize(Object o, int loc) {
+	public static void allocateReflectSize(Object o, LocationStack stack, int index) {
 		String name = o.getClass().getName();
-		IndexMap map = getDetailedIndex(name, loc);
+		IndexMap map = getDetailedIndex(stack, getRootIndex(name, index));
 		if (name.startsWith("[")) {
 			map.increment(getArraySizeMultiRec(o));
 		} else {
@@ -119,14 +119,14 @@ public class AProfOps {
 		}
 	}
 
-	public static void allocateReflectVClone(Object o, int reflectIndex) {
+	public static void allocateReflectVClone(Object o, LocationStack stack, int index) {
 		if (isDirectCloneClass(o.getClass().getName()))
-			allocateReflect(o, reflectIndex);
+			allocateReflect(o, stack, index);
 	}
 
-	public static void allocateReflectVCloneSize(Object o, int reflectIndex) {
+	public static void allocateReflectVCloneSize(Object o, LocationStack stack, int index) {
 		if (isDirectCloneClass(o.getClass().getName()))
-			allocateReflectSize(o, reflectIndex);
+			allocateReflectSize(o, stack, index);
 	}
 
 	public static void objectInit(Object o) {

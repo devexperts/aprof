@@ -32,7 +32,6 @@ import com.devexperts.aprof.util.*;
 public class AProfRegistry {
 	private static final String PROXY_CLASS_TOKEN = "$Proxy";
 
-	public static final String ARRAY_NEWINSTANCE_SUFFIX = "#";
 	public static final String CLONE_SUFFIX = "*";
 
 	private static final int OVERFLOW_THRESHOLD = 1 << 30;
@@ -275,9 +274,8 @@ public class AProfRegistry {
 
 	// TODO: can allocate memory during execution: new root because of reflection call
 	// all data-types should be registered beforehand
-	static IndexMap getDetailedIndex(String cname, int loc) {
-		DatatypeInfo datatypeInfo = registerDatatypeInfo(normalize(cname));
-		return registerRootIndex(datatypeInfo, loc);
+	static IndexMap getRootIndex(String cname, int loc) {
+		return registerRootIndex(registerDatatypeInfo(normalize(cname)), loc);
 	}
 
 	// can allocate memory during execution

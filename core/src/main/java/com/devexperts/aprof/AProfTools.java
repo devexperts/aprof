@@ -152,15 +152,15 @@ public class AProfTools {
 		}
 		boolean ok = true;
 		for (int i = 1; i < args.length; i++) {
-			String testName = args[i].trim().toLowerCase(Locale.US);
-			if ("all".equals(testName)) {
+			String testName = args[i].trim();
+			if ("all".equalsIgnoreCase(testName)) {
 				if (!TestSuite.testAllApplicableCases())
 					ok = false;
 				continue;
 			}
 			boolean done = false;
 			for (TestCase test : TestSuite.getTestCases()) {
-				if (test.name().equals(testName)) {
+				if (test.name().equalsIgnoreCase(testName)) {
 					if (!TestSuite.testSingleCase(test))
 						ok = false;
 					done = true;

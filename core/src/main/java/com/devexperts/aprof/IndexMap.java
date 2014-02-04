@@ -56,7 +56,8 @@ class IndexMap {
 
 	/**
 	 * For non-arrays acts as an ordinal instance counter.
-	 * For arrays counts instances created via {@link #increment(int size)} and this count is always 0.
+	 * For arrays counts instances created via {@link #increment(int size)} and this count is usually 0,
+	 * with the exception of reflective allocations that do not support histograms and increment this count.
 	 */
 	private int count;
 

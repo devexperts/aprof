@@ -218,19 +218,25 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 		if (opcode == Opcodes.INVOKEVIRTUAL && isObjectClone) {
 			// INVOKEVIRTUAL needs runtime check of class that is being cloned
 			visitAllocateReflectVClone(AProfRegistry.CLONE_SUFFIX);
+			return;
 		}
+
 		if (opcode == Opcodes.INVOKESPECIAL && isObjectClone) {
 			// Object.clone via super.clone (does not need runtime check)
 			visitAllocateReflect(AProfRegistry.CLONE_SUFFIX);
+			return;
 		}
+
 		if (isArrayClone) {
 			// <array>.clone (usually via INVOKEVIRTUAL, but we don't care)
 			visitAllocateReflect(AProfRegistry.CLONE_SUFFIX);
+			return;
 		}
+
 		if (opcode == Opcodes.INVOKESTATIC && owner.equals("java/lang/reflect/Array") && name.equals("newInstance")
 				&& (desc.equals(AProfTransformer.CLASS_INT_RETURNS_OBJECT) || desc.equals(AProfTransformer.CLASS_INT_ARR_RETURNS_OBJECT))) {
 			// Array.newInstance
-			visitAllocateReflect(AProfRegistry.ARRAY_NEWINSTANCE_SUFFIX);
+			visitAllocateReflect("");
 		}
 	}
 }

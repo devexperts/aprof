@@ -39,7 +39,8 @@ public class TestSuite {
 			new ReflectionTest(),
 			new CloneTest(),
 			new TryTest(),
-			new DeserializationTest()
+			new DeserializationTest(),
+			new ArrayNewInstanceTest()
 	);
 
 	public static Collection<TestCase> getTestCases() {
@@ -92,11 +93,13 @@ public class TestSuite {
 		String result = compareStatistics(received, expected);
 
 		if (result != null) {
+			// Print full details to stderr
+			System.err.printf("-- Test '%s' expected allocations:%n", test.name());
+			System.err.println(expected);
+			System.err.printf("-- Test '%s' Collected allocations:%n", test.name());
+			System.err.println(received);
+			// Print short summary to stdout
 			System.out.println(result);
-			System.out.println("-- Expected allocations:");
-			System.out.println(expected);
-			System.out.println("-- Collected allocations:");
-			System.out.println(received);
 			System.out.printf("-- Test '%s' FAILED !!!%n", test.name());
 			return false;
 		} else {
@@ -122,7 +125,7 @@ public class TestSuite {
 				if (!tracked)
 					continue;
 				// add delta to result
-				SnapshotDeep child0 = snapshot0.getOrCreateChild(child.getName(),child.getHistoCountsLength());
+				SnapshotDeep child0 = snapshot0.getOrCreateChild(child.getName(), child.getHistoCountsLength());
 				SnapshotDeep resultChild = result.getOrCreateChild(child.getName(), child.getHistoCountsLength());
 				resultChild.addDeep(child);
 				resultChild.subDeep(child0);

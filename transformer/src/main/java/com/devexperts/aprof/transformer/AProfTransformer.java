@@ -56,7 +56,7 @@ public class AProfTransformer implements ClassFileTransformer {
 	static final String STACK_INT_VOID = "(Lcom/devexperts/aprof/LocationStack;I)V";
 	static final String STACK_INT_CLASS_VOID = "(Lcom/devexperts/aprof/LocationStack;ILjava/lang/Class;)V";
 	static final String OBJECT_VOID = "(Ljava/lang/Object;)V";
-	static final String OBJECT_INT_VOID = "(Ljava/lang/Object;I)V";
+	static final String OBJECT_STACK_INT_VOID = "(Ljava/lang/Object;Lcom/devexperts/aprof/LocationStack;I)V";
 	static final String CLASS_INT_RETURNS_OBJECT = "(Ljava/lang/Class;I)Ljava/lang/Object;";
 	static final String CLASS_INT_ARR_RETURNS_OBJECT = "(Ljava/lang/Class;[I)Ljava/lang/Object;";
 
@@ -123,7 +123,7 @@ public class AProfTransformer implements ClassFileTransformer {
 				describeTransformation(sharedStringBuilder, classNo, className);
 				describeClassLoader(sharedStringBuilder, loader);
 				sharedStringBuilder.append(" failed with error: ");
-				sharedStringBuilder.append(t.getLocalizedMessage());
+				sharedStringBuilder.append(t.toString());
 				Log.out.println(sharedStringBuilder);
 			}
 			t.printStackTrace();
@@ -158,7 +158,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			synchronized (sharedStringBuilder) {
 				describeTransformation(sharedStringBuilder, classNo, className);
 				sharedStringBuilder.append(" dump failed with error: ");
-				sharedStringBuilder.append(e.getLocalizedMessage());
+				sharedStringBuilder.append(e.toString());
 				Log.out.println(sharedStringBuilder);
 			}
 			e.printStackTrace();
@@ -182,43 +182,26 @@ public class AProfTransformer implements ClassFileTransformer {
 	}
 
 	private class ClassAnalyzer extends ClassVisitor {
+		private final String locationClass;
+		private final boolean isNormal;
 		private final String cname;
 		private final List<Context> contexts;
 
 		public ClassAnalyzer(final ClassVisitor cv, String cname, List<Context> contexts) {
 			super(Opcodes.ASM4, cv);
+			this.isNormal = AProfRegistry.isNormal(cname);
+			this.locationClass = AProfRegistry.normalize(cname);
 			this.cname = cname;
 			this.contexts = contexts;
 		}
 
 		@Override
-		public MethodVisitor visitMethod(final int access, final String mname, final String desc, final String signature, final String[] exceptions) {
-			Context context = new Context(config, cname, mname, desc, access);
-			contexts.add(context);
-			return new MethodAnalyzer(new GeneratorAdapter(new EmptyMethodVisitor(), access, mname, desc), context);
-		}
-	}
-
-	private class ClassTransformer extends ClassVisitor {
-		private final String locationClass;
-		private final boolean isNormal;
-		private final Iterator<Context> contextIterator;
-
-		public ClassTransformer(final ClassVisitor cv, String cname, List<Context> contexts) {
-			super(Opcodes.ASM4, cv);
-			this.isNormal = AProfRegistry.isNormal(cname);
-			this.locationClass = AProfRegistry.normalize(cname);
-			this.contextIterator = contexts.iterator();
-		}
-
-		@Override
-		public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
-			super.visit(Math.max(MIN_CLASS_VERSION, version), access, name, signature, superName, interfaces);
+		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+			super.visit(version, access, name, signature, superName, interfaces);
 			AProfRegistry.registerDatatypeInfo(locationClass);
 			if (superName != null && isNormal && AProfRegistry.isDirectCloneClass(superName.replace('/', '.')))
 				// candidate for direct clone
 				AProfRegistry.addDirectCloneClass(locationClass);
-
 		}
 
 		@Override
@@ -228,6 +211,27 @@ public class AProfTransformer implements ClassFileTransformer {
 				// no -- does not implement clone directly
 				AProfRegistry.removeDirectCloneClass(locationClass);
 			}
+			Context context = new Context(config, cname, mname, desc, access);
+			contexts.add(context);
+			return new MethodAnalyzer(new GeneratorAdapter(new EmptyMethodVisitor(), access, mname, desc), context);
+		}
+	}
+
+	private class ClassTransformer extends ClassVisitor {
+		private final Iterator<Context> contextIterator;
+
+		public ClassTransformer(final ClassVisitor cv, String cname, List<Context> contexts) {
+			super(Opcodes.ASM4, cv);
+			this.contextIterator = contexts.iterator();
+		}
+
+		@Override
+		public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
+			super.visit(Math.max(MIN_CLASS_VERSION, version), access, name, signature, superName, interfaces);
+		}
+
+		@Override
+		public MethodVisitor visitMethod(final int access, final String mname, final String desc, final String signature, final String[] exceptions) {
 			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
 			visitor = new TryCatchBlockSorter(visitor, access, mname, desc, signature, exceptions);
 			Context context = contextIterator.next();

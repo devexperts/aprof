@@ -37,14 +37,14 @@ class MethodTransformer extends AbstractMethodVisitor {
 	}
 
 	public void pushLocationStack() {
-		assert context.isLocationStackNeeded();
+		assert context.isLocationStackNeeded() : context;
 		if (context.isInternalLocation()) {
 			mv.visitInsn(Opcodes.ACONST_NULL);
 			return;
 		}
 		int locationStack = context.getLocationStack();
 		if (context.isMethodTracked()) {
-			assert locationStack >= 0;
+			assert locationStack >= 0 : context;
 			mv.loadLocal(locationStack);
 			return;
 		}
@@ -87,7 +87,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitMarkInvokedMethod() {
-		assert !context.isInternalLocation();
+		assert !context.isInternalLocation() : context;
 		pushLocationStack();
 		mv.push(AProfRegistry.registerLocation(context.getLocation()));
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvokedMethod", AProfTransformer.INT_VOID);
@@ -98,7 +98,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitUnmarkInvokedMethod() {
-		assert !context.isInternalLocation();
+		assert !context.isInternalLocation() : context;
 		pushLocationStack();
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvokedMethod", AProfTransformer.NOARG_VOID);
 	}
@@ -108,7 +108,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitMarkInvocationPoint() {
-		assert !context.isInternalLocation();
+		assert !context.isInternalLocation() : context;
 		pushLocationStack();
 		mv.push(AProfRegistry.registerLocation(context.getLocation()));
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "addInvocationPoint", AProfTransformer.INT_VOID);
@@ -119,7 +119,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitUnmarkInvocationPoint() {
-		assert !context.isInternalLocation();
+		assert !context.isInternalLocation() : context;
 		pushLocationStack();
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, AProfTransformer.LOCATION_STACK, "removeInvocationPoint", AProfTransformer.NOARG_VOID);
 	}
@@ -141,12 +141,12 @@ class MethodTransformer extends AbstractMethodVisitor {
 	/**
 	 * OPS implementation is chosen based on the class doing the allocation.
 	 *
-	 * @see com.devexperts.aprof.AProfOps#allocate(int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocate(int)
+	 * @see com.devexperts.aprof.AProfOps#allocate(LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateSize(LocationStack, int, Class)
 	 */
 	@Override
 	protected void visitAllocate(String desc) {
-		assert context.getConfig().isLocation();
+		assert context.getConfig().isLocation() : context;
 		pushLocationStack();
 		pushAllocationPoint(desc);
 		if (context.getConfig().isSize()) {
@@ -159,7 +159,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	/**
 	 * OPS implementation is chosen based on the class doing the allocation.
 	 *
-	 * @see com.devexperts.aprof.AProfOps#allocate(int)
+	 * @see com.devexperts.aprof.AProfOps#allocate(LocationStack, int)
 	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(boolean[], LocationStack, int)
 	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(byte[], LocationStack, int)
 	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(char[], LocationStack, int)
@@ -170,22 +170,10 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(double[], LocationStack, int)
 	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(Object[], LocationStack, int)
 	 * @see com.devexperts.aprof.AProfOps#allocateArraySizeMulti(Object[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocate(int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(boolean[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(byte[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(char[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(short[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(int[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(long[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(float[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(double[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySize(Object[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOpsInternal#allocateArraySizeMulti(Object[], LocationStack, int)
-	 * @param desc
 	 */
 	@Override
 	protected void visitAllocateArray(String desc) {
-		assert context.getConfig().isArrays();
+		assert context.getConfig().isArrays() : context;
 		if (context.getConfig().isSize()) {
 			mv.dup();
 			pushLocationStack();
@@ -210,33 +198,34 @@ class MethodTransformer extends AbstractMethodVisitor {
 	}
 
 	/**
-	 * @see com.devexperts.aprof.AProfOps#allocateReflect(Object, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateReflectSize(Object, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateReflect(Object, LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateReflectSize(Object, LocationStack, int)
 	 */
 	@Override
 	protected void visitAllocateReflect(String suffix) {
-		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass());
-		assert context.getConfig().isReflect();
+		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass()) : context;
+		assert context.getConfig().isReflect() : context;
 		mv.dup();
-		int loc = AProfRegistry.registerLocation(context.getLocation() + suffix);
-		mv.push(loc);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS,
+		pushLocationStack();
+		mv.push(AProfRegistry.registerLocation(context.getLocation() + suffix));
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(),
 				context.getConfig().isSize() ? "allocateReflectSize" : "allocateReflect",
-				AProfTransformer.OBJECT_INT_VOID);
+				AProfTransformer.OBJECT_STACK_INT_VOID);
 	}
 
 	/**
-	 * @see com.devexperts.aprof.AProfOps#allocateReflectVClone(Object, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateReflectVCloneSize(Object, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateReflectVClone(Object, LocationStack, int)
+	 * @see com.devexperts.aprof.AProfOps#allocateReflectVCloneSize(Object, LocationStack, int)
 	 */
 	@Override
 	protected void visitAllocateReflectVClone(String suffix) {
-		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass());
-		assert context.getConfig().isReflect();
+		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass()) : context;
+		assert context.getConfig().isReflect() : context;
 		mv.dup();
+		pushLocationStack();
 		mv.push(AProfRegistry.registerLocation(context.getLocation() + suffix));
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, AProfTransformer.APROF_OPS,
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(),
 				context.getConfig().isSize() ? "allocateReflectVCloneSize" : "allocateReflectVClone",
-				AProfTransformer.OBJECT_INT_VOID);
+				AProfTransformer.OBJECT_STACK_INT_VOID);
 	}
 }

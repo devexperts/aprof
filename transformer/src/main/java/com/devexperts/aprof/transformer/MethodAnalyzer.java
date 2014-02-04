@@ -78,11 +78,11 @@ class MethodAnalyzer extends AbstractMethodVisitor {
 
 	@Override
 	protected void visitAllocateReflect(String suffix) {
-		// do nothing
+		requestLocationStack();
 	}
 
 	@Override
 	protected void visitAllocateReflectVClone(String suffix) {
-		// do nothing
+		requestLocationStack();
 	}
 }

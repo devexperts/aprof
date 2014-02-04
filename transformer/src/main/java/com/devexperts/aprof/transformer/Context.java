@@ -128,4 +128,19 @@ class Context {
 	public boolean isLocationTracked(String locationClass, String locationMethod) {
 		return config.isLocationTracked(locationClass, locationMethod) && !accessMethod;
 	}
+
+	@Override
+	public String toString() {
+		return "Context{" +
+			"locationClass='" + locationClass + '\'' +
+			", locationMethod='" + locationMethod + '\'' +
+			", accessMethod=" + accessMethod +
+			", methodTracked=" + methodTracked +
+			", objectInit=" + objectInit +
+			", aprofOpsImpl='" + aprofOpsImpl + '\'' +
+			", location='" + location + '\'' +
+			", locationStackNeeded=" + locationStackNeeded +
+			", locationStack=" + locationStack +
+			'}';
+	}
 }
