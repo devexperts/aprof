@@ -32,7 +32,9 @@ import com.devexperts.aprof.util.*;
 public class AProfRegistry {
 	private static final String PROXY_CLASS_TOKEN = "$Proxy";
 
-	public static final String CLONE_SUFFIX = "*";
+	// locations that correspond to "clone" method invocation are internally marked with this suffix,
+	// because they don't invoke constructor and need to be counted separately.
+	private static final String OBJECT_CLONE_SUFFIX = ";via-clone";
 
 	private static final int OVERFLOW_THRESHOLD = 1 << 30;
 
@@ -151,12 +153,22 @@ public class AProfRegistry {
 		return classNameResolver.resolve(datatype);
 	}
 
+	public static String getLocationNameWithoutSuffix(String name) {
+		return name.endsWith(OBJECT_CLONE_SUFFIX) ?
+			name.substring(0, name.length() - OBJECT_CLONE_SUFFIX.length()) : name;
+	}
+
 	// allocates memory during class transformation only
 	public static int registerLocation(String location) {
 		int loc = LOCATIONS.get(location);
 		if (loc == 0)
 			loc = LOCATIONS.register(location);
 		return loc;
+	}
+
+	// allocates memory during class transformation only
+	public static int registerLocation(String location, boolean objectCloneInvocation) {
+		return registerLocation(objectCloneInvocation ? location + OBJECT_CLONE_SUFFIX : location);
 	}
 
 	// allocates memory during class transformation only???
@@ -438,7 +450,7 @@ public class AProfRegistry {
 	private static void addCloneLocationsShallow(SnapshotDeep ss, SnapshotShallow cloneTotal) {
 		for (int i = 0; i < ss.getUsed(); i++) {
 			SnapshotDeep cs = ss.getChild(i);
-			if (cs.getName().endsWith(CLONE_SUFFIX))
+			if (cs.getName().endsWith(OBJECT_CLONE_SUFFIX))
 				cloneTotal.addShallow(cs);
 		}
 	}
@@ -446,7 +458,7 @@ public class AProfRegistry {
 	private static void subCloneLocationsShallow(SnapshotDeep ss, SnapshotShallow cloneTotal) {
 		for (int i = 0; i < ss.getUsed(); i++) {
 			SnapshotDeep cs = ss.getChild(i);
-			if (cs.getName().endsWith(CLONE_SUFFIX))
+			if (cs.getName().endsWith(OBJECT_CLONE_SUFFIX))
 				cloneTotal.subShallow(cs);
 		}
 	}

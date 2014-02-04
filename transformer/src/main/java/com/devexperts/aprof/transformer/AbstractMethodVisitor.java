@@ -62,9 +62,9 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 
 	protected abstract void visitAllocateArray(String desc);
 
-	protected abstract void visitAllocateReflect(String suffix);
+	protected abstract void visitAllocateReflect(boolean cloneInvocation);
 
-	protected abstract void visitAllocateReflectVClone(String suffix);
+	protected abstract void visitAllocateReflectVClone();
 
 	@Override
 	public void visitCode() {
@@ -218,32 +218,32 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 
 		if (opcode == Opcodes.INVOKEVIRTUAL && isObjectClone) {
 			// INVOKEVIRTUAL needs runtime check of class that is being cloned
-			visitAllocateReflectVClone(AProfRegistry.CLONE_SUFFIX);
+			visitAllocateReflectVClone();
 			return;
 		}
 
 		if (opcode == Opcodes.INVOKESPECIAL && isObjectClone) {
 			// Object.clone via super.clone (does not need runtime check)
-			visitAllocateReflect(AProfRegistry.CLONE_SUFFIX);
+			visitAllocateReflect(true);
 			return;
 		}
 
 		if (isArrayClone) {
 			// <array>.clone (usually via INVOKEVIRTUAL, but we don't care)
-			visitAllocateReflect(AProfRegistry.CLONE_SUFFIX);
+			visitAllocateReflect(false);
 			return;
 		}
 
 		if (opcode == Opcodes.INVOKESTATIC && owner.equals("java/lang/reflect/Array") && name.equals("newInstance")
 				&& (desc.equals(TransformerUtil.CLASS_INT_RETURNS_OBJECT) || desc.equals(TransformerUtil.CLASS_INT_ARR_RETURNS_OBJECT))) {
 			// Array.newInstance
-			visitAllocateReflect("");
+			visitAllocateReflect(false);
 			return;
 		}
 
 		if (opcode == Opcodes.INVOKESTATIC && TransformerUtil.isIntrinsicArraysCopyOf(owner, name, desc)) {
 			// HotSpot intrinsic for Arrays.copyOf and Arrays.copyOfRange
-			visitAllocateReflect("");
+			visitAllocateReflect(false);
 		}
 	}
 }

@@ -202,12 +202,12 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 * @see com.devexperts.aprof.AProfOps#allocateReflectSize(Object, LocationStack, int)
 	 */
 	@Override
-	protected void visitAllocateReflect(String suffix) {
+	protected void visitAllocateReflect(boolean objectCloneInvocation) {
 		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass()) : context;
 		assert context.getConfig().isReflect() : context;
 		mv.dup();
 		pushLocationStack();
-		mv.push(AProfRegistry.registerLocation(context.getLocation() + suffix));
+		mv.push(AProfRegistry.registerLocation(context.getLocation(), objectCloneInvocation));
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(),
 				context.getConfig().isSize() ? "allocateReflectSize" : "allocateReflect",
 				TransformerUtil.OBJECT_STACK_INT_VOID);
@@ -218,12 +218,12 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 * @see com.devexperts.aprof.AProfOps#allocateReflectVCloneSize(Object, LocationStack, int)
 	 */
 	@Override
-	protected void visitAllocateReflectVClone(String suffix) {
+	protected void visitAllocateReflectVClone() {
 		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass()) : context;
 		assert context.getConfig().isReflect() : context;
 		mv.dup();
 		pushLocationStack();
-		mv.push(AProfRegistry.registerLocation(context.getLocation() + suffix));
+		mv.push(AProfRegistry.registerLocation(context.getLocation(), true));
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(),
 				context.getConfig().isSize() ? "allocateReflectVCloneSize" : "allocateReflectVClone",
 				TransformerUtil.OBJECT_STACK_INT_VOID);

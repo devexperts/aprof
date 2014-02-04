@@ -45,7 +45,7 @@ class CloneTest implements TestCase {
 		int objSize = AProfSizeUtil.getObjectSize(new Entity()) << AProfSizeUtil.SIZE_SHIFT;
 		return fmt(
 			"{class}$Entity: {size1} bytes in {count1} objects (avg size {objSize} bytes)\n" +
-			"\t{class}$Entity.dup*: {size} bytes in {count} objects\n" +
+			"\t{class}$Entity.dup;via-clone: {size} bytes in {count} objects\n" +
 			"\t{class}.doTest: {objSize} bytes in 1 objects\n",
 			"class=" + getClass().getName(),
 			"size=" + fmt(objSize * COUNT),

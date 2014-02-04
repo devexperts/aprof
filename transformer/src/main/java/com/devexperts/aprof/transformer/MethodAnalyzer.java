@@ -77,12 +77,12 @@ class MethodAnalyzer extends AbstractMethodVisitor {
 	}
 
 	@Override
-	protected void visitAllocateReflect(String suffix) {
+	protected void visitAllocateReflect(boolean cloneInvocation) {
 		requestLocationStack();
 	}
 
 	@Override
-	protected void visitAllocateReflectVClone(String suffix) {
+	protected void visitAllocateReflectVClone() {
 		requestLocationStack();
 	}
 }

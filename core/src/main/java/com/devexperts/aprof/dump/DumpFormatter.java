@@ -21,6 +21,7 @@ package com.devexperts.aprof.dump;
 import java.io.PrintWriter;
 import java.util.Comparator;
 
+import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
 import com.devexperts.aprof.util.FastObjIntMap;
 
@@ -82,7 +83,7 @@ public class DumpFormatter {
 			return;
 		if (!ss.hasChildren()) {
 			// leaf location
-			String name = ss.getName();
+			String name = AProfRegistry.getLocationNameWithoutSuffix(ss.getName());
 			// use hash index to find location (fast path)
 			int i = locationIndex.get(name, -1);
 			if (i < 0) {
