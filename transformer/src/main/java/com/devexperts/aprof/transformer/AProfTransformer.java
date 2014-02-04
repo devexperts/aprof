@@ -90,20 +90,35 @@ public class AProfTransformer implements ClassFileTransformer {
 			}
 		}
 		try {
-			int flags = (config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) + ClassReader.EXPAND_FRAMES;
-
 			ClassReader cr = new ClassReader(classfileBuffer);
-			int javaVersion = cr.readShort(6);
-			ClassWriter cw = javaVersion >= Opcodes.V1_7 ?
+
+			// 1ST PASS: ANALYZE CLASS
+			ClassAnalyzer classAnalyzer = new ClassAnalyzer(new EmptyClassVisitor(), binaryClassName, cname);
+			cr.accept(classAnalyzer, ClassReader.SKIP_DEBUG + ClassReader.SKIP_FRAMES);
+
+			// check if transformation is needed
+			boolean transformationNeeded = false;
+			for (Context methodContext : classAnalyzer.contexts) {
+				if (methodContext.isTransformationNeeded()) {
+					transformationNeeded = true;
+					break;
+				}
+			}
+			if (!transformationNeeded)
+				return classfileBuffer; // don't transform classes that don't need transformation
+
+			// 2ST PASS: TRANSFORM CLASS
+			boolean computeFrames = compareVersion(classAnalyzer.classVersion, Opcodes.V1_6) >= 0;
+			ClassWriter cw = computeFrames ?
 				new FrameClassWriter(cr) :
 				new ClassWriter(ClassWriter.COMPUTE_MAXS);
+			ClassVisitor classTransformer = new ClassTransformer(cw, cname, classAnalyzer.contexts);
+			int transformFlags =
+				(config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) +
+				(computeFrames ? ClassReader.SKIP_FRAMES : 0);
+			cr.accept(classTransformer, transformFlags);
 
-			List<Context> methodContexts = new ArrayList<Context>();
-			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyClassVisitor(), binaryClassName, cname, methodContexts);
-			cr.accept(classAnalyzer, flags);
-
-			ClassVisitor classTransformer = new ClassTransformer(cw, cname, methodContexts);
-			cr.accept(classTransformer, flags);
+			// Convert transformed class to byte array, dump (if needed) and return
 			byte[] bytes = cw.toByteArray();
 			dumpClass(binaryClassName, classNo, cname, bytes);
 			return bytes;
@@ -114,12 +129,32 @@ public class AProfTransformer implements ClassFileTransformer {
 				sharedStringBuilder.append(" failed with error: ");
 				sharedStringBuilder.append(t.toString());
 				Log.out.println(sharedStringBuilder);
+				t.printStackTrace(Log.out);
 			}
-			t.printStackTrace();
 			return null;
 		} finally {
 			AProfRegistry.incrementTime(System.currentTimeMillis() - start);
 		}
+	}
+
+	private int compareVersion(int version1, int version2) {
+		if (major(version1) > major(version2))
+			return 1;
+		if (major(version1) < major(version2))
+			return -1;
+		if (minor(version1) > minor(version2))
+			return 1;
+		if (minor(version1) < minor(version2))
+			return -1;
+		return 0;
+	}
+
+	private int minor(int version) {
+		return version >>> 16;
+	}
+
+	private int major(int version) {
+		return version & 0xffff;
 	}
 
 	private static void describeTransformation(StringBuilder sb, int classNo, String cname) {
@@ -175,20 +210,22 @@ public class AProfTransformer implements ClassFileTransformer {
 		private final String locationClass;
 		private final boolean isNormal;
 		private final String cname;
-		private final List<Context> contexts;
 
-		public ClassAnalyzer(final ClassVisitor cv, String binaryClassName, String cname, List<Context> contexts) {
+		final List<Context> contexts = new ArrayList<Context>();
+		int classVersion;
+
+		public ClassAnalyzer(final ClassVisitor cv, String binaryClassName, String cname) {
 			super(Opcodes.ASM4, cv);
 			this.binaryClassName = binaryClassName;
 			this.locationClass = AProfRegistry.normalize(cname);
 			this.isNormal = AProfRegistry.isNormal(cname);
 			this.cname = cname;
-			this.contexts = contexts;
 		}
 
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 			super.visit(version, access, name, signature, superName, interfaces);
+			classVersion = version;
 			AProfRegistry.registerDatatypeInfo(locationClass);
 			if (superName != null && isNormal && AProfRegistry.isDirectCloneClass(superName.replace('/', '.')))
 				// candidate for direct clone
@@ -217,8 +254,10 @@ public class AProfTransformer implements ClassFileTransformer {
 		}
 
 		@Override
-		public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
-			super.visit(Math.max(TransformerUtil.MIN_CLASS_VERSION, version), access, name, signature, superName, interfaces);
+		public void visit(int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
+			if (compareVersion(version, TransformerUtil.MIN_CLASS_VERSION) < 0)
+				version = TransformerUtil.MIN_CLASS_VERSION;
+			super.visit(version, access, name, signature, superName, interfaces);
 		}
 
 		@Override

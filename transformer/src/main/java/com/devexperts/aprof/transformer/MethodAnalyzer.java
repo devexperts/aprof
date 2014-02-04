@@ -33,7 +33,12 @@ class MethodAnalyzer extends AbstractMethodVisitor {
 		// do nothing
 	}
 
-	public void requestLocationStack() {
+	private void requestTransformation() {
+		context.setTransformationNeeded(true);
+	}
+
+	private void requestLocationStack() {
+		requestTransformation();
 		context.setLocationStackNeeded(true);
 	}
 
@@ -63,7 +68,7 @@ class MethodAnalyzer extends AbstractMethodVisitor {
 
 	@Override
 	protected void visitObjectInit() {
-		// do nothing
+		requestTransformation();
 	}
 
 	@Override

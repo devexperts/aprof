@@ -37,7 +37,8 @@ class Context {
 
 	private String location; // lazily computed on first get
 
-	private boolean locationStackNeeded = false;
+	private boolean transformationNeeded;
+	private boolean locationStackNeeded;
 
 	private int locationStack = -1;
 
@@ -84,6 +85,14 @@ class Context {
 
 	public String getAprofOpsImplementation() {
 		return aprofOpsImpl;
+	}
+
+	public boolean isTransformationNeeded() {
+		return transformationNeeded;
+	}
+
+	public void setTransformationNeeded(boolean transformationNeeded) {
+		this.transformationNeeded = transformationNeeded;
 	}
 
 	public boolean isLocationStackNeeded() {
