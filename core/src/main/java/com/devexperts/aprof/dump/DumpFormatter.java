@@ -117,11 +117,11 @@ public class DumpFormatter {
 			out.print(" bytes in ");
 		}
 		printNum(out, ss.getTotalCount());
-		out.print(" objects in ");
-		printNum(out, ss.countNonEmptyLeafs());
-		out.print(" locations of ");
+		out.print(" objects of ");
 		printNum(out, ss.countNonEmptyChildrenShallow());
-		out.println(" classes");
+		out.print(" classes in ");
+		printNum(out, ss.countNonEmptyLeafs());
+		out.println(" locations");
 		//------ end with tear line
 		printlnTearLine(out, '=');
 		out.println();

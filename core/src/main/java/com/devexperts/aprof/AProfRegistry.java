@@ -317,7 +317,6 @@ public class AProfRegistry {
 		}
 		QuickSort.sort(SORTED_DATATYPES, 0, count, DatatypeInfo.COMPARATOR_NAME);
 		ss.ensureChildrenCapacity(count);
-		ss.clearShallow(); // will recompute sum here
 		int idx = 0;
 		for (int i = 0 ; i < count; i++) {
 			// process datatype
@@ -355,8 +354,7 @@ public class AProfRegistry {
 			}
 
 			// take snapshot for data type children (known locations)
-			takeSnapshotDeepOnly(cs, map, classSize);
-			cs.updateSnapshotSumShallow();
+			takeSnapshotDeep(cs, map, classSize);
 
 			// create unknown node for datatype if tracked them (was enabled in config for non-array datatypes)
 			if (trackClassUnknown) {
@@ -383,10 +381,9 @@ public class AProfRegistry {
 				// NOW: cs = a[1]
 			} else
 				assert DATATYPE_TOTAL_TEMP.isEmpty(); // otherwise, datatype counters should not have anything in them
-
-			 // add this datatype to the total sum
-			ss.addShallow(cs);
 		}
+		// recompute overall totals
+		ss.updateSnapshotSumShallow();
 	}
 
 	private static void takeSnapshotShallow(SnapshotShallow ss, IndexMap map, int classSize) {
@@ -409,7 +406,7 @@ public class AProfRegistry {
 	 * (which is zero for arrays or when size is not being tracked).
 	 */
 	// PRE-CONDITION: ss.sortChildrenDeep(SnapshotDeep.COMPARATOR_NAME)
-	private static void takeSnapshotDeepOnly(SnapshotDeep ss, IndexMap map, int classSize) {
+	private static void takeSnapshotDeep(SnapshotDeep ss, IndexMap map, int classSize) {
 		ss.ensureChildrenCapacity(map.size());
 		// process all children in map
 		for (IntIterator it = map.iterator(); it.hasNext();) {
@@ -430,14 +427,14 @@ public class AProfRegistry {
 				cs.addToUnknown(UNKNOWN_TEMP);
 				UNKNOWN_TEMP.clearShallow();
 				// and go recursively into its children
-				takeSnapshotDeepOnly(cs, childMap, classSize);
-				// and update an overall sum from its children
-				cs.updateSnapshotSumShallow();
+				takeSnapshotDeep(cs, childMap, classSize);
 			} else {
 				// child has no children of its own -- just take its shallow snapshot
 				takeSnapshotShallow(cs, childMap, classSize);
 			}
 		}
+		// update an overall sum for this snapshot
+		ss.updateSnapshotSumShallow();
 	}
 
 	private static void addCloneLocationsShallow(SnapshotDeep ss, SnapshotShallow cloneTotal) {

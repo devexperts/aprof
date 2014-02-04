@@ -76,14 +76,14 @@ public class SnapshotDeep extends SnapshotShallow {
 		if (!hasChildren())
 			return;
 		clearShallow();
-		for (int i = 0; i < getUsed(); i++)
+		for (int i = 0; i < used; i++)
 			addShallow(getChild(i));
 	}
 
 	public void updateSnapshotSumDeep() {
 		if (!hasChildren())
 			return;
-		for (int i = 0; i < getUsed(); i++)
+		for (int i = 0; i < used; i++)
 			getChild(i).updateSnapshotSumDeep();
 		updateSnapshotSumShallow();
 	}
@@ -236,24 +236,21 @@ public class SnapshotDeep extends SnapshotShallow {
 	public int countNonEmptyChildrenShallow() {
 		int count = 0;
 		for (int i = 0; i < used; i++) {
-			if (children[i].isEmpty())
-				break;
-			count++;
+			SnapshotDeep item = children[i];
+			if (!item.isEmpty())
+				count++;
 		}
 		return count;
 	}
 
 	public int countNonEmptyLeafs() {
-		if (!hasChildren())
-			return 1;
 		int count = 0;
 		for (int i = 0; i < used; i++) {
 			SnapshotDeep item = children[i];
-			if (item.isEmpty())
-				break;
-			count += item.countNonEmptyLeafs();
+			if (!item.isEmpty())
+				count += item.countNonEmptyLeafs();
 		}
-		return count;
+		return count == 0 ? 1 : count;
 	}
 
 	/** Serialization. */
