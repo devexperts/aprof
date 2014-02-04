@@ -32,6 +32,7 @@ class Context {
 	private final boolean accessMethod;
 	private final boolean methodTracked;
 	private final boolean objectInit;
+	private final boolean intrinsicArraysCopyOf;
 	private final String aprofOpsImpl;
 
 	private String location; // lazily computed on first get
@@ -40,14 +41,15 @@ class Context {
 
 	private int locationStack = -1;
 
-	public Context(Configuration config, String cname, String mname, String desc, int access) {
+	public Context(Configuration config, String binaryClassName, String cname, String mname, String desc, int access) {
 		this.config = config;
 		this.locationClass = AProfRegistry.normalize(cname);
 		this.locationMethod = getLocationMethod(locationClass, mname, desc);
-		this.accessMethod = mname.startsWith(AProfTransformer.ACCESS_METHOD);
+		this.accessMethod = mname.startsWith(TransformerUtil.ACCESS_METHOD);
 		this.methodTracked = !isInternalLocation() && isLocationTracked(locationClass, locationMethod);
-		this.objectInit = this.locationClass.equals(AProfTransformer.OBJECT_CLASS_NAME) && mname.equals(AProfTransformer.OBJECT_INIT);
-		this.aprofOpsImpl = isInternalLocation() ? AProfTransformer.APROF_OPS_INTERNAL : AProfTransformer.APROF_OPS;
+		this.objectInit = locationClass.equals(TransformerUtil.OBJECT_CLASS_NAME) && mname.equals(TransformerUtil.OBJECT_INIT);
+		this.intrinsicArraysCopyOf = TransformerUtil.isIntrinsicArraysCopyOf(binaryClassName, mname, desc);
+		this.aprofOpsImpl = isInternalLocation() ? TransformerUtil.APROF_OPS_INTERNAL : TransformerUtil.APROF_OPS;
 	}
 
 	public boolean isInternalLocation() {
@@ -74,6 +76,10 @@ class Context {
 
 	public boolean isObjectInit() {
 		return objectInit;
+	}
+
+	public boolean isIntrinsicArraysCopyOf() {
+		return intrinsicArraysCopyOf;
 	}
 
 	public String getAprofOpsImplementation() {
@@ -137,6 +143,7 @@ class Context {
 			", accessMethod=" + accessMethod +
 			", methodTracked=" + methodTracked +
 			", objectInit=" + objectInit +
+			", intrinsicArraysCopyOf=" + intrinsicArraysCopyOf +
 			", aprofOpsImpl='" + aprofOpsImpl + '\'' +
 			", location='" + location + '\'' +
 			", locationStackNeeded=" + locationStackNeeded +

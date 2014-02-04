@@ -40,7 +40,8 @@ public class TestSuite {
 			new CloneTest(),
 			new TryTest(),
 			new DeserializationTest(),
-			new ArrayNewInstanceTest()
+			new ArrayNewInstanceTest(),
+			new ObjectArrayCopyTest()
 	);
 
 	public static Collection<TestCase> getTestCases() {

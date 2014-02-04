@@ -36,57 +36,32 @@ import org.objectweb.asm.commons.*;
  * @author Denis Davydov
  */
 public class AProfTransformer implements ClassFileTransformer {
-	static final int MIN_CLASS_VERSION = Opcodes.V1_5; // needed to support ldc <class> and avoid "Illegal type in constant pool"
-
-	static final String APROF_OPS = "com/devexperts/aprof/AProfOps";
-	static final String APROF_OPS_INTERNAL = "com/devexperts/aprof/AProfOpsInternal";
-	static final String LOCATION_STACK = "com/devexperts/aprof/LocationStack";
-
-	static final String OBJECT_CLASS_NAME = "java.lang.Object";
-
-	static final String ACCESS_METHOD = "access$";
-
-	static final String OBJECT_INIT = "<init>";
-	static final String CLONE = "clone";
-
-	static final String NOARG_RETURNS_OBJECT = "()Ljava/lang/Object;";
-	static final String NOARG_RETURNS_STACK = "()Lcom/devexperts/aprof/LocationStack;";
-	static final String NOARG_VOID = "()V";
-	static final String INT_VOID = "(I)V";
-	static final String STACK_INT_VOID = "(Lcom/devexperts/aprof/LocationStack;I)V";
-	static final String STACK_INT_CLASS_VOID = "(Lcom/devexperts/aprof/LocationStack;ILjava/lang/Class;)V";
-	static final String OBJECT_VOID = "(Ljava/lang/Object;)V";
-	static final String OBJECT_STACK_INT_VOID = "(Ljava/lang/Object;Lcom/devexperts/aprof/LocationStack;I)V";
-	static final String CLASS_INT_RETURNS_OBJECT = "(Ljava/lang/Class;I)Ljava/lang/Object;";
-	static final String CLASS_INT_ARR_RETURNS_OBJECT = "(Ljava/lang/Class;[I)Ljava/lang/Object;";
-
-
 	private final Configuration config;
 	private final StringBuilder sharedStringBuilder = new StringBuilder();
 
 	public AProfTransformer(Configuration config) {
 		this.config = config;
-		AProfRegistry.addDirectCloneClass(OBJECT_CLASS_NAME);
+		AProfRegistry.addDirectCloneClass(TransformerUtil.OBJECT_CLASS_NAME);
 	}
 
-	public byte[] transform(ClassLoader loader, String className,
+	public byte[] transform(ClassLoader loader, String binaryClassName,
 							Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
 			throws IllegalClassFormatException {
 		config.reloadTrackedClasses();
 		long start = System.currentTimeMillis();
-		if (className == null) {
+		if (binaryClassName == null) {
 			sharedStringBuilder.setLength(0);
 			sharedStringBuilder.append("Cannot transform class with no name");
 			describeClassLoader(sharedStringBuilder, loader);
 			Log.out.println(sharedStringBuilder);
 			return null;
 		}
-		className = className.replace('/', '.');
+		String cname = binaryClassName.replace('/', '.');
 		for (String s : config.getExcludedClasses()) {
-			if (className.equals(s)) {
+			if (cname.equals(s)) {
 				sharedStringBuilder.setLength(0);
 				sharedStringBuilder.append("Skipping transformation of excluded class: ");
-				sharedStringBuilder.append(className);
+				sharedStringBuilder.append(cname);
 				describeClassLoader(sharedStringBuilder, loader);
 				Log.out.println(sharedStringBuilder);
 				return null;
@@ -95,7 +70,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		int classNo = AProfRegistry.incrementCount();
 		if (config.isVerbose()) {
 			synchronized (sharedStringBuilder) {
-				describeTransformation(sharedStringBuilder, classNo, className);
+				describeTransformation(sharedStringBuilder, classNo, cname);
 				describeClassLoader(sharedStringBuilder, loader);
 				Log.out.println(sharedStringBuilder);
 			}
@@ -110,17 +85,17 @@ public class AProfTransformer implements ClassFileTransformer {
 				new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
 			List<Context> methodContexts = new ArrayList<Context>();
-			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyClassVisitor(), className, methodContexts);
+			ClassVisitor classAnalyzer = new ClassAnalyzer(new EmptyClassVisitor(), binaryClassName, cname, methodContexts);
 			cr.accept(classAnalyzer, flags);
 
-			ClassVisitor classTransformer = new ClassTransformer(cw, className, methodContexts);
+			ClassVisitor classTransformer = new ClassTransformer(cw, cname, methodContexts);
 			cr.accept(classTransformer, flags);
 			byte[] bytes = cw.toByteArray();
-			dumpClass(classNo, className, bytes);
+			dumpClass(binaryClassName, classNo, cname, bytes);
 			return bytes;
 		} catch (Throwable t) {
 			synchronized (sharedStringBuilder) {
-				describeTransformation(sharedStringBuilder, classNo, className);
+				describeTransformation(sharedStringBuilder, classNo, cname);
 				describeClassLoader(sharedStringBuilder, loader);
 				sharedStringBuilder.append(" failed with error: ");
 				sharedStringBuilder.append(t.toString());
@@ -133,19 +108,19 @@ public class AProfTransformer implements ClassFileTransformer {
 		}
 	}
 
-	private static void describeTransformation(StringBuilder sb, int classNo, String className) {
+	private static void describeTransformation(StringBuilder sb, int classNo, String cname) {
 		sb.setLength(0);
 		sb.append("Transforming class #");
 		sb.append(classNo);
 		sb.append(": ");
-		sb.append(className);
+		sb.append(cname);
 	}
 
-	private void dumpClass(int classNo, String className, byte[] bytes) {
+	private void dumpClass(String binaryClassName, int classNo, String cname, byte[] bytes) {
 		String dir = config.getDumpClassesDir();
 		if (dir.length() == 0)
 			return;
-		File file = new File(dir, className.replace('.', File.separatorChar) + ".class");
+		File file = new File(dir, binaryClassName + ".class");
 		file.getParentFile().mkdirs();
 		try {
 			FileOutputStream out = new FileOutputStream(file);
@@ -156,7 +131,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			}
 		} catch (IOException e) {
 			synchronized (sharedStringBuilder) {
-				describeTransformation(sharedStringBuilder, classNo, className);
+				describeTransformation(sharedStringBuilder, classNo, cname);
 				sharedStringBuilder.append(" dump failed with error: ");
 				sharedStringBuilder.append(e.toString());
 				Log.out.println(sharedStringBuilder);
@@ -182,15 +157,17 @@ public class AProfTransformer implements ClassFileTransformer {
 	}
 
 	private class ClassAnalyzer extends ClassVisitor {
+		private final String binaryClassName;
 		private final String locationClass;
 		private final boolean isNormal;
 		private final String cname;
 		private final List<Context> contexts;
 
-		public ClassAnalyzer(final ClassVisitor cv, String cname, List<Context> contexts) {
+		public ClassAnalyzer(final ClassVisitor cv, String binaryClassName, String cname, List<Context> contexts) {
 			super(Opcodes.ASM4, cv);
-			this.isNormal = AProfRegistry.isNormal(cname);
+			this.binaryClassName = binaryClassName;
 			this.locationClass = AProfRegistry.normalize(cname);
+			this.isNormal = AProfRegistry.isNormal(cname);
 			this.cname = cname;
 			this.contexts = contexts;
 		}
@@ -206,12 +183,12 @@ public class AProfTransformer implements ClassFileTransformer {
 
 		@Override
 		public MethodVisitor visitMethod(final int access, final String mname, final String desc, final String signature, final String[] exceptions) {
-			if (isNormal && ((access & Opcodes.ACC_STATIC) == 0) && !locationClass.equals(OBJECT_CLASS_NAME) &&
-					mname.equals(CLONE) && desc.equals(NOARG_RETURNS_OBJECT)) {
+			if (isNormal && ((access & Opcodes.ACC_STATIC) == 0) && !locationClass.equals(TransformerUtil.OBJECT_CLASS_NAME) &&
+					mname.equals(TransformerUtil.CLONE) && desc.equals(TransformerUtil.NOARG_RETURNS_OBJECT)) {
 				// no -- does not implement clone directly
 				AProfRegistry.removeDirectCloneClass(locationClass);
 			}
-			Context context = new Context(config, cname, mname, desc, access);
+			Context context = new Context(config, binaryClassName, cname, mname, desc, access);
 			contexts.add(context);
 			return new MethodAnalyzer(new GeneratorAdapter(new EmptyMethodVisitor(), access, mname, desc), context);
 		}
@@ -227,7 +204,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 		@Override
 		public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
-			super.visit(Math.max(MIN_CLASS_VERSION, version), access, name, signature, superName, interfaces);
+			super.visit(Math.max(TransformerUtil.MIN_CLASS_VERSION, version), access, name, signature, superName, interfaces);
 		}
 
 		@Override

@@ -119,7 +119,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 			visitAllocate(desc);
 		}
 		mv.visitTypeInsn(opcode, desc);
-		if (opcode == Opcodes.ANEWARRAY && context.getConfig().isArrays()) {
+		if (opcode == Opcodes.ANEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf()) {
 			String arrayName = name.startsWith("[") ? "[" + name : "[L" + name + ";";
 			visitAllocateArray(arrayName);
 		}
@@ -128,7 +128,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 	@Override
 	public void visitIntInsn(final int opcode, final int operand) {
 		mv.visitIntInsn(opcode, operand);
-		if (opcode == Opcodes.NEWARRAY && context.getConfig().isArrays()) {
+		if (opcode == Opcodes.NEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf()) {
 			Type type;
 			switch (operand) {
 				case Opcodes.T_BOOLEAN:
@@ -165,7 +165,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 	@Override
 	public void visitMultiANewArrayInsn(final String desc, final int dims) {
 		mv.visitMultiANewArrayInsn(desc, dims);
-		if (context.getConfig().isArrays()) {
+		if (context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf()) {
 			visitAllocateArray(desc);
 		}
 	}
@@ -180,7 +180,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 		String cname = owner.replace('/', '.'); // convert owner to dot-separated class name
 
 		// check if it is eligible object.clone call (that can get dispatched to actual Object.clone method
-		boolean isClone = opcode != Opcodes.INVOKESTATIC && name.equals(AProfTransformer.CLONE) && desc.equals(AProfTransformer.NOARG_RETURNS_OBJECT);
+		boolean isClone = opcode != Opcodes.INVOKESTATIC && name.equals(TransformerUtil.CLONE) && desc.equals(TransformerUtil.NOARG_RETURNS_OBJECT);
 		boolean isArrayClone = isClone && owner.startsWith("[");
 		boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(cname);
 
@@ -211,9 +211,10 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 			mv.visitMethodInsn(opcode, owner, name, desc);
 		}
 
-		if (!context.getConfig().isReflect()) {
+		if (!context.getConfig().isReflect())
 			return;
-		}
+		if (context.isIntrinsicArraysCopyOf())
+			return;
 
 		if (opcode == Opcodes.INVOKEVIRTUAL && isObjectClone) {
 			// INVOKEVIRTUAL needs runtime check of class that is being cloned
@@ -234,8 +235,14 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 		}
 
 		if (opcode == Opcodes.INVOKESTATIC && owner.equals("java/lang/reflect/Array") && name.equals("newInstance")
-				&& (desc.equals(AProfTransformer.CLASS_INT_RETURNS_OBJECT) || desc.equals(AProfTransformer.CLASS_INT_ARR_RETURNS_OBJECT))) {
+				&& (desc.equals(TransformerUtil.CLASS_INT_RETURNS_OBJECT) || desc.equals(TransformerUtil.CLASS_INT_ARR_RETURNS_OBJECT))) {
 			// Array.newInstance
+			visitAllocateReflect("");
+			return;
+		}
+
+		if (opcode == Opcodes.INVOKESTATIC && TransformerUtil.isIntrinsicArraysCopyOf(owner, name, desc)) {
+			// HotSpot intrinsic for Arrays.copyOf and Arrays.copyOfRange
 			visitAllocateReflect("");
 		}
 	}
