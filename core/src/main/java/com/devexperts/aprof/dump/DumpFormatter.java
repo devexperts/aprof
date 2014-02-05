@@ -182,23 +182,16 @@ public class DumpFormatter {
 			printAvg(out, item.getSize(), item.getTotalCount());
 		}
 		long[] counts = item.getHistoCounts();
-		if (counts != null && counts.length > 1) {
+		if (counts.length > 0 && item.getTotalCount() > 0) {
 			out.print(" [histogram: ");
 			int lastNonZero = counts.length - 1;
-			while (lastNonZero > 0 && counts[lastNonZero] == 0) {
+			while (lastNonZero > 0 && counts[lastNonZero] == 0)
 				lastNonZero--;
-			}
-			long count = item.getCount();
-			if (count != 0) {
-				out.print("(");
-				out.print(count);
-				out.print(") ");
-			}
-			for (int i = 0; i < lastNonZero; i++) {
-				out.print(counts[i]);
+			printNum(out, item.getCount()); // smallest bracket first
+			for (int i = 0; i <= lastNonZero; i++) {
 				out.print(" ");
+				printNum(out, counts[i]);
 			}
-			out.print(counts[lastNonZero]);
 			out.print("]");
 		}
 		out.println();

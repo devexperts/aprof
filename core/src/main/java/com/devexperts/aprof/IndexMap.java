@@ -54,8 +54,9 @@ class IndexMap<T extends IndexMap> {
 
 	/**
 	 * For non-arrays acts as an ordinal instance counter.
-	 * For arrays counts instances created via {@link #incrementArraySize(int, long)} and this count is usually 0,
-	 * with the exception of reflective allocations that do not support histograms and increment this count.
+	 * For arrays counts instances created via {@link #incrementArraySizeAndCount(int, long)} and this count
+	 * tracks the count of the smallest arrays. For arrays without detailed histograms
+	 * (when {@code histogram.length == 0}) this is the only tracked count.
 	 */
 	private int count;
 
@@ -66,7 +67,7 @@ class IndexMap<T extends IndexMap> {
 
 	/**
 	 * Instance counter for arrays of specific lengths (as specified in {@link #histogram}).
-	 * <code>null</code> for non-arrays.
+	 * <code>null</code> for non-arrays and for arrays with empty histogram (when {@code histogram.length == 0})
 	 */
 	private final int[] histogramCounts;
 
@@ -83,11 +84,15 @@ class IndexMap<T extends IndexMap> {
 	public IndexMap(int location, int[] histogram) {
 		this.location = location;
 		this.histogram = histogram;
-		this.histogramCounts = histogram != null ? new int[histogram.length + 1] : null;
+		this.histogramCounts = histogram == null || histogram.length == 0 ? null : new int[histogram.length];
 	}
 
 	public int getLocation() {
 		return location;
+	}
+
+	public int getHistogramLength() {
+		return histogram.length;
 	}
 
 	public int[] getHistogram() {
@@ -184,11 +189,7 @@ class IndexMap<T extends IndexMap> {
 	 * Returns {@code true} for array data types.
 	 */
 	public boolean hasHistogram() {
-		return histogramCounts != null;
-	}
-
-	public int getHistogramLength() {
-		return histogramCounts.length;
+		return histogram != null;
 	}
 
 	public int takeCount() {
@@ -216,26 +217,11 @@ class IndexMap<T extends IndexMap> {
 		return val;
 	}
 
-	public void increment() {
+	public void incrementCount() {
 		int val;
 		do {
 			val = count;
 		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, COUNT_OFFSET, val, val + 1));
-	}
-
-	public void incrementArraySize(long size) {
-		increment();
-		incrementSize(size);
-	}
-
-	public void incrementArraySize(int length, long size) {
-		int i = getHistogramIndex(length);
-		int val;
-		do {
-			val = histogramCounts[i];
-		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(histogramCounts,
-				INT_ARRAY_BASE_OFFSET + i * INT_ARRAY_INDEX_SCALE, val, val + 1));
-		incrementSize(size);
 	}
 
 	private void incrementSize(long size) {
@@ -245,12 +231,33 @@ class IndexMap<T extends IndexMap> {
 		} while (!UnsafeHolder.UNSAFE.compareAndSwapLong(this, SIZE_OFFSET, val, val + size));
 	}
 
-	private int getHistogramIndex(int length) {
-		for (int i = 0; i < histogram.length; i++) {
-			if (length <= histogram[i])
-				return i;
+	private void incrementHistogramCount(int i) {
+		int val;
+		do {
+			val = histogramCounts[i];
+		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(histogramCounts,
+				INT_ARRAY_BASE_OFFSET + i * INT_ARRAY_INDEX_SCALE, val, val + 1));
+	}
+
+	public void incrementArraySizeAndCount(int length, long size) {
+		incrementSize(size);
+		if (histogramCounts == null || length < histogram[0]) {
+			// fast path -- no histogram is specified for this array type or the length of the array is in the smallest bracket
+			incrementCount();
+			return;
 		}
-		return histogram.length;
+		incrementArraySizeAndCountSlowPath(length);
+	}
+
+	private void incrementArraySizeAndCountSlowPath(int length) {
+		int last = histogram.length - 1;
+		for (int i = 0; i < last; i++) {
+			if (length <= histogram[i + 1]) {
+				incrementHistogramCount(i);
+				return;
+			}
+		}
+		incrementHistogramCount(last);
 	}
 
 	public boolean isOverflowThreshold() {

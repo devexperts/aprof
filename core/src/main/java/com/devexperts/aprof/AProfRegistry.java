@@ -96,7 +96,7 @@ public class AProfRegistry {
 		registerDatatypeInfo(IndexMap.class.getName());
 
 		// allocate memory for temp snapshots
-		int histoCountsLength = config.getMaxHistogramLength() + 1;
+		int histoCountsLength = config.getMaxHistogramLength();
 		UNKNOWN_TEMP = new SnapshotShallow(null, histoCountsLength);
 		DATATYPE_TOTAL_TEMP = new SnapshotShallow(null, histoCountsLength);
 	}
@@ -273,7 +273,7 @@ public class AProfRegistry {
 
 	// NOTE: It can allocate memory during execution: new root because of reflection call
 	// all data-types should be registered beforehand
-	static IndexMap getRootIndex(String cname, int loc) {
+	static RootIndexMap getRootIndex(String cname, int loc) {
 		return registerRootIndex(registerDatatypeInfo(normalize(cname)), loc);
 	}
 
@@ -323,10 +323,10 @@ public class AProfRegistry {
 			if (classSize < 0) // If failed to compute size
 				classSize = 0;
 			int[] histogram = map.getHistogram();
-			int histoCountsLength = histogram == null ? 0 : histogram.length + 1;
+			int histogramLength = histogram == null ? 0 : histogram.length;
 			boolean trackClassUnknown = config.isUnknown() && !datatypeInfo.isArray();
 			// find child snapshot corresponding to this datatype
-			SnapshotDeep cs = ss.getOrCreateChildAt(idx = ss.findChildInSortedFrom(idx, name), name, histoCountsLength);
+			SnapshotDeep cs = ss.getOrCreateChildAt(idx = ss.findChildInSortedFrom(idx, name), name, histogramLength);
 
 			// NOTATION HERE FOR THIS DATA TYPE:
 			//   a[t] = all recorded allocations up to time "t" (unknown and known locations, including from clone)

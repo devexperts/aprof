@@ -44,8 +44,8 @@ public class SnapshotDeep extends SnapshotShallow {
 
 	public SnapshotDeep() {}
 
-	public SnapshotDeep(String name, int histoCountsLength) {
-		super(name, histoCountsLength);
+	public SnapshotDeep(String name, int histogramLength) {
+		super(name, histogramLength);
 	}
 
 	@Override
@@ -207,12 +207,12 @@ public class SnapshotDeep extends SnapshotShallow {
 		return i;
 	}
 
-	public int findOrCreateChildAt(int index, String name, int histoCountsLength) {
+	public int findOrCreateChildAt(int index, String name, int histogramLength) {
 		if (index < used && name.equals(children[index].name))
 			return index;
 		ensureChildrenCapacity(used + 1);
 		int i = used++;
-		children[i] = new SnapshotDeep(name, histoCountsLength);
+		children[i] = new SnapshotDeep(name, histogramLength);
 		return i;
 	}
 
@@ -220,8 +220,8 @@ public class SnapshotDeep extends SnapshotShallow {
 		return getOrCreateChildAt(index, name, histoCounts.length);
 	}
 
-	public SnapshotDeep getOrCreateChildAt(int index, String name, int histoCountsLength) {
-		int i = findOrCreateChildAt(index, name, histoCountsLength);
+	public SnapshotDeep getOrCreateChildAt(int index, String name, int histogramLength) {
+		int i = findOrCreateChildAt(index, name, histogramLength);
 		return children[i];
 	}
 

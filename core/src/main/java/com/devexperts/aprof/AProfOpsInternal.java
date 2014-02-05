@@ -29,12 +29,12 @@ import static com.devexperts.aprof.AProfSizeUtil.*;
 @Internal
 public class AProfOpsInternal extends AProfOps {
 	public static void allocate(LocationStack stack, int index) {
-		getRootIndex(index).increment();
+		getRootIndex(index).incrementCount();
 	}
 
 	public static void allocateSize(LocationStack stack, int index, Class objectClass) {
 		RootIndexMap rootIndex = getRootIndex(index);
-		rootIndex.increment();
+		rootIndex.incrementCount();
 		DatatypeInfo datatypeInfo = rootIndex.getDatatypeInfo();
 		if (datatypeInfo.getSize() == 0)
 			datatypeInfo.setSize(getObjectSizeByClass(objectClass));
@@ -42,51 +42,51 @@ public class AProfOpsInternal extends AProfOps {
 
 	public static void allocateArraySize(boolean[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(o.length, getArraySize(o));
 	}
 
 	public static void allocateArraySize(byte[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(o.length, getArraySize(o));
 	}
 
 	public static void allocateArraySize(char[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(o.length, getArraySize(o));
 	}
 
 	public static void allocateArraySize(short[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(o.length, getArraySize(o));
 	}
 
 	public static void allocateArraySize(int[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(o.length, getArraySize(o));
 	}
 
 	public static void allocateArraySize(long[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(o.length, getArraySize(o));
 	}
 
 	public static void allocateArraySize(float[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(o.length, getArraySize(o));
 	}
 
 	public static void allocateArraySize(double[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(o.length, getArraySize(o));
 	}
 
 	public static void allocateArraySize(Object[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(o.length, getArraySize(o));
 	}
 
 	public static void allocateArraySizeMulti(Object[] o, LocationStack stack, int index) {
 		IndexMap map = getRootIndex(index);
-		map.incrementArraySize(o.length, getArraySizeMultiRec(o));
+		map.incrementArraySizeAndCount(o.length, getArraySizeMultiRec(o));
 	}
 }

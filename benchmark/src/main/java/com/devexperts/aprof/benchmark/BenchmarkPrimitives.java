@@ -21,6 +21,8 @@ package com.devexperts.aprof.benchmark;
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 
 public class BenchmarkPrimitives {
+	private static final char[] CHARS = "TEST".toCharArray();
+
 	@GenerateMicroBenchmark
 	public Box testNew() {
 		return newBox();
@@ -29,6 +31,11 @@ public class BenchmarkPrimitives {
 	@GenerateMicroBenchmark
 	public int testEscapeAnalysis() {
 		return newBox().getValue();
+	}
+
+	@GenerateMicroBenchmark
+	public String testNewString() {
+		return new String(CHARS);
 	}
 
 	private static Box newBox() {

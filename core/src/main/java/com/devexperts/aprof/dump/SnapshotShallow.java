@@ -69,9 +69,9 @@ public class SnapshotShallow implements Serializable {
 		histoCounts = EMPTY_HISTO_COUNTS;
 	}
 
-	public SnapshotShallow(String name, int histoCountsLength) {
+	public SnapshotShallow(String name, int histogramLength) {
 		this.name = name;
-		this.histoCounts = histoCountsLength == 0 ? EMPTY_HISTO_COUNTS : new long[histoCountsLength];
+		this.histoCounts = histogramLength == 0 ? EMPTY_HISTO_COUNTS : new long[histogramLength];
 	}
 
 	public boolean hasChildren() {

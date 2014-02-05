@@ -160,15 +160,26 @@ public class AProfSizeUtil {
 	}
 
 	public static long getArraySizeMultiRec(Object o) {
-		if (o instanceof Object[]) {
+		if (o instanceof Object[])
 			return getArraySizeMultiRec((Object[])o);
-		} else if (o instanceof char[]) {
+		else if (o instanceof char[])
 			return getArraySize((char[])o);
-		} else if (o != null) {
-			return getObjectSize(o);
-		} else {
+		else if (o instanceof byte[])
+			return getArraySize((byte[])o);
+		else if (o instanceof short[])
+			return getArraySize((short[])o);
+		else if (o instanceof int[])
+			return getArraySize((int[])o);
+		else if (o instanceof long[])
+			return getArraySize((long[])o);
+		else if (o instanceof boolean[])
+			return getArraySize((boolean[])o);
+		else if (o instanceof float[])
+			return getArraySize((float[])o);
+		else if (o instanceof double[])
+			return getArraySize((double[])o);
+		else
 			return 0;
-		}
 	}
 
 	public static long getArraySizeMultiRec(Object[] o) {
