@@ -1,3 +1,28 @@
+Aprof 27
+
+** Change Request
+APROF-83: Option to dump aprof-instrumented classes
+APROF-97: Add timestamp to aprof output in the same format as GC date stamps (-XX:+PrintGCDateStamps)
+** Defect Report
+APROF-85: "Allocated objects in xxx locations of yyy classes" stats in report are wrong
+APROF-86: Array allocations are counted twice
+APROF-88: Arrays.copyOf and Arrays.copyOfRange HotSpot intrinsic memory allocation is not tracked
+APROF-99: Unknown locations shall be attributed to their parent known locations in "Top allocation-inducing locations" section
+** Improvement
+APROF-82: JMH benchmarks module with simple microbenchmarks to measure aprof performance impact
+APROF-84: Support "size" without "unknown", improve performance, turn "unknown" off by default
+APROF-89: Allocations during aprof transformation shall be always recorded under a separate location
+APROF-90: Object.clone invocation locations shall be counted in overall location totals together with regular allocation locations
+APROF-91: Optimize transformation performance
+APROF-92: Reduce internal locations that are tracked without details to an absolute minimum
+APROF-93: Use long size counters to simplify code and avoid overflows on allocation mirco-tests
+APROF-94: Rewrite IndexedMap children hash for speed and memory footprint
+APROF-95: Allocations during aprof dumps shall be tracked
+APROF-96: Optimize array allocation tracking (don't use extra arrays without histograms)
+APROF-98: Print average objects sizes in "Top allocation-inducing locations" section
+APROF-100: Print last report with the configured threshold and set default threshold to 0.01%
+APROF-101: Run aprof selftests during "integration-test" of the project build
+
 AProf 26
 
 ** Change Request
