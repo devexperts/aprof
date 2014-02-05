@@ -25,6 +25,8 @@ import com.devexperts.aprof.AProfRegistry;
 import com.devexperts.aprof.Configuration;
 import com.devexperts.aprof.util.FastObjIntMap;
 
+import static com.devexperts.aprof.util.FastFmtUtil.*;
+
 /**
  * Formats collected dump snapshots.
  * <b>This class is not thread-safe</b>.
@@ -32,7 +34,6 @@ import com.devexperts.aprof.util.FastObjIntMap;
  * @author Denis Davydov
  */
 public class DumpFormatter {
-	private static final int TEAR_LINE_LENGTH = 120;
 	private static final int MAX_DEPTH = 5;
 
 	private final Configuration config;
@@ -107,9 +108,9 @@ public class DumpFormatter {
 		printlnTearLine(out, '=');
 		//------ Line #1
 		out.print(kind + " allocation dump for ");
-		DumpFormatter.printNum(out, ss.getTime());
+		printNum(out, ss.getTime());
 		out.print(" ms (");
-		DumpFormatter.printTime(out, ss.getTime());
+		printTimePeriod(out, ss.getTime());
 		out.println(")");
 		//------ Line #2
 		out.print("Allocated ");
@@ -267,70 +268,4 @@ public class DumpFormatter {
 		}
 	}
 
-	static void printNum(PrintWriter out, long value) {
-		if (value < 0) {
-			out.print('-');
-			value = -value;
-		}
-		boolean fill = false;
-		for (long x = 1000000000000000000L; x >= 1; x /= 1000) {
-			if (value >= x || fill) {
-				if (fill)
-					out.print(",");
-				print3(out, (int)(value / x), fill);
-				value = value % x;
-				fill = true;
-			}
-		}
-		if (!fill)
-			out.print("0");
-	}
-
-	private static void print3(PrintWriter out, int value, boolean fill) {
-		if (fill || value >= 100)
-			out.print((char)(value / 100 + '0'));
-		print2(out, value, fill);
-	}
-
-	private static void print2(PrintWriter out, int value, boolean fill) {
-		if (fill || value >= 10)
-			out.print((char)(value / 10 % 10 + '0'));
-		out.print((char)(value % 10 + '0'));
-	}
-
-	private static void printAvg(PrintWriter out, long size, long count) {
-		out.print("(avg size ");
-		printNum(out, Math.round((double)size / count));
-		out.print(" bytes)");
-	}
-
-	static void printNumPercent(PrintWriter out, long count, long total) {
-		printNum(out, count);
-		if (count > 0 && total > 0) {
-			out.print(" (");
-			long pp = count * 10000 / total;
-			printNum(out, pp / 100);
-			out.print(".");
-			print2(out, (int)(pp % 100), true);
-			out.print("%)");
-		}
-	}
-
-	static void printTime(PrintWriter out, long millis) {
-		long hour = millis / (60 * 60000);
-		int min = (int)(millis / 60000 % 60);
-		int sec = (int)(millis / 1000 % 60);
-		printNum(out, hour);
-		out.print("h");
-		print2(out, min, true);
-		out.print("m");
-		print2(out, sec, true);
-		out.print("s");
-	}
-
-	static void printlnTearLine(PrintWriter out, char c) {
-		for (int i = 0; i < TEAR_LINE_LENGTH; i++)
-			out.print(c);
-		out.println();
-	}
 }

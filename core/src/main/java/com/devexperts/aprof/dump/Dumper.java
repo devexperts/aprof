@@ -19,11 +19,11 @@
 package com.devexperts.aprof.dump;
 
 import java.io.*;
-import java.util.Date;
 
 import com.devexperts.aprof.*;
-import com.devexperts.aprof.util.FastOutputStreamWriter;
-import com.devexperts.aprof.util.Log;
+import com.devexperts.aprof.util.*;
+
+import static com.devexperts.aprof.util.FastFmtUtil.*;
 
 /**
  * @author Roman Elizarov
@@ -149,37 +149,37 @@ public class Dumper {
 	private long dumpReportHeader(PrintWriter out, long now) {
 		long uptime = now - start;
 		//------ start with tear line
-		DumpFormatter.printlnTearLine(out, '#');
+		printlnTearLine(out, '#');
 		//------ Line #1
 		out.println(Version.full());
 		//------ Line #2
 		out.print("Allocation dump at ");
-		out.print(new Date(now));
+		printTimeAndDate(out, System.currentTimeMillis());
 		out.print(". Uptime ");
-		DumpFormatter.printNum(out, uptime);
+		printNum(out, uptime);
 		out.print(" ms (");
-		DumpFormatter.printTime(out, uptime);
+		printTimePeriod(out, uptime);
 		out.println(")");
 		//------ Line #3
 		out.print("Arguments ");
 		out.println(argsStr);
 		//------ Line #4
 		out.print("Transformed ");
-		DumpFormatter.printNum(out, AProfRegistry.getCount());
+		printNum(out, AProfRegistry.getCount());
 		out.print(" classes and registered ");
-		DumpFormatter.printNum(out, AProfRegistry.getLocationCount());
+		printNum(out, AProfRegistry.getLocationCount());
 		out.print(" locations in ");
-		DumpFormatter.printNumPercent(out, AProfRegistry.getTime(), uptime);
+		FastFmtUtil.printNumPercent(out, AProfRegistry.getTime(), uptime);
 		out.print(" ms");
 		out.println();
 		//------ Line #4
 		out.print("Snapshot of counters was made ");
-		DumpFormatter.printNum(out, snapshotCount);
+		printNum(out, snapshotCount);
 		out.print(" times to write file and ");
-		DumpFormatter.printNum(out, overflowCount);
+		printNum(out, overflowCount);
 		out.println(" times to prevent overflow");
 		//------ end with tear line
-		DumpFormatter.printlnTearLine(out, '#');
+		printlnTearLine(out, '#');
 		return uptime;
 	}
 

@@ -24,7 +24,7 @@ import java.io.PrintWriter;
  * @author Roman Elizarov
  */
 public class Log {
-	private static final String HEADER = "aprof: ";
+	private static final String HEADER = ": aprof: ";
 
 	public static PrintWriter out = new PrintWriter(new FastOutputStreamWriter(System.out), true) {
 		public void println(Object x) {
@@ -36,14 +36,16 @@ public class Log {
 
 		public void println(String x) {
 			synchronized (System.out) {
-				super.print(HEADER);
+				FastFmtUtil.printTimeAndDate(this, System.currentTimeMillis());
+				print(HEADER);
 				super.println(x);
 			}
 		}
 
 		private void println(CharSequence cs) {
 			synchronized (System.out) {
-				super.print(HEADER);
+				FastFmtUtil.printTimeAndDate(this, System.currentTimeMillis());
+				print(HEADER);
 				for (int i = 0; i < cs.length(); i++)
 					super.print(cs.charAt(i));
 				super.println();
