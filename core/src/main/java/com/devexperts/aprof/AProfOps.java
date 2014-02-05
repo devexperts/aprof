@@ -42,46 +42,64 @@ public class AProfOps {
 	}
 
 	public static void booleanAllocateArraySize(int length, LocationStack stack, int index) {
+		if (length < 0)
+			return; // will throw NegativeArraySizeException instead of array allocation
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		map.incrementArraySizeAndCount(length, booleanArraySize(length));
 	}
 
 	public static void byteAllocateArraySize(int length, LocationStack stack, int index) {
+		if (length < 0)
+			return; // will throw NegativeArraySizeException instead of array allocation
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		map.incrementArraySizeAndCount(length, byteArraySize(length));
 	}
 
 	public static void charAllocateArraySize(int length, LocationStack stack, int index) {
+		if (length < 0)
+			return; // will throw NegativeArraySizeException instead of array allocation
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		map.incrementArraySizeAndCount(length, charArraySize(length));
 	}
 
 	public static void shortAllocateArraySize(int length, LocationStack stack, int index) {
+		if (length < 0)
+			return; // will throw NegativeArraySizeException instead of array allocation
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		map.incrementArraySizeAndCount(length, shortArraySize(length));
 	}
 
 	public static void intAllocateArraySize(int length, LocationStack stack, int index) {
+		if (length < 0)
+			return; // will throw NegativeArraySizeException instead of array allocation
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		map.incrementArraySizeAndCount(length, intArraySize(length));
 	}
 
 	public static void longAllocateArraySize(int length, LocationStack stack, int index) {
+		if (length < 0)
+			return; // will throw NegativeArraySizeException instead of array allocation
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		map.incrementArraySizeAndCount(length, longArraySize(length));
 	}
 
 	public static void floatAllocateArraySize(int length, LocationStack stack, int index) {
+		if (length < 0)
+			return; // will throw NegativeArraySizeException instead of array allocation
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		map.incrementArraySizeAndCount(length, floatArraySize(length));
 	}
 
 	public static void doubleAllocateArraySize(int length, LocationStack stack, int index) {
+		if (length < 0)
+			return; // will throw NegativeArraySizeException instead of array allocation
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		map.incrementArraySizeAndCount(length, doubleArraySize(length));
 	}
 
 	public static void objectAllocateArraySize(int length, LocationStack stack, int index) {
+		if (length < 0)
+			return; // will throw NegativeArraySizeException instead of array allocation
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
 		map.incrementArraySizeAndCount(length, objectArraySize(length));
 	}
