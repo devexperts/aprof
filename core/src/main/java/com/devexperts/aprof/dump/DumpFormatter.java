@@ -81,26 +81,32 @@ public class DumpFormatter {
 	}
 
 	private void findLocationsDeep(SnapshotDeep ss, String dataTypeName, int histoCountsLength) {
-		if (ss.getName().equals(SnapshotDeep.UNKNOWN))
-			return;
 		if (!ss.hasChildren()) {
-			// leaf location
-			String name = AProfRegistry.getLocationNameWithoutSuffix(ss.getName());
-			// use hash index to find location (fast path)
-			int i = locationIndex.get(name, -1);
-			if (i < 0) {
-				// if that does not work, then binary-search existing node (or create new one) and remember index in hash index
-				i = locations.findOrCreateChildInSorted(name);
-				locationIndex.put(name, i);
-			}
-			SnapshotDeep cs = locations.getChild(i);
-			// append data type info for this location, true to always print average size
-			cs.getOrCreateChild(dataTypeName, true, histoCountsLength).addShallow(ss);
+			processLeadLocation(ss, AProfRegistry.getLocationNameWithoutSuffix(ss.getName()), dataTypeName, histoCountsLength);
 			return;
 		}
-		// has children -- go recursive
-		for (int i = 0; i < ss.getUsed(); i++)
-			findLocationsDeep(ss.getChild(i), dataTypeName, histoCountsLength);
+		// has children -- go recursive with a special treatment for UNKNOWN children -- attribute them this location's name
+		for (int i = 0; i < ss.getUsed(); i++) {
+			SnapshotDeep cs = ss.getChild(i);
+			if (cs.getName().equals(SnapshotDeep.UNKNOWN)) {
+				assert !cs.hasChildren() : "unknown location shall not have children";
+				processLeadLocation(cs, AProfRegistry.getLocationNameWithoutSuffix(ss.getName()), dataTypeName, histoCountsLength);
+			} else
+				findLocationsDeep(cs, dataTypeName, histoCountsLength);
+		}
+	}
+
+	private void processLeadLocation(SnapshotDeep ss, String name, String dataTypeName, int histoCountsLength) {
+		// use hash index to find location (fast path)
+		int i = locationIndex.get(name, -1);
+		if (i < 0) {
+			// if that does not work, then binary-search existing node (or create new one) and remember index in hash index
+			i = locations.findOrCreateChildInSorted(name);
+			locationIndex.put(name, i);
+		}
+		SnapshotDeep cs = locations.getChild(i);
+		// append data type info for this location, true to always print average size
+		cs.getOrCreateChild(dataTypeName, true, histoCountsLength).addShallow(ss);
 	}
 
 	public void dumpSnapshotHeader(PrintWriter out, SnapshotRoot ss, String kind) {
