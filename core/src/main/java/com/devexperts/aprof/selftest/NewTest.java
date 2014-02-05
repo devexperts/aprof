@@ -16,21 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aproftest;
+package com.devexperts.aprof.selftest;
 
 import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
 
-import static com.devexperts.aproftest.TestUtil.fmt;
-
 /**
  * @author Dmitry Paraschenko
  */
-class TryTest implements TestCase {
-	private static final int COUNT = 100000;
+class NewTest implements TestCase {
+	private static final int COUNT = 1000000;
 
 	public String name() {
-		return "try";
+		return "new";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -38,34 +36,25 @@ class TryTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] {Double.class.getName(), Float.class.getName()};
+		return new String[] {getClass().getName() + "$"};
 	}
 
 	public String getExpectedStatistics() {
-		long doubleObjSize = AProfSizeUtil.getObjectSize(new Double(0));
-		long floatObjSize = AProfSizeUtil.getObjectSize(new Float(0));
-		return fmt(
-			"java.lang.Double: {doubleSize} bytes in {count} objects (avg size {doubleObjSize} bytes)\n" +
-			"\tjava.lang.Double.valueOf: {doubleSize} bytes in {count} objects\n" +
-			"\t\t{class}.doTest: {doubleSize} bytes in {count} objects\n" +
-			"\n" +
-			"java.lang.Float: {floatSize} bytes in {count} objects (avg size {floatObjSize} bytes)\n" +
-			"\t{class}.doTest: {floatSize} bytes in {count} objects\n",
+		long objSize = AProfSizeUtil.getObjectSize(new Entity());
+		return TestUtil.fmt(
+			"{class}$Entity: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
+				"\t{class}.doTest: {size} bytes in {count} objects\n",
 			"class=" + getClass().getName(),
-			"doubleSize=" + fmt(doubleObjSize * COUNT),
-			"floatSize=" + fmt(floatObjSize * COUNT),
-			"count=" + fmt(COUNT),
-			"doubleObjSize=" + doubleObjSize,
-			"floatObjSize=" + floatObjSize);
+			"size=" + TestUtil.fmt(objSize * COUNT),
+			"count=" + TestUtil.fmt(COUNT),
+			"objSize=" + objSize);
 	}
 
 	public void doTest() {
-		for (int i = 0; i < COUNT; i++) {
-			try {
-				Double.valueOf("16r7");
-			} catch (NumberFormatException e) {
-				new Float(10.6);
-			}
-		}
+		for (int i = 0; i < COUNT; i++)
+			new Entity();
+	}
+
+	private static class Entity {
 	}
 }

@@ -16,21 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aproftest;
+package com.devexperts.aprof.selftest;
+
+import java.lang.reflect.Array;
 
 import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
 
-import static com.devexperts.aproftest.TestUtil.fmt;
-
-/**
- * @author Dmitry Paraschenko
- */
-class IntegerTest implements TestCase {
+class ArrayNewInstanceTest implements TestCase {
 	private static final int COUNT = 1000000;
+	private static final int LENGTH = 5;
 
 	public String name() {
-		return "integer";
+		return "arrayNewInstance";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -38,28 +36,24 @@ class IntegerTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] {Integer.class.getName()};
+		return new String[] { getClass().getName() + "$Entity[]" };
 	}
 
 	public String getExpectedStatistics() {
-		long objSize = AProfSizeUtil.getObjectSize(new Integer(0));
-		return fmt(
-			"java.lang.Integer: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
-			"\tjava.lang.Integer.valueOf: {size} bytes in {count} objects\n" +
-			"\t\t{class}.doTest: {size} bytes in {count} objects\n",
+		long objSize = AProfSizeUtil.getObjectSize(new Entity[LENGTH]);
+		return TestUtil.fmt(
+			"{class}$Entity[]: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
+				"\t{class}.doTest: {size} bytes in {count} objects (avg size {objSize} bytes)\n",
 			"class=" + getClass().getName(),
-			"size=" + fmt(objSize * COUNT),
-			"count=" + fmt(COUNT),
+			"size=" + TestUtil.fmt(objSize * COUNT),
+			"count=" + TestUtil.fmt(COUNT),
 			"objSize=" + objSize);
 	}
 
-	public void doTest() {
-		for (int i = 0; i < COUNT; i++) {
-			if (i % 2 == 0)
-				Integer.valueOf(i + 10000);
-			else
-				Integer.valueOf(Integer.toString(i + 10000));
-		}
+	public void doTest() throws Exception {
+		for (int i = 0; i < COUNT; i++)
+			Array.newInstance(Entity.class, LENGTH);
 	}
 
+	private static class Entity {}
 }

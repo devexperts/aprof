@@ -16,21 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aproftest;
+package com.devexperts.aprof.selftest;
 
 import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
 
-import static com.devexperts.aproftest.TestUtil.fmt;
-
 /**
  * @author Dmitry Paraschenko
  */
-class NewTest implements TestCase {
+class IntegerTest implements TestCase {
 	private static final int COUNT = 1000000;
 
 	public String name() {
-		return "new";
+		return "integer";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -38,25 +36,28 @@ class NewTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] {getClass().getName() + "$"};
+		return new String[] {Integer.class.getName()};
 	}
 
 	public String getExpectedStatistics() {
-		long objSize = AProfSizeUtil.getObjectSize(new Entity());
-		return fmt(
-			"{class}$Entity: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
-			"\t{class}.doTest: {size} bytes in {count} objects\n",
+		long objSize = AProfSizeUtil.getObjectSize(new Integer(0));
+		return TestUtil.fmt(
+			"java.lang.Integer: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
+				"\tjava.lang.Integer.valueOf: {size} bytes in {count} objects\n" +
+				"\t\t{class}.doTest: {size} bytes in {count} objects\n",
 			"class=" + getClass().getName(),
-			"size=" + fmt(objSize * COUNT),
-			"count=" + fmt(COUNT),
+			"size=" + TestUtil.fmt(objSize * COUNT),
+			"count=" + TestUtil.fmt(COUNT),
 			"objSize=" + objSize);
 	}
 
 	public void doTest() {
-		for (int i = 0; i < COUNT; i++)
-			new Entity();
+		for (int i = 0; i < COUNT; i++) {
+			if (i % 2 == 0)
+				Integer.valueOf(i + 10000);
+			else
+				Integer.valueOf(Integer.toString(i + 10000));
+		}
 	}
 
-	private static class Entity {
-	}
 }

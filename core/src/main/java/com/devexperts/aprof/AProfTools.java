@@ -24,9 +24,9 @@ import java.util.Locale;
 
 import com.devexperts.aprof.dump.DumpFormatter;
 import com.devexperts.aprof.dump.SnapshotRoot;
+import com.devexperts.aprof.selftest.TestCase;
+import com.devexperts.aprof.selftest.TestSuite;
 import com.devexperts.aprof.util.FastOutputStreamWriter;
-import com.devexperts.aproftest.TestCase;
-import com.devexperts.aproftest.TestSuite;
 
 /**
  * @author Denis Davydov
@@ -171,9 +171,12 @@ public class AProfTools {
 				return;
 			}
 		}
-		if (ok)
-			System.out.println("==== TESTS HAVE PASSED");
-		else
+		if (ok) {
+			System.out.println("==== ALL TESTS HAVE PASSED");
+			System.exit(0);
+		} else {
 			System.out.println("==== SOME TESTS HAVE FAILED !!!");
+			System.exit(1);
+		}
 	}
 }

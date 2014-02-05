@@ -16,21 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aproftest;
-
-import java.lang.reflect.Array;
+package com.devexperts.aprof.selftest;
 
 import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
 
-import static com.devexperts.aproftest.TestUtil.fmt;
-
-class ArrayNewInstanceTest implements TestCase {
+/**
+ * @author Dmitry Paraschenko
+ */
+class CloneTest implements TestCase {
 	private static final int COUNT = 1000000;
-	private static final int LENGTH = 5;
 
 	public String name() {
-		return "arrayNewInstance";
+		return "clone";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -38,24 +36,36 @@ class ArrayNewInstanceTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] { getClass().getName() + "$Entity[]" };
+		return new String[] {getClass().getName() + "$"};
 	}
 
 	public String getExpectedStatistics() {
-		long objSize = AProfSizeUtil.getObjectSize(new Entity[LENGTH]);
-		return fmt(
-			"{class}$Entity[]: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
-			"\t{class}.doTest: {size} bytes in {count} objects (avg size {objSize} bytes)\n",
+		long objSize = AProfSizeUtil.getObjectSize(new Entity());
+		return TestUtil.fmt(
+			"{class}$Entity: {size1} bytes in {count1} objects (avg size {objSize} bytes)\n" +
+				"\t{class}$Entity.dup;via-clone: {size} bytes in {count} objects\n" +
+				"\t{class}.doTest: {objSize} bytes in 1 objects\n",
 			"class=" + getClass().getName(),
-			"size=" + fmt(objSize * COUNT),
-			"count=" + fmt(COUNT),
+			"size=" + TestUtil.fmt(objSize * COUNT),
+			"count=" + TestUtil.fmt(COUNT),
+			"size1=" + TestUtil.fmt(objSize * (COUNT + 1)),
+			"count1=" + TestUtil.fmt(COUNT + 1),
 			"objSize=" + objSize);
 	}
 
-	public void doTest() throws Exception {
+	public void doTest() {
+		Entity entity = new Entity();
 		for (int i = 0; i < COUNT; i++)
-			Array.newInstance(Entity.class, LENGTH);
+			entity.dup();
 	}
 
-	private static class Entity {}
+	private static class Entity implements Cloneable {
+		public Entity dup() {
+			try {
+				return (Entity) clone();
+			} catch (CloneNotSupportedException e) {
+				throw new InternalError();
+			}
+		}
+	}
 }

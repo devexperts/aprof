@@ -16,12 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aproftest;
+package com.devexperts.aprof.selftest;
 
 import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
-
-import static com.devexperts.aproftest.TestUtil.fmt;
 
 class StringTest implements TestCase {
 	private static final int COUNT = 1000000;
@@ -44,18 +42,18 @@ class StringTest implements TestCase {
 	public String getExpectedStatistics() {
 		long charsObjSize = AProfSizeUtil.getObjectSize(CHARS);
 		long stringObjSize = AProfSizeUtil.getObjectSize(new String());
-		return fmt(
+		return TestUtil.fmt(
 			"char[]: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
-			"\tjava.util.Arrays.copyOf: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
-			"\t\tjava.lang.String.<init>: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
-			"\t\t\t{class}.doTest: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
-			"\n" +
-			"java.lang.String: {stringSize} bytes in {count} objects (avg size {stringObjSize} bytes)\n" +
-			"\t{class}.doTest: {stringSize} bytes in {count} objects\n",
+				"\tjava.util.Arrays.copyOf: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
+				"\t\tjava.lang.String.<init>: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
+				"\t\t\t{class}.doTest: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
+				"\n" +
+				"java.lang.String: {stringSize} bytes in {count} objects (avg size {stringObjSize} bytes)\n" +
+				"\t{class}.doTest: {stringSize} bytes in {count} objects\n",
 			"class=" + getClass().getName(),
-			"charsSize=" + fmt(charsObjSize * COUNT),
-			"stringSize=" + fmt(stringObjSize * COUNT),
-			"count=" + fmt(COUNT),
+			"charsSize=" + TestUtil.fmt(charsObjSize * COUNT),
+			"stringSize=" + TestUtil.fmt(stringObjSize * COUNT),
+			"count=" + TestUtil.fmt(COUNT),
 			"charsObjSize=" + charsObjSize,
 			"stringObjSize=" + stringObjSize);
 	}

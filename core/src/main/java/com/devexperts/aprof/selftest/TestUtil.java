@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aproftest;
+package com.devexperts.aprof.selftest;
 
 import java.text.NumberFormat;
 import java.util.*;

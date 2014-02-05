@@ -16,23 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aproftest;
-
-import java.lang.reflect.Constructor;
+package com.devexperts.aprof.selftest;
 
 import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
 
-import static com.devexperts.aproftest.TestUtil.fmt;
+import static com.devexperts.aprof.selftest.TestUtil.fmt;
 
 /**
  * @author Dmitry Paraschenko
  */
-class ReflectionTest implements TestCase {
-	private static final int COUNT = 1000000;
+class TryTest implements TestCase {
+	private static final int COUNT = 100000;
 
 	public String name() {
-		return "reflection";
+		return "try";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -40,31 +38,34 @@ class ReflectionTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] {getClass().getName() + "$"};
+		return new String[] {Double.class.getName(), Float.class.getName()};
 	}
 
 	public String getExpectedStatistics() {
-		long objSize = AProfSizeUtil.getObjectSize(new Entity());
+		long doubleObjSize = AProfSizeUtil.getObjectSize(new Double(0));
+		long floatObjSize = AProfSizeUtil.getObjectSize(new Float(0));
 		return fmt(
-			"{class}$Entity: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
-			"\tsun.reflect.GeneratedConstructorAccessor.newInstance: {size} bytes in {count} objects\n" +
-			"\t\tjava.lang.reflect.Constructor.newInstance: {size} bytes in {count} objects\n" +
-			"\t\t\t{class}.doTest: {size} bytes in {count} objects\n",
+			"java.lang.Double: {doubleSize} bytes in {count} objects (avg size {doubleObjSize} bytes)\n" +
+			"\tjava.lang.Double.valueOf: {doubleSize} bytes in {count} objects\n" +
+			"\t\t{class}.doTest: {doubleSize} bytes in {count} objects\n" +
+			"\n" +
+			"java.lang.Float: {floatSize} bytes in {count} objects (avg size {floatObjSize} bytes)\n" +
+			"\t{class}.doTest: {floatSize} bytes in {count} objects\n",
 			"class=" + getClass().getName(),
-			"size=" + fmt(objSize * COUNT),
+			"doubleSize=" + fmt(doubleObjSize * COUNT),
+			"floatSize=" + fmt(floatObjSize * COUNT),
 			"count=" + fmt(COUNT),
-			"objSize=" + objSize);
+			"doubleObjSize=" + doubleObjSize,
+			"floatObjSize=" + floatObjSize);
 	}
 
-	public void doTest() throws Exception {
-		Constructor<Entity> constructor = Entity.class.getConstructor();
-		for (int i = 0; i < COUNT; i++)
-			constructor.newInstance();
-	}
-
-	private static class Entity {
-		public Entity() {
+	public void doTest() {
+		for (int i = 0; i < COUNT; i++) {
+			try {
+				Double.valueOf("16r7");
+			} catch (NumberFormatException e) {
+				new Float(10.6);
+			}
 		}
 	}
-
 }

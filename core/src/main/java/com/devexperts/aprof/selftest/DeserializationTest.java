@@ -16,15 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aproftest;
+package com.devexperts.aprof.selftest;
 
 import java.io.*;
 import java.util.ArrayList;
 
 import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
-
-import static com.devexperts.aproftest.TestUtil.fmt;
 
 /**
  * @author Dmitry Paraschenko
@@ -64,14 +62,14 @@ class DeserializationTest implements TestCase {
 
 	public String getExpectedStatistics() {
 		long objSize = AProfSizeUtil.getObjectSize(new Entity(0));
-		return fmt(
+		return TestUtil.fmt(
 			"{class}$Entity: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
-			"\tsun.reflect.GeneratedSerializationConstructorAccessor.newInstance: {size} bytes in {count} objects\n" +
-			"\t\tjava.io.ObjectInputStream.readObject: {size} bytes in {count} objects\n" +
-			"\t\t\t{class}.doTest: {size} bytes in {count} objects\n",
+				"\tsun.reflect.GeneratedSerializationConstructorAccessor.newInstance: {size} bytes in {count} objects\n" +
+				"\t\tjava.io.ObjectInputStream.readObject: {size} bytes in {count} objects\n" +
+				"\t\t\t{class}.doTest: {size} bytes in {count} objects\n",
 			"class=" + getClass().getName(),
-			"size=" + fmt(objSize * COUNT),
-			"count=" + fmt(COUNT),
+			"size=" + TestUtil.fmt(objSize * COUNT),
+			"count=" + TestUtil.fmt(COUNT),
 			"objSize=" + objSize);
 	}
 

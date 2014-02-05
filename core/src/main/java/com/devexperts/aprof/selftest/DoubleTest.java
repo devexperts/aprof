@@ -16,22 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.devexperts.aproftest;
-
-import java.util.Arrays;
+package com.devexperts.aprof.selftest;
 
 import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
 
-import static com.devexperts.aproftest.TestUtil.fmt;
-
-class ObjectArrayCopyTest implements TestCase {
+/**
+ * @author Dmitry Paraschenko
+ */
+class DoubleTest implements TestCase {
 	private static final int COUNT = 1000000;
 
-	private static Entity[] ARRAY = new Entity[5];
-
 	public String name() {
-		return "objectArrayCopy";
+		return "double";
 	}
 
 	public String verifyConfiguration(Configuration configuration) {
@@ -39,31 +36,28 @@ class ObjectArrayCopyTest implements TestCase {
 	}
 
 	public String[] getCheckedClasses() {
-		return new String[] { getClass().getName() + "$Entity[]" };
+		return new String[] {Double.class.getName()};
 	}
 
 	public String getExpectedStatistics() {
-		long objSize = AProfSizeUtil.getObjectSize(ARRAY);
-		return fmt(
-			"{class}$Entity[]: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
-			"\tjava.util.Arrays.copyOf: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
-			"\t\t{class}.doTest: {size} bytes in {count} objects (avg size {objSize} bytes)\n",
+		long objSize = AProfSizeUtil.getObjectSize(new Double(0));
+		return TestUtil.fmt(
+			"java.lang.Double: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
+				"\tjava.lang.Double.valueOf: {size} bytes in {count} objects\n" +
+				"\t\t{class}.doTest: {size} bytes in {count} objects\n",
 			"class=" + getClass().getName(),
-			"size=" + fmt(objSize * COUNT),
-			"count=" + fmt(COUNT),
+			"size=" + TestUtil.fmt(objSize * COUNT),
+			"count=" + TestUtil.fmt(COUNT),
 			"objSize=" + objSize);
 	}
 
-	public void doTest() throws Exception {
-		for (int i = 0; i < COUNT; i++)
-			Arrays.copyOf(ARRAY, ARRAY.length);
-	}
-
-	private static class Entity {
-		int value;
-
-		private Entity(int value) {
-			this.value = value;
+	public void doTest() {
+		for (int i = 0; i < COUNT; i++) {
+			if (i % 2 == 0)
+				Double.valueOf(10000 + i);
+			else
+				Double.valueOf(Double.toString(10000 + i));
 		}
 	}
+
 }
