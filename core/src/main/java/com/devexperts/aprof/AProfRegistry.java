@@ -73,6 +73,11 @@ public class AProfRegistry {
 	 */
 	private static SnapshotShallow DATATYPE_TOTAL_TEMP;
 
+	/**
+	 * Pre-allocated visitor for each depth.
+	 */
+	private static SnapshotDeepVisitor[] SNAPSHOT_DEEP_VISITOR = new SnapshotDeepVisitor[4];
+
 	public static final int UNKNOWN_LOC = registerLocation(SnapshotDeep.UNKNOWN);
 
 	private static Configuration config;
@@ -88,7 +93,6 @@ public class AProfRegistry {
 
 		registerDatatypeInfo(Object.class.getName());
 		registerDatatypeInfo(IndexMap.class.getName());
-		registerDatatypeInfo(FastIntObjMap.class.getName());
 
 		// allocate memory for temp snapshots
 		int histoCountsLength = config.getMaxHistogramLength() + 1;
@@ -198,10 +202,10 @@ public class AProfRegistry {
 				String datatype = DATATYPE_NAMES.get(id);
 				if (datatype.startsWith("[")) {
 					datatype = resolveClassName(datatype);
-					datatypeInfo = new DatatypeInfo(datatype, id, config.getHistogram(datatype));
+					datatypeInfo = new DatatypeInfo(datatype, config.getHistogram(datatype));
 				} else {
 					datatype = resolveClassName(datatype);
-					datatypeInfo = new DatatypeInfo(datatype, id, null);
+					datatypeInfo = new DatatypeInfo(datatype, null);
 				}
 				DATATYPE_INFOS.putUnsync(id, datatypeInfo);
 			}
@@ -214,24 +218,25 @@ public class AProfRegistry {
 	}
 
 	// allocates memory during class transformation and reflection calls
-	public static IndexMap registerRootIndex(DatatypeInfo datatypeInfo, int loc) {
-		IndexMap datatypeMap = datatypeInfo.getIndex();
-		RootIndexMap rootMap = (RootIndexMap)datatypeMap.get(loc);
+	public static RootIndexMap registerRootIndex(DatatypeInfo datatypeInfo, int loc) {
+		IndexMap<RootIndexMap> datatypeMap = datatypeInfo.getIndex();
+		RootIndexMap rootMap = datatypeMap.getChildUnsync(loc);
 		if (rootMap == null)
 			rootMap = registerRootIndexSlowPath(datatypeInfo, loc);
 		return rootMap;
 	}
 
+	@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 	private static RootIndexMap registerRootIndexSlowPath(DatatypeInfo datatypeInfo, int loc) {
-		IndexMap datatypeMap = datatypeInfo.getIndex();
+		IndexMap<RootIndexMap> datatypeMap = datatypeInfo.getIndex();
 		synchronized (datatypeMap) {
-			RootIndexMap rootMap = (RootIndexMap)datatypeMap.get(loc);
+			RootIndexMap rootMap = datatypeMap.getChildUnsync(loc);
 			if (rootMap == null) {
-				int index = LAST_ROOT_INDEX.incrementAndGet();
-				rootMap = new RootIndexMap(loc, index, datatypeMap.getHistogram(), datatypeInfo);
-				datatypeMap.put(loc, rootMap);
+				int rootIndex = LAST_ROOT_INDEX.incrementAndGet();
+				datatypeMap.putNewChildUnsync(rootMap =
+					new RootIndexMap(loc, rootIndex, datatypeMap.getHistogram(), datatypeInfo));
 				synchronized (ROOT_INDEXES) {
-					ROOT_INDEXES.putUnsync(index, rootMap);
+					ROOT_INDEXES.putUnsync(rootIndex, rootMap);
 				}
 			}
 			return rootMap;
@@ -242,23 +247,25 @@ public class AProfRegistry {
 	public static int registerAllocationPoint(String cname, String location) {
 		DatatypeInfo datatypeInfo = registerDatatypeInfo(normalize(cname));
 		int loc = registerLocation(location);
-		return registerRootIndex(datatypeInfo, loc).getIndex();
+		return registerRootIndex(datatypeInfo, loc).getRootIndex();
 	}
 
 	// TODO: can allocate memory
-	private static IndexMap putLocation(IndexMap map, int loc) {
-		IndexMap result = map.get(loc);
-		if (result == null) {
-			//noinspection SynchronizationOnLocalVariableOrMethodParameter
-			synchronized (map) {
-				result = map.get(loc);
-				if (result == null) {
-					result = new IndexMap(loc, -1, map.getHistogram());
-					map.put(loc, result);
-				}
-			}
-		}
+	private static IndexMap registerLocation(IndexMap map, int loc) {
+		IndexMap result = map.getChildUnsync(loc);
+		if (result == null)
+			result = registerLocationSlowPath(map, loc);
 		return result;
+	}
+
+	@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "unchecked"})
+	private static IndexMap registerLocationSlowPath(IndexMap map, int loc) {
+		synchronized (map) {
+			IndexMap result = map.getChildUnsync(loc);
+			if (result == null)
+				map.putNewChildUnsync(result = new IndexMap(loc, map.getHistogram()));
+			return result;
+		}
 	}
 
 	public static synchronized boolean isOverflowThreshold() {
@@ -280,15 +287,15 @@ public class AProfRegistry {
 	}
 
 	// can allocate memory during execution
-	static IndexMap getDetailedIndex(LocationStack stack, IndexMap rootIndex) {
+	static IndexMap getDetailedIndex(LocationStack stack, IndexMap map) {
 		assert stack != null;
 		int loc1 = stack.invoked_method_loc;
 		int loc2 = stack.invocation_point_loc;
-		if (loc1 != UNKNOWN_LOC && loc1 != rootIndex.getLocation())
-			rootIndex = putLocation(rootIndex, loc1);
+		if (loc1 != UNKNOWN_LOC && loc1 != map.getLocation())
+			map = registerLocation(map, loc1);
 		if (loc2 != UNKNOWN_LOC)
-			rootIndex = putLocation(rootIndex, loc2);
-		return rootIndex;
+			map = registerLocation(map, loc2);
+		return map;
 	}
 
 
@@ -353,7 +360,7 @@ public class AProfRegistry {
 			}
 
 			// take snapshot for data type children (known locations)
-			takeSnapshotDeep(cs, map, classSize);
+			takeSnapshotDeep(0, cs, map, classSize);
 
 			// create unknown node for datatype if tracked them (was enabled in config for non-array datatypes)
 			if (trackClassUnknown) {
@@ -404,18 +411,35 @@ public class AProfRegistry {
 	 * (which is zero for arrays or when size is not being tracked).
 	 */
 	// PRE-CONDITION: ss.sortChildrenDeep(SnapshotDeep.COMPARATOR_NAME)
-	private static void takeSnapshotDeep(SnapshotDeep ss, IndexMap map, long classSize) {
-		ss.ensureChildrenCapacity(map.size());
-		// process all children in map
-		for (IntIterator it = map.iterator(); it.hasNext();) {
-			int key = it.next();
-			String name = LOCATIONS.get(key);
-			IndexMap childMap = map.get(key);
+	private static void takeSnapshotDeep(int depth, SnapshotDeep ss, IndexMap map, long classSize) {
+		ss.ensureChildrenCapacity(map.getChildrenCount());
+		if (map.getChildrenCount() > 0) {
+			// process all children
+			SnapshotDeepVisitor visitor = SNAPSHOT_DEEP_VISITOR[depth];
+			if (visitor == null)
+				SNAPSHOT_DEEP_VISITOR[depth] = visitor = new SnapshotDeepVisitor();
+			visitor.depth = depth;
+			visitor.ss = ss;
+			visitor.classSize = classSize;
+			map.visitChildren(visitor);
+		}
+		// update an overall sum for this snapshot
+		ss.updateSnapshotSumShallow();
+	}
+
+	private static class SnapshotDeepVisitor implements IndexMapVisitor {
+		int depth;
+		SnapshotDeep ss;
+		long classSize;
+
+		public void acceptChild(IndexMap childMap) {
+			int loc = childMap.getLocation();
+			String name = LOCATIONS.get(loc);
 			// Use "findChild" for UNKNOWN_LOC, because UNKNOWN child might get created by "addToUnknown" for other
 			// reasons, so it will be appended to the end of the children list and will not be findable by
 			// "findChildInSorted" method that is used to find all other children
-			SnapshotDeep cs = ss.getOrCreateChildAt(key == UNKNOWN_LOC ? ss.findChild(name) : ss.findChildInSorted(name), name);
-			if (childMap.size() > 0) {
+			SnapshotDeep cs = ss.getOrCreateChildAt(loc == UNKNOWN_LOC ? ss.findChild(name) : ss.findChildInSorted(name), name);
+			if (childMap.getChildrenCount() > 0) {
 				// if child will have children, then move whatever counters it had while it had no children to UNKNOWN
 				if (!cs.hasChildren())
 					cs.addToUnknown(cs);
@@ -425,14 +449,12 @@ public class AProfRegistry {
 				cs.addToUnknown(UNKNOWN_TEMP);
 				UNKNOWN_TEMP.clearShallow();
 				// and go recursively into its children
-				takeSnapshotDeep(cs, childMap, classSize);
+				takeSnapshotDeep(depth + 1, cs, childMap, classSize);
 			} else {
 				// child has no children of its own -- just take its shallow snapshot
 				takeSnapshotShallow(cs, childMap, classSize);
 			}
 		}
-		// update an overall sum for this snapshot
-		ss.updateSnapshotSumShallow();
 	}
 
 	private static void addCloneLocationsShallow(SnapshotDeep ss, SnapshotShallow cloneTotal) {

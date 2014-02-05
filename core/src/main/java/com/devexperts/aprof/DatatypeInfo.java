@@ -24,14 +24,30 @@ import java.util.Comparator;
 * @author Dmitry Paraschenko
 */
 final class DatatypeInfo {
+	/**
+	 * Name of this data type.
+	 */
 	private final String name;
-	private final IndexMap index;
+
+	/**
+	 * Index of this data type. Its children are of type {@link RootIndexMap} and
+	 * correspond to root locations where this data type is allocated.
+	 */
+	private final IndexMap<RootIndexMap> index;
+
+	/**
+	 * Fixed size of this data type. 0 for array, -1 if failed to determine.
+	 */
 	private volatile long size;
+
+	/**
+	 * True if this data type does not override clone nor any of its super-classes do.
+	 */
 	private volatile boolean directClone;
 
-	public DatatypeInfo(String name, int id, int[] histogram) {
+	public DatatypeInfo(String name, int[] histogram) {
 		this.name = name;
-		this.index = new IndexMap(AProfRegistry.UNKNOWN_LOC, id, histogram);
+		this.index = new IndexMap<RootIndexMap>(AProfRegistry.UNKNOWN_LOC, histogram);
 	}
 
 	public String getName() {
@@ -42,7 +58,7 @@ final class DatatypeInfo {
 		return index.hasHistogram();
 	}
 
-	public IndexMap getIndex() {
+	public IndexMap<RootIndexMap> getIndex() {
 		return index;
 	}
 

@@ -18,9 +18,9 @@
 
 package com.devexperts.aprof;
 
-import com.devexperts.aprof.util.*;
+import com.devexperts.aprof.util.UnsafeHolder;
 
-class IndexMap {
+class IndexMap<T extends IndexMap> {
 	private static final int COUNT_OVERFLOW_THRESHOLD = 1 << 30;
 
 	private static final long COUNT_OFFSET;
@@ -45,11 +45,6 @@ class IndexMap {
 	private final int location;
 
 	/**
-	 * Root index in AProfRegistry rootIndexes.
-	 */
-	private final int index;
-
-	/**
 	 * Class histogram configuration.
 	 * One object per datatype.
 	 * <code>null</code> for non-arrays.
@@ -58,7 +53,7 @@ class IndexMap {
 
 	/**
 	 * For non-arrays acts as an ordinal instance counter.
-	 * For arrays counts instances created via {@link #incrementArraySize(int size)} and this count is usually 0,
+	 * For arrays counts instances created via {@link #incrementArraySize(int, long)} and this count is usually 0,
 	 * with the exception of reflective allocations that do not support histograms and increment this count.
 	 */
 	private int count;
@@ -75,13 +70,17 @@ class IndexMap {
 	private final int[] histogramCounts;
 
 	/**
-	 * Children map. <code>null</code> when there are no children.
+	 * Number of children.
 	 */
-	private FastIntObjMap<IndexMap> items;
+	private volatile int childrenCount;
 
-	public IndexMap(int location, int index, int[] histogram) {
+	/**
+	 * Children hash-indexed map. <code>null</code> when there are no children.
+	 */
+	private T[] children;
+
+	public IndexMap(int location, int[] histogram) {
 		this.location = location;
-		this.index = index;
 		this.histogram = histogram;
 		this.histogramCounts = histogram != null ? new int[histogram.length + 1] : null;
 	}
@@ -90,39 +89,69 @@ class IndexMap {
 		return location;
 	}
 
-	public int getIndex() {
-		return index;
-	}
-
 	public int[] getHistogram() {
 		return histogram;
 	}
 
-	public IndexMap get(int key) {
-		FastIntObjMap<IndexMap> items = this.items; // atomic read
-		return items == null ? null : items.get(key);
+	public int getChildrenCount() {
+		return childrenCount;
 	}
 
-	/* needs external synchronization */
-	public void put(int key, IndexMap value) {
-		if (items == null)
-			items = new FastIntObjMap<IndexMap>();
-		items.put(key, value);
+	// will not crash without synchronization, but may return null
+	public T getChildUnsync(int loc) {
+		T[] children = this.children; // atomic read (non-volatile)
+		if (children == null)
+			return null;
+		int i = loc & (children.length - 1); // always power of 2 in length
+		T child;
+		while ((child = children[i]) != null) {
+			if (child.location == loc)
+				return child;
+			if (i == 0)
+				i = children.length;
+			i--;
+		}
+		return null;
 	}
 
-	public int size() {
-		FastIntObjMap<IndexMap> items = this.items; // atomic read
-		return items == null ? 0 : items.size();
+	private void putInternal(T[] children, T child) {
+		int i = child.location & (children.length - 1); // always power of 2 in length
+		while (children[i] != null) {
+			if (i == 0)
+				i = children.length;
+			i--;
+		}
+		children[i] = child;
 	}
 
-	/**
-	 * Returns iterator that is reused when iteration is over.
-	 * This method is <b>not thread-safe</b>.
-	 */
-	public IntIterator iterator() {
-		FastIntObjMap<IndexMap> items = this.items; // atomic read
-		// note -- result is always of the same class that is returned by FastIntObjMap.iterator() method
-		return items == null ? FastIntObjMap.EMPTY_ITERATOR : items.iterator();
+	// needs external synchronization on _this_ and external check that the child does not exist yet
+	@SuppressWarnings("unchecked")
+	public void putNewChildUnsync(T child) {
+		T[] children = this.children;
+		if (children == null)
+			this.children = children = (T[])new IndexMap[4];
+		else if (childrenCount >= children.length / 2)
+			this.children = children = rehashChildren(children);
+		putInternal(children, child);
+		childrenCount++;
+	}
+
+	@SuppressWarnings("unchecked")
+	private T[] rehashChildren(T[] oldChildren) {
+		int n = oldChildren.length;
+		T[] newChildren = (T[])new IndexMap[n * 2];
+		for (T child : oldChildren)
+			if (child != null)
+				putInternal(newChildren, child);
+		return newChildren;
+	}
+
+	public void visitChildren(IndexMapVisitor visitor) {
+		IndexMap[] children = this.children; // atomic read (non-volatile)
+		if (children != null)
+			for (IndexMap child : children)
+				if (child != null)
+					visitor.acceptChild(child);
 	}
 
 	public int getCount() {
@@ -142,10 +171,6 @@ class IndexMap {
 
 	public int getHistogramLength() {
 		return histogramCounts.length;
-	}
-
-	public int[] getHistogramCounts() {
-		return histogramCounts;
 	}
 
 	public int takeCount() {
@@ -218,9 +243,11 @@ class IndexMap {
 			for (int cnt : histogramCounts)
 				if (cnt >= COUNT_OVERFLOW_THRESHOLD)
 					return true;
-		for (IntIterator it = iterator(); it.hasNext();)
-			if (items.get(it.next()).isOverflowThreshold())
-				return true;
+		IndexMap[] children = this.children; // atomic read (non-volatile)
+		if (children != null)
+			for (IndexMap child : children)
+				if (child != null && child.isOverflowThreshold())
+					return true;
 		return false;
 	}
 }
