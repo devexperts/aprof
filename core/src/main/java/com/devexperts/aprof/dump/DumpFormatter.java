@@ -82,7 +82,7 @@ public class DumpFormatter {
 
 	private void findLocationsDeep(SnapshotDeep ss, String dataTypeName, int histoCountsLength) {
 		if (!ss.hasChildren()) {
-			processLeadLocation(ss, AProfRegistry.getLocationNameWithoutSuffix(ss.getName()), dataTypeName, histoCountsLength);
+			processLeafLocation(ss, AProfRegistry.getLocationNameWithoutSuffix(ss.getName()), dataTypeName, histoCountsLength);
 			return;
 		}
 		// has children -- go recursive with a special treatment for UNKNOWN children -- attribute them this location's name
@@ -90,13 +90,13 @@ public class DumpFormatter {
 			SnapshotDeep cs = ss.getChild(i);
 			if (cs.getName().equals(SnapshotDeep.UNKNOWN)) {
 				assert !cs.hasChildren() : "unknown location shall not have children";
-				processLeadLocation(cs, AProfRegistry.getLocationNameWithoutSuffix(ss.getName()), dataTypeName, histoCountsLength);
+				processLeafLocation(cs, AProfRegistry.getLocationNameWithoutSuffix(ss.getName()), dataTypeName, histoCountsLength);
 			} else
 				findLocationsDeep(cs, dataTypeName, histoCountsLength);
 		}
 	}
 
-	private void processLeadLocation(SnapshotDeep ss, String name, String dataTypeName, int histoCountsLength) {
+	private void processLeafLocation(SnapshotDeep ss, String name, String dataTypeName, int histoCountsLength) {
 		// use hash index to find location (fast path)
 		int i = locationIndex.get(name, -1);
 		if (i < 0) {
