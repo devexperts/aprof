@@ -20,7 +20,7 @@
 
 	<groupId>com.devexperts.aprof</groupId>
 	<artifactId>aprof</artifactId>
-	<version>27-SNAPSHOT</version>
+	<version>27</version>
 	<packaging>pom</packaging>
 
 	<name>Aprof</name>
@@ -32,8 +32,8 @@
 	</properties>
 
 	<scm>
-		<connection>scm:svn:http://svn-code.devexperts.com/code/aprof/trunk</connection>
-		<developerConnection>scm:svn:http://svn-code.devexperts.com/coderw/aprof/trunk</developerConnection>
+		<connection>scm:svn:http://svn-code.devexperts.com/code/aprof/tags/aprof-27</connection>
+		<developerConnection>scm:svn:http://svn-code.devexperts.com/coderw/aprof/tags/aprof-27</developerConnection>
 	</scm>
 
 	<modules>
@@ -117,7 +117,7 @@
 				<artifactId>maven-enforcer-plugin</artifactId>
 				<configuration>
 					<rules>
-						<DependencyConvergence/>
+						<DependencyConvergence />
 						<requireMavenVersion>
 							<version>3.0.4</version>
 						</requireMavenVersion>

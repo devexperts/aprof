@@ -22,7 +22,7 @@
 	<parent>
 		<groupId>com.devexperts.aprof</groupId>
 		<artifactId>aprof</artifactId>
-		<version>27-SNAPSHOT</version>
+		<version>27</version>
 	</parent>
 
 	<packaging>jar</packaging>
@@ -125,15 +125,15 @@
 							<target>
 								<!-- default configuration -->
 								<java fork="true" dir="${project.build.directory}" jar="${project.build.directory}/aprof.jar" failonerror="true">
-									<jvmarg value="-javaagent:aprof.jar"/>
-									<arg value="selftest"/>
-									<arg value="all"/>
+									<jvmarg value="-javaagent:aprof.jar" />
+									<arg value="selftest" />
+									<arg value="all" />
 								</java>
 								<!-- with Object.<init> instrumentation -->
 								<java fork="true" dir="${project.build.directory}" jar="${project.build.directory}/aprof.jar" failonerror="true">
-									<jvmarg value="-javaagent:aprof.jar=+unknown"/>
-									<arg value="selftest"/>
-									<arg value="all"/>
+									<jvmarg value="-javaagent:aprof.jar=+unknown" />
+									<arg value="selftest" />
+									<arg value="all" />
 								</java>
 							</target>
 						</configuration>
