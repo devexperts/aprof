@@ -23,6 +23,8 @@ class TransformerUtil {
 	static final String NOARG_VOID = "()V";
 	static final String INT_VOID = "(I)V";
 	static final String STACK_INT_VOID = "(Lcom/devexperts/aprof/LocationStack;I)V";
+	static final String INT_STACK_INT_VOID = "(ILcom/devexperts/aprof/LocationStack;I)V";
+	static final String OBJECT_ARR_STACK_INT_VOID = "([Ljava/lang/Object;Lcom/devexperts/aprof/LocationStack;I)V";
 	static final String STACK_INT_CLASS_VOID = "(Lcom/devexperts/aprof/LocationStack;ILjava/lang/Class;)V";
 	static final String OBJECT_VOID = "(Ljava/lang/Object;)V";
 	static final String OBJECT_STACK_INT_VOID = "(Ljava/lang/Object;Lcom/devexperts/aprof/LocationStack;I)V";

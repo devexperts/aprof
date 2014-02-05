@@ -41,49 +41,49 @@ public class AProfOps {
 			datatypeInfo.setSize(getObjectSizeByClass(objectClass));
 	}
 
-	public static void allocateArraySize(boolean[] o, LocationStack stack, int index) {
+	public static void booleanAllocateArraySize(int length, LocationStack stack, int index) {
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
-		map.incrementArraySizeAndCount(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(length, booleanArraySize(length));
 	}
 
-	public static void allocateArraySize(byte[] o, LocationStack stack, int index) {
+	public static void byteAllocateArraySize(int length, LocationStack stack, int index) {
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
-		map.incrementArraySizeAndCount(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(length, byteArraySize(length));
 	}
 
-	public static void allocateArraySize(char[] o, LocationStack stack, int index) {
+	public static void charAllocateArraySize(int length, LocationStack stack, int index) {
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
-		map.incrementArraySizeAndCount(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(length, charArraySize(length));
 	}
 
-	public static void allocateArraySize(short[] o, LocationStack stack, int index) {
+	public static void shortAllocateArraySize(int length, LocationStack stack, int index) {
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
-		map.incrementArraySizeAndCount(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(length, shortArraySize(length));
 	}
 
-	public static void allocateArraySize(int[] o, LocationStack stack, int index) {
+	public static void intAllocateArraySize(int length, LocationStack stack, int index) {
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
-		map.incrementArraySizeAndCount(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(length, intArraySize(length));
 	}
 
-	public static void allocateArraySize(long[] o, LocationStack stack, int index) {
+	public static void longAllocateArraySize(int length, LocationStack stack, int index) {
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
-		map.incrementArraySizeAndCount(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(length, longArraySize(length));
 	}
 
-	public static void allocateArraySize(float[] o, LocationStack stack, int index) {
+	public static void floatAllocateArraySize(int length, LocationStack stack, int index) {
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
-		map.incrementArraySizeAndCount(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(length, floatArraySize(length));
 	}
 
-	public static void allocateArraySize(double[] o, LocationStack stack, int index) {
+	public static void doubleAllocateArraySize(int length, LocationStack stack, int index) {
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
-		map.incrementArraySizeAndCount(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(length, doubleArraySize(length));
 	}
 
-	public static void allocateArraySize(Object[] o, LocationStack stack, int index) {
+	public static void objectAllocateArraySize(int length, LocationStack stack, int index) {
 		IndexMap map = getDetailedIndex(stack, getRootIndex(index));
-		map.incrementArraySizeAndCount(o.length, getArraySize(o));
+		map.incrementArraySizeAndCount(length, objectArraySize(length));
 	}
 
 	public static void allocateArraySizeMulti(Object[] o, LocationStack stack, int index) {

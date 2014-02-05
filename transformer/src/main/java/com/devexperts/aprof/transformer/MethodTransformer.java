@@ -158,18 +158,6 @@ class MethodTransformer extends AbstractMethodVisitor {
 
 	/**
 	 * OPS implementation is chosen based on the class doing the allocation.
-	 *
-	 * @see com.devexperts.aprof.AProfOps#allocate(LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(boolean[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(byte[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(char[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(short[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(int[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(long[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(float[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(double[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySize(Object[], LocationStack, int)
-	 * @see com.devexperts.aprof.AProfOps#allocateArraySizeMulti(Object[], LocationStack, int)
 	 */
 	@Override
 	protected void visitAllocateArray(String desc) {
@@ -178,22 +166,34 @@ class MethodTransformer extends AbstractMethodVisitor {
 			mv.dup();
 			pushLocationStack();
 			pushAllocationPoint(desc);
-			boolean isMulti = desc.lastIndexOf('[') > 0;
-			boolean isPrimitive = desc.length() == 2;
-			StringBuilder sb = new StringBuilder();
-			sb.append("(");
-			if (isPrimitive) {
-				sb.append(desc);
-			} else {
-				sb.append("[Ljava/lang/Object;");
-			}
-			sb.append("Lcom/devexperts/aprof/LocationStack;I)V");
-			String mname = isMulti ? "allocateArraySizeMulti" : "allocateArraySize";
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), mname, sb.toString());
+			Type type = Type.getType(desc);
+			assert type.getSort() == Type.ARRAY;
+			Type elementType = type.getElementType();
+			String name = elementType.getSort() == Type.OBJECT || elementType.getSort() == Type.ARRAY ?
+				"object" : elementType.getClassName();
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(),
+				name + "AllocateArraySize", TransformerUtil.INT_STACK_INT_VOID);
 		} else {
 			pushLocationStack();
 			pushAllocationPoint(desc);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", TransformerUtil.STACK_INT_VOID);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(),
+				"allocate", TransformerUtil.STACK_INT_VOID);
+		}
+	}
+
+	@Override
+	protected void visitAllocateArrayMulti(String desc) {
+		if (context.getConfig().isSize()) {
+			mv.dup();
+			pushLocationStack();
+			pushAllocationPoint(desc);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(),
+				"allocateArraySizeMulti", TransformerUtil.OBJECT_ARR_STACK_INT_VOID);
+		} else {
+			pushLocationStack();
+			pushAllocationPoint(desc);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(),
+				"allocate", TransformerUtil.STACK_INT_VOID);
 		}
 	}
 

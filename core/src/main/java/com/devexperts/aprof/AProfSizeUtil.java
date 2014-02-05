@@ -56,40 +56,40 @@ public class AProfSizeUtil {
 		return (size + 7) & ~7L;
 	}
 
-	public static long getArraySize(boolean[] o) {
-		return align(BOOLEAN_BASE_OFFSET + BOOLEAN_INDEX_SCALE * o.length);
+	public static long booleanArraySize(int length) {
+		return align(BOOLEAN_BASE_OFFSET + BOOLEAN_INDEX_SCALE * length);
 	}
 
-	public static long getArraySize(byte[] o) {
-		return align(BYTE_BASE_OFFSET + BYTE_INDEX_SCALE * o.length);
+	public static long byteArraySize(int length) {
+		return align(BYTE_BASE_OFFSET + BYTE_INDEX_SCALE * length);
 	}
 
-	public static long getArraySize(char[] o) {
-		return align(CHAR_BASE_OFFSET + CHAR_INDEX_SCALE * o.length);
+	public static long charArraySize(int length) {
+		return align(CHAR_BASE_OFFSET + CHAR_INDEX_SCALE * length);
 	}
 
-	public static long getArraySize(short[] o) {
-		return align(SHORT_BASE_OFFSET + SHORT_INDEX_SCALE * o.length);
+	public static long shortArraySize(int length) {
+		return align(SHORT_BASE_OFFSET + SHORT_INDEX_SCALE * length);
 	}
 
-	public static long getArraySize(int[] o) {
-		return align(INT_BASE_OFFSET + INT_INDEX_SCALE * o.length);
+	public static long intArraySize(int length) {
+		return align(INT_BASE_OFFSET + INT_INDEX_SCALE * length);
 	}
 
-	public static long getArraySize(long[] o) {
-		return align(LONG_BASE_OFFSET + LONG_INDEX_SCALE * o.length);
+	public static long longArraySize(int length) {
+		return align(LONG_BASE_OFFSET + LONG_INDEX_SCALE * length);
 	}
 
-	public static long getArraySize(float[] o) {
-		return align(FLOAT_BASE_OFFSET + FLOAT_INDEX_SCALE * o.length);
+	public static long floatArraySize(int length) {
+		return align(FLOAT_BASE_OFFSET + FLOAT_INDEX_SCALE * length);
 	}
 
-	public static long getArraySize(double[] o) {
-		return align(DOUBLE_BASE_OFFSET + DOUBLE_INDEX_SCALE * o.length);
+	public static long doubleArraySize(int length) {
+		return align(DOUBLE_BASE_OFFSET + DOUBLE_INDEX_SCALE * length);
 	}
 
-	public static long getArraySize(Object[] o) {
-		return align(OBJECT_BASE_OFFSET + OBJECT_INDEX_SCALE * o.length);
+	public static long objectArraySize(int length) {
+		return align(OBJECT_BASE_OFFSET + OBJECT_INDEX_SCALE * length);
 	}
 
 	public static long getObjectSize(Object o) {
@@ -110,29 +110,30 @@ public class AProfSizeUtil {
 		if (o instanceof Object[])
 			return getArraySizeMultiRec((Object[])o);
 		else if (o instanceof char[])
-			return getArraySize((char[])o);
+			return charArraySize(((char[])o).length);
 		else if (o instanceof byte[])
-			return getArraySize((byte[])o);
+			return byteArraySize(((byte[])o).length);
 		else if (o instanceof short[])
-			return getArraySize((short[])o);
+			return shortArraySize(((short[])o).length);
 		else if (o instanceof int[])
-			return getArraySize((int[])o);
+			return intArraySize(((int[])o).length);
 		else if (o instanceof long[])
-			return getArraySize((long[])o);
+			return longArraySize(((long[])o).length);
 		else if (o instanceof boolean[])
-			return getArraySize((boolean[])o);
+			return booleanArraySize(((boolean[])o).length);
 		else if (o instanceof float[])
-			return getArraySize((float[])o);
+			return floatArraySize(((float[])o).length);
 		else if (o instanceof double[])
-			return getArraySize((double[])o);
+			return doubleArraySize(((double[])o).length);
 		else
 			return 0;
 	}
 
 	public static long getArraySizeMultiRec(Object[] o) {
-		long size = getArraySize(o);
-		if (o.getClass().getComponentType().isArray() && o.length > 0)
-			size += o.length * getArraySizeMultiRec(o[0]);
+		int length = o.length;
+		long size = objectArraySize(length);
+		if (o.getClass().getComponentType().isArray() && length > 0)
+			size += length * getArraySizeMultiRec(o[0]);
 		return size;
 	}
 }

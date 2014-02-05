@@ -62,6 +62,8 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 
 	protected abstract void visitAllocateArray(String desc);
 
+	protected abstract void visitAllocateArrayMulti(String desc);
+
 	protected abstract void visitAllocateReflect(boolean cloneInvocation);
 
 	protected abstract void visitAllocateReflectVClone();
@@ -118,16 +120,15 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 		if (opcode == Opcodes.NEW && context.getConfig().isLocation()) {
 			visitAllocate(desc);
 		}
-		mv.visitTypeInsn(opcode, desc);
 		if (opcode == Opcodes.ANEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf()) {
 			String arrayName = name.startsWith("[") ? "[" + name : "[L" + name + ";";
 			visitAllocateArray(arrayName);
 		}
+		mv.visitTypeInsn(opcode, desc);
 	}
 
 	@Override
 	public void visitIntInsn(final int opcode, final int operand) {
-		mv.visitIntInsn(opcode, operand);
 		if (opcode == Opcodes.NEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf()) {
 			Type type;
 			switch (operand) {
@@ -160,14 +161,14 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 			}
 			visitAllocateArray(type.getDescriptor());
 		}
+		mv.visitIntInsn(opcode, operand);
 	}
 
 	@Override
 	public void visitMultiANewArrayInsn(final String desc, final int dims) {
 		mv.visitMultiANewArrayInsn(desc, dims);
-		if (context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf()) {
-			visitAllocateArray(desc);
-		}
+		if (context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf())
+			visitAllocateArrayMulti(desc);
 	}
 
 	@Override
