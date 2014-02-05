@@ -25,6 +25,7 @@ import static com.devexperts.aprof.AProfSizeUtil.*;
  * Methods that are instrumented into target code by aprof method transformer.
  */
 @SuppressWarnings({"UnusedDeclaration"})
+@Internal
 public class AProfOps {
 	public static void allocate(LocationStack stack, int index) {
 		getDetailedIndex(stack, getRootIndex(index)).increment();

@@ -21,18 +21,14 @@ package com.devexperts.aprof;
 /**
 * @author Dmitry Paraschenko
 */
+@Internal
 public final class LocationStack {
 	int invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
 	int invocation_point_count;
 	int invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
 	int invoked_method_count = 0;
 
-	private static final ThreadLocal<LocationStack> LOCATION_STACK = new ThreadLocal<LocationStack>() {
-		@Override
-		protected LocationStack initialValue() {
-			return new LocationStack();
-		}
-	};
+	private static final ThreadLocal<LocationStack> LOCATION_STACK = new LocationStackThreadLocal();
 
 	public static LocationStack get() {
 		return LOCATION_STACK.get();
@@ -98,4 +94,5 @@ public final class LocationStack {
 		invoked_method_loc = other.invoked_method_loc;
 		invoked_method_count = other.invoked_method_count;
 	}
+
 }

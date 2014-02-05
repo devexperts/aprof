@@ -29,6 +29,7 @@ import com.devexperts.aprof.util.*;
  * @author Roman Elizarov
  * @author Dmitry Paraschenko
  */
+@Internal
 public class AProfRegistry {
 	private static final String PROXY_CLASS_TOKEN = "$Proxy";
 
@@ -100,11 +101,19 @@ public class AProfRegistry {
 		DATATYPE_TOTAL_TEMP = new SnapshotShallow(null, histoCountsLength);
 	}
 
-	public static boolean isInternalLocationClass(String locationClass) {
+	/**
+	 * Returns true for {@link Internal} location.
+	 */
+	public static boolean isInternalLocation(String locationClass) {
 		return locationClass.startsWith("java.lang.ThreadLocal") ||
-				locationClass.startsWith("com.devexperts.aprof.") &&
-						!locationClass.startsWith("com.devexperts.aprof.transformer.") &&
-						!locationClass.startsWith("com.devexperts.aprof.dump.");
+			locationClass.equals(AProfOps.class.getName()) ||
+			locationClass.equals(AProfOpsInternal.class.getName()) ||
+			locationClass.equals(AProfRegistry.class.getName()) ||
+			locationClass.equals(IndexMap.class.getName()) ||
+			locationClass.equals(LocationStack.class.getName()) ||
+			locationClass.equals(LocationStackThreadLocal.class.getName()) ||
+			locationClass.equals(FastArrayList.class.getName()) ||
+			locationClass.equals(StringIndexer.class.getName());
 	}
 
 	public static boolean isNormal(String cname) {
@@ -250,24 +259,6 @@ public class AProfRegistry {
 		return registerRootIndex(datatypeInfo, loc).getRootIndex();
 	}
 
-	// TODO: can allocate memory
-	private static IndexMap registerLocation(IndexMap map, int loc) {
-		IndexMap result = map.getChildUnsync(loc);
-		if (result == null)
-			result = registerLocationSlowPath(map, loc);
-		return result;
-	}
-
-	@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "unchecked"})
-	private static IndexMap registerLocationSlowPath(IndexMap map, int loc) {
-		synchronized (map) {
-			IndexMap result = map.getChildUnsync(loc);
-			if (result == null)
-				map.putNewChildUnsync(result = new IndexMap(loc, map.getHistogram()));
-			return result;
-		}
-	}
-
 	public static synchronized boolean isOverflowThreshold() {
 		int n = DATATYPE_INFOS.length();
 		for (int i = 0; i < n; i++) {
@@ -280,7 +271,7 @@ public class AProfRegistry {
 		return false;
 	}
 
-	// TODO: can allocate memory during execution: new root because of reflection call
+	// NOTE: It can allocate memory during execution: new root because of reflection call
 	// all data-types should be registered beforehand
 	static IndexMap getRootIndex(String cname, int loc) {
 		return registerRootIndex(registerDatatypeInfo(normalize(cname)), loc);
@@ -292,12 +283,11 @@ public class AProfRegistry {
 		int loc1 = stack.invoked_method_loc;
 		int loc2 = stack.invocation_point_loc;
 		if (loc1 != UNKNOWN_LOC && loc1 != map.getLocation())
-			map = registerLocation(map, loc1);
+			map = map.registerChild(loc1);
 		if (loc2 != UNKNOWN_LOC)
-			map = registerLocation(map, loc2);
+			map = map.registerChild(loc2);
 		return map;
 	}
-
 
 	//==================== SNAPSHOTS ======================
 

@@ -18,9 +18,12 @@
 
 package com.devexperts.aprof.util;
 
+import com.devexperts.aprof.Internal;
+
 /**
  * @author Dmitry Paraschenko
  */
+@Internal
 public class StringIndexer {
 	private static final int MIN_LENGTH = 8;
 

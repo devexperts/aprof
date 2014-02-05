@@ -203,7 +203,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitAllocateReflect(boolean objectCloneInvocation) {
-		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass()) : context;
+		assert !context.isInternalLocation() : context;
 		assert context.getConfig().isReflect() : context;
 		mv.dup();
 		pushLocationStack();
@@ -219,7 +219,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 */
 	@Override
 	protected void visitAllocateReflectVClone() {
-		assert !AProfRegistry.isInternalLocationClass(context.getLocationClass()) : context;
+		assert !context.isInternalLocation() : context;
 		assert context.getConfig().isReflect() : context;
 		mv.dup();
 		pushLocationStack();

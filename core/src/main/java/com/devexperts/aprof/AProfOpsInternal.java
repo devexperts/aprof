@@ -26,6 +26,7 @@ import static com.devexperts.aprof.AProfSizeUtil.*;
  * The difference is that they don't use {@link LocationStack} parameter.
  */
 @SuppressWarnings({"UnusedDeclaration"})
+@Internal
 public class AProfOpsInternal extends AProfOps {
 	public static void allocate(LocationStack stack, int index) {
 		getRootIndex(index).increment();

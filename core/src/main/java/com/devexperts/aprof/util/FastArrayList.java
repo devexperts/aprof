@@ -18,9 +18,12 @@
 
 package com.devexperts.aprof.util;
 
+import com.devexperts.aprof.Internal;
+
 /**
  * @author Roman Elizarov
  */
+@Internal
 public class FastArrayList<T> {
 	private volatile T[] list;
 

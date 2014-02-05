@@ -172,7 +172,8 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 
 	@Override
 	public void visitMethodInsn(final int opcode, final String owner, final String name, final String desc) {
-		if (AProfRegistry.isInternalLocationClass(context.getLocationClass())) {
+		if (context.isInternalLocation()) {
+			// do not instrument method invocations in internal locations
 			mv.visitMethodInsn(opcode, owner, name, desc);
 			return;
 		}

@@ -20,6 +20,7 @@ package com.devexperts.aprof;
 
 import com.devexperts.aprof.util.UnsafeHolder;
 
+@Internal
 class IndexMap<T extends IndexMap> {
 	private static final int COUNT_OVERFLOW_THRESHOLD = 1 << 30;
 
@@ -112,6 +113,23 @@ class IndexMap<T extends IndexMap> {
 			i--;
 		}
 		return null;
+	}
+
+	public IndexMap registerChild(int loc) {
+		IndexMap result = getChildUnsync(loc);
+		if (result == null)
+			result = registerChildSlowPath(loc);
+		return result;
+	}
+
+	@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "unchecked"})
+	private synchronized IndexMap registerChildSlowPath(int loc) {
+		IndexMap result = getChildUnsync(loc);
+		if (result == null) {
+			result = new IndexMap(loc, getHistogram());
+			putNewChildUnsync((T)result);
+		}
+		return result;
 	}
 
 	private void putInternal(T[] children, T child) {

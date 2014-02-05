@@ -18,8 +18,7 @@
 
 package com.devexperts.aprof.transformer;
 
-import com.devexperts.aprof.AProfRegistry;
-import com.devexperts.aprof.Configuration;
+import com.devexperts.aprof.*;
 import org.objectweb.asm.Type;
 
 /**
@@ -53,8 +52,11 @@ class Context {
 		this.aprofOpsImpl = isInternalLocation() ? TransformerUtil.APROF_OPS_INTERNAL : TransformerUtil.APROF_OPS;
 	}
 
+	/**
+	 * Returns true for context of {@link Internal} location.
+	 */
 	public boolean isInternalLocation() {
-		return AProfRegistry.isInternalLocationClass(locationClass);
+		return AProfRegistry.isInternalLocation(locationClass);
 	}
 
 	public Configuration getConfig() {
