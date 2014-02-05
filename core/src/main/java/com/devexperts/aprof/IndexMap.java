@@ -111,7 +111,7 @@ class IndexMap<T extends IndexMap> {
 		int i = loc & (children.length - 1); // always power of 2 in length
 		T child;
 		while ((child = children[i]) != null) {
-			if (child.location == loc)
+			if (child.getLocation() == loc)
 				return child;
 			if (i == 0)
 				i = children.length;
