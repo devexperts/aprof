@@ -138,11 +138,11 @@ public class Dumper {
 		if (!dumpAll) {
 			last.setTime(now - lastTime);
 			lastTime = now;
-			formatter.dumpSnapshot(out, last, "LAST", config.getThreshold());
+			formatter.dumpSnapshot(out, last, "LAST");
 		}
 
 		total.setTime(now - start);
-		formatter.dumpSnapshot(out, total, "TOTAL", dumpAll ? 0 : config.getThreshold());
+		formatter.dumpSnapshot(out, total, "TOTAL");
 		out.println();
 	}
 

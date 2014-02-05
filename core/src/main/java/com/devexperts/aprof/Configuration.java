@@ -47,7 +47,7 @@ public class Configuration {
 	private int filecount = 0;
 
 	@Description("Threshold for entries in Aprof dump in (%).")
-	private double threshold = 0.1;
+	private double threshold = 0.01;
 
 	@Description("Expand shown classes (even below threshold) up to specified level (0 -- do not expand).")
 	private int level = 2;

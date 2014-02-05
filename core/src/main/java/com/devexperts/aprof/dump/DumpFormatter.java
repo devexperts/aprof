@@ -50,21 +50,21 @@ public class DumpFormatter {
 		locations = new SnapshotDeep(null, true, 0); // true to print avg size, 0 to skip printing histogram
 	}
 
-	public void dumpSnapshot(PrintWriter out, SnapshotRoot ss, String kind, double threshold) {
+	public void dumpSnapshot(PrintWriter out, SnapshotRoot ss, String kind) {
 		dumpSnapshotHeader(out, ss, kind);
 		out.println("Top allocation-inducing locations with data types allocated from them");
 		printlnTearLine(out, '-');
-		dumpSnapshotByLocations(out, ss, threshold);
+		dumpSnapshotByLocations(out, ss);
 		out.println("Top allocated data types with reverse location traces");
 		printlnTearLine(out, '-');
-		dumpSnapshotByDataTypes(out, ss, threshold);
+		dumpSnapshotByDataTypes(out, ss);
 	}
 
 	private Comparator<SnapshotShallow> getOutputComparator() {
 		return config.isSize() ? SnapshotShallow.COMPARATOR_SIZE : SnapshotShallow.COMPARATOR_COUNT;
 	}
 
-	private void dumpSnapshotByLocations(PrintWriter out, SnapshotRoot ss, double threshold) {
+	private void dumpSnapshotByLocations(PrintWriter out, SnapshotRoot ss) {
 		// rebuild locations
 		locations.clearDeep();
 		locations.sortChildrenDeep(SnapshotShallow.COMPARATOR_NAME);
@@ -77,7 +77,7 @@ public class DumpFormatter {
 		locations.updateSnapshotSumDeep();
 		// sort them and print
 		locations.sortChildrenDeep(getOutputComparator());
-		printLocationsDeep(out, 0, locations, ss, threshold);
+		printLocationsDeep(out, 0, locations, ss);
 	}
 
 	private void findLocationsDeep(SnapshotDeep ss, String dataTypeName, int histoCountsLength) {
@@ -136,21 +136,21 @@ public class DumpFormatter {
 		out.println();
 	}
 
-	public void dumpSnapshotByDataTypes(PrintWriter out, SnapshotRoot ss, double threshold) {
+	public void dumpSnapshotByDataTypes(PrintWriter out, SnapshotRoot ss) {
 		// sort snapshot (deep)
 		ss.sortChildrenDeep(getOutputComparator());
 		// compute class levels -- classes of level 0 are classes that exceed threshold
 		classLevel.fill(Integer.MAX_VALUE);
 		for (int csi = 0; csi < ss.getUsed(); csi++) {
 			SnapshotDeep cs = ss.getChild(csi);
-			classLevel.put(cs.getName(), cs.exceedsThreshold(ss, threshold) ? 0 : Integer.MAX_VALUE);
+			classLevel.put(cs.getName(), cs.exceedsThreshold(ss, config.getThreshold()) ? 0 : Integer.MAX_VALUE);
 		}
 		// compute progressive higher levels
 		for (int level = 0; level < config.getLevel(); level++)
 			for (int csi = 0; csi < ss.getUsed(); csi++) {
 				SnapshotDeep cs = ss.getChild(csi);
 				if (classLevel.get(cs.getName()) == level)
-					markClassLevelRec(cs, threshold, level);
+					markClassLevelRec(cs, level);
 			}
 
 		// dump classes
@@ -161,7 +161,7 @@ public class DumpFormatter {
 			if (!cs.isEmpty() && classLevel.get(cs.getName()) <= config.getLevel()) {
 				out.print(cs.getName());
 				printlnDetailsShallow(out, cs, ss, true);
-				printLocationsDeep(out, 1, cs, ss, threshold);
+				printLocationsDeep(out, 1, cs, ss);
 				out.println();
 			} else if (!cs.isEmpty()) {
 				cskipped++;
@@ -211,21 +211,21 @@ public class DumpFormatter {
 			out.print("\t");
 	}
 
-	private void markClassLevelRec(SnapshotDeep ss, double threshold, int level) {
+	private void markClassLevelRec(SnapshotDeep ss, int level) {
 		for (int i = 0; i < ss.getUsed(); i++) {
 			SnapshotDeep item = ss.getChild(i);
 			String className = item.getName();
-			if (item.exceedsThreshold(ss, threshold) && className != null) {
+			if (item.exceedsThreshold(ss, config.getThreshold()) && className != null) {
 				int oldLevel = classLevel.get(className);
 				if (oldLevel > level + 1)
 					classLevel.put(className, level + 1);
 			}
 			if (item.hasChildren())
-				markClassLevelRec(item, threshold, level);
+				markClassLevelRec(item, level);
 		}
 	}
 
-	private void printLocationsDeep(PrintWriter out, int depth, SnapshotDeep ss, SnapshotShallow total, double threshold) {
+	private void printLocationsDeep(PrintWriter out, int depth, SnapshotDeep ss, SnapshotShallow total) {
 		// count how many below threshold (1st pass)
 		int shown = 0;
 		int skipped = 0;
@@ -234,7 +234,7 @@ public class DumpFormatter {
 			if (item.isEmpty())
 				continue; // ignore empty items
 			// always show 1st item and all that exceed threshold
-			if (shown == 0 || item.exceedsThreshold(total, threshold))
+			if (shown == 0 || item.exceedsThreshold(total, config.getThreshold()))
 				shown++;
 			else
 				skipped++;
@@ -249,13 +249,13 @@ public class DumpFormatter {
 			SnapshotDeep item = ss.getChild(i);
 			if (item.isEmpty())
 				continue; // ignore empty items
-			if (shown == 0 || printAll || item.exceedsThreshold(total, threshold)) {
+			if (shown == 0 || printAll || item.exceedsThreshold(total, config.getThreshold())) {
 				shown++;
 				printIndent(out, depth);
 				out.print(item.getName());
 				printlnDetailsShallow(out, item, total, item.isArray());
 				if (item.hasChildren())
-					printLocationsDeep(out, depth + 1, item, total, threshold);
+					printLocationsDeep(out, depth + 1, item, total);
 				if (depth == 0)
 					out.println(); // empty lines on top level
 			} else {

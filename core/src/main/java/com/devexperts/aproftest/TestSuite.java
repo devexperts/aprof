@@ -138,7 +138,7 @@ public class TestSuite {
 	private static String snapshotToString(Configuration config, SnapshotRoot snapshot) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		PrintWriter out = new PrintWriter(bos);
-		new DumpFormatter(config).dumpSnapshotByDataTypes(out, snapshot, 0);
+		new DumpFormatter(config).dumpSnapshotByDataTypes(out, snapshot);
 		out.flush();
 		return new String(bos.toByteArray());
 	}

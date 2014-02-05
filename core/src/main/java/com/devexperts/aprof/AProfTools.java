@@ -118,7 +118,7 @@ public class AProfTools {
 		socket.close();
 		DumpFormatter formatter = new DumpFormatter(new Configuration());
 		PrintWriter out = new PrintWriter(System.out);
-		formatter.dumpSnapshot(out, totalSnapshot, "DUMP", 0);
+		formatter.dumpSnapshot(out, totalSnapshot, "DUMP");
 		out.flush();
 	}
 
