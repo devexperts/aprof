@@ -97,8 +97,8 @@ public class AProfRegistry {
 
 		// allocate memory for temp snapshots
 		int histoCountsLength = config.getMaxHistogramLength();
-		UNKNOWN_TEMP = new SnapshotShallow(null, histoCountsLength);
-		DATATYPE_TOTAL_TEMP = new SnapshotShallow(null, histoCountsLength);
+		UNKNOWN_TEMP = new SnapshotShallow(null, false, histoCountsLength);
+		DATATYPE_TOTAL_TEMP = new SnapshotShallow(null, false, histoCountsLength);
 	}
 
 	/**
@@ -326,7 +326,8 @@ public class AProfRegistry {
 			int histogramLength = histogram == null ? 0 : histogram.length;
 			boolean trackClassUnknown = config.isUnknown() && !datatypeInfo.isArray();
 			// find child snapshot corresponding to this datatype
-			SnapshotDeep cs = ss.getOrCreateChildAt(idx = ss.findChildInSortedFrom(idx, name), name, histogramLength);
+			SnapshotDeep cs = ss.getOrCreateChildAt(idx =
+				ss.findChildInSortedFrom(idx, name), name, datatypeInfo.isArray(), histogramLength);
 
 			// NOTATION HERE FOR THIS DATA TYPE:
 			//   a[t] = all recorded allocations up to time "t" (unknown and known locations, including from clone)

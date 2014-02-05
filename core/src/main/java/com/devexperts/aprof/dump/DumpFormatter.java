@@ -40,13 +40,14 @@ public class DumpFormatter {
 
 	private final SnapshotShallow[] rest = new SnapshotShallow[MAX_DEPTH];
 	private final FastObjIntMap<String> classLevel = new FastObjIntMap<String>();
-	private final SnapshotDeep locations = new SnapshotDeep();
 	private final FastObjIntMap<String> locationIndex = new FastObjIntMap<String>();
+	private final SnapshotDeep locations;
 
 	public DumpFormatter(Configuration config) {
 		this.config = config;
 		for (int i = 0; i < MAX_DEPTH; i++)
 			rest[i] = new SnapshotShallow();
+		locations = new SnapshotDeep(null, true, 0); // true to print avg size, 0 to skip printing histogram
 	}
 
 	public void dumpSnapshot(PrintWriter out, SnapshotRoot ss, String kind, double threshold) {
@@ -76,7 +77,7 @@ public class DumpFormatter {
 		locations.updateSnapshotSumDeep();
 		// sort them and print
 		locations.sortChildrenDeep(getOutputComparator());
-		printLocationsDeep(out, 0, locations, ss, threshold, false);
+		printLocationsDeep(out, 0, locations, ss, threshold);
 	}
 
 	private void findLocationsDeep(SnapshotDeep ss, String dataTypeName, int histoCountsLength) {
@@ -93,8 +94,8 @@ public class DumpFormatter {
 				locationIndex.put(name, i);
 			}
 			SnapshotDeep cs = locations.getChild(i);
-			// append data type info for this location
-			cs.getOrCreateChild(dataTypeName, histoCountsLength).addShallow(ss);
+			// append data type info for this location, true to always print average size
+			cs.getOrCreateChild(dataTypeName, true, histoCountsLength).addShallow(ss);
 			return;
 		}
 		// has children -- go recursive
@@ -152,10 +153,9 @@ public class DumpFormatter {
 		for (int csi = 0; csi < ss.getUsed(); csi++) {
 			SnapshotDeep cs = ss.getChild(csi);
 			if (!cs.isEmpty() && classLevel.get(cs.getName()) <= config.getLevel()) {
-				boolean isArray = cs.getName().indexOf('[') >= 0;
 				out.print(cs.getName());
 				printlnDetailsShallow(out, cs, ss, true);
-				printLocationsDeep(out, 1, cs, ss, threshold, isArray);
+				printLocationsDeep(out, 1, cs, ss, threshold);
 				out.println();
 			} else if (!cs.isEmpty()) {
 				cskipped++;
@@ -184,16 +184,18 @@ public class DumpFormatter {
 		}
 		long[] counts = item.getHistoCounts();
 		if (counts.length > 0 && item.getTotalCount() > 0) {
-			out.print(" [histogram: ");
 			int lastNonZero = counts.length - 1;
 			while (lastNonZero > 0 && counts[lastNonZero] == 0)
 				lastNonZero--;
-			printNum(out, item.getCount()); // smallest bracket first
-			for (int i = 0; i <= lastNonZero; i++) {
-				out.print(" ");
-				printNum(out, counts[i]);
+			if (counts[lastNonZero] != 0) {
+				out.print(" [histogram: ");
+				printNum(out, item.getCount()); // smallest bracket first
+				for (int i = 0; i <= lastNonZero; i++) {
+					out.print(" ");
+					printNum(out, counts[i]);
+				}
+				out.print("]");
 			}
-			out.print("]");
 		}
 		out.println();
 	}
@@ -217,9 +219,7 @@ public class DumpFormatter {
 		}
 	}
 
-	private void printLocationsDeep(PrintWriter out, int depth, SnapshotDeep ss, SnapshotShallow total,
-		double threshold, boolean isArray)
-	{
+	private void printLocationsDeep(PrintWriter out, int depth, SnapshotDeep ss, SnapshotShallow total, double threshold) {
 		// count how many below threshold (1st pass)
 		int shown = 0;
 		int skipped = 0;
@@ -247,9 +247,9 @@ public class DumpFormatter {
 				shown++;
 				printIndent(out, depth);
 				out.print(item.getName());
-				printlnDetailsShallow(out, item, total, isArray);
+				printlnDetailsShallow(out, item, total, item.isArray());
 				if (item.hasChildren())
-					printLocationsDeep(out, depth + 1, item, total, threshold, isArray);
+					printLocationsDeep(out, depth + 1, item, total, threshold);
 				if (depth == 0)
 					out.println(); // empty lines on top level
 			} else {
@@ -262,7 +262,7 @@ public class DumpFormatter {
 			out.print("... ");
 			printNum(out, skipped);
 			out.print(" more below threshold");
-			printlnDetailsShallow(out, rest[depth], total, isArray);
+			printlnDetailsShallow(out, rest[depth], total, ss.isArray());
 			if (depth == 0)
 				out.println(); // empty lines on top level
 		}

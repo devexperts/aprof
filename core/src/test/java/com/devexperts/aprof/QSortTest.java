@@ -29,7 +29,7 @@ import junit.framework.TestCase;
 public class QSortTest extends TestCase {
 	public void testQSort() {
 		Random r = new Random(1);
-		SnapshotDeep cs = new SnapshotDeep("test", 0);
+		SnapshotDeep cs = new SnapshotDeep("test", false, 0);
 		int cnt = 1000;
 		cs.ensureChildrenCapacity(cnt);
 		for (int i = 0; i < cnt; i++)

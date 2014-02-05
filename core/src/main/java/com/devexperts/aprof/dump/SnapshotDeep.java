@@ -44,8 +44,8 @@ public class SnapshotDeep extends SnapshotShallow {
 
 	public SnapshotDeep() {}
 
-	public SnapshotDeep(String name, int histogramLength) {
-		super(name, histogramLength);
+	public SnapshotDeep(String name, boolean isArray, int histogramLength) {
+		super(name, isArray, histogramLength);
 	}
 
 	@Override
@@ -105,8 +105,9 @@ public class SnapshotDeep extends SnapshotShallow {
 		int idx = 0;
 		for (int i = 0; i < ss.used; i++) {
 			SnapshotDeep other = ss.children[i];
-			String id = other.name;
-			SnapshotDeep item = getOrCreateChildAt(idx = findChildInSortedFrom(idx, id), id, other.getHistoCountsLength());
+			String name = other.getName();
+			SnapshotDeep item = getOrCreateChildAt(idx =
+				findChildInSortedFrom(idx, name), name, other.isArray(), other.getHistoCountsLength());
 			item.addDeep(other);
 		}
 	}
@@ -127,8 +128,9 @@ public class SnapshotDeep extends SnapshotShallow {
 		int idx = 0;
 		for (int i = 0; i < ss.used; i++) {
 			SnapshotDeep other = ss.children[i];
-			String id = other.name;
-			SnapshotDeep item = getOrCreateChildAt(idx = findChildInSortedFrom(idx, id), id, other.getHistoCountsLength());
+			String name = other.getName();
+			SnapshotDeep item = getOrCreateChildAt(idx =
+				findChildInSortedFrom(idx, name), name, other.isArray(), other.getHistoCountsLength());
 			item.subDeep(other);
 		}
 	}
@@ -172,7 +174,7 @@ public class SnapshotDeep extends SnapshotShallow {
 	// PRE-CONDITION: sortChildrenShallow(COMPARATOR_NAME)
 	public int findChildInSortedFrom(int i, String name) {
 		assert sortedByNameTo >= 0;
-		while (i < sortedByNameTo && name.compareTo(children[i].name) > 0)
+		while (i < sortedByNameTo && name.compareTo(children[i].getName()) > 0)
 			i++;
 		return i;
 	}
@@ -197,31 +199,33 @@ public class SnapshotDeep extends SnapshotShallow {
 
 	// PRE-CONDITION: sortChildrenShallow(COMPARATOR_NAME)
 	public int findOrCreateChildInSorted(String name) {
-		return findOrCreateChildAt(findChildInSorted(name), name, histoCounts.length);
+		// inherit isArray and histogramLength attributes
+		return findOrCreateChildAt(findChildInSorted(name), name, isArray(), getHistoCountsLength());
 	}
 
 	public int findChild(String name) {
 		int i = 0;
-		while (i < used && !name.equals(children[i].name))
+		while (i < used && !name.equals(children[i].getName()))
 			i++;
 		return i;
 	}
 
-	public int findOrCreateChildAt(int index, String name, int histogramLength) {
-		if (index < used && name.equals(children[index].name))
+	public int findOrCreateChildAt(int index, String name, boolean isArray, int histogramLength) {
+		if (index < used && name.equals(children[index].getName()))
 			return index;
 		ensureChildrenCapacity(used + 1);
 		int i = used++;
-		children[i] = new SnapshotDeep(name, histogramLength);
+		children[i] = new SnapshotDeep(name, isArray, histogramLength);
 		return i;
 	}
 
 	public SnapshotDeep getOrCreateChildAt(int index, String name) {
-		return getOrCreateChildAt(index, name, histoCounts.length);
+		// inherit isArray and histogramLength attributes
+		return getOrCreateChildAt(index, name, isArray(), getHistoCountsLength());
 	}
 
-	public SnapshotDeep getOrCreateChildAt(int index, String name, int histogramLength) {
-		int i = findOrCreateChildAt(index, name, histogramLength);
+	public SnapshotDeep getOrCreateChildAt(int index, String name, boolean isArray, int histogramLength) {
+		int i = findOrCreateChildAt(index, name, isArray, histogramLength);
 		return children[i];
 	}
 
@@ -229,8 +233,8 @@ public class SnapshotDeep extends SnapshotShallow {
 		return getOrCreateChildAt(findChild(name), name);
 	}
 
-	public SnapshotDeep getOrCreateChild(String name, int histoCountsLength) {
-		return getOrCreateChildAt(findChild(name), name, histoCountsLength);
+	public SnapshotDeep getOrCreateChild(String name, boolean isArray, int histoCountsLength) {
+		return getOrCreateChildAt(findChild(name), name, isArray, histoCountsLength);
 	}
 
 	public int countNonEmptyChildrenShallow() {

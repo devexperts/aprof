@@ -126,8 +126,8 @@ public class TestSuite {
 				if (!tracked)
 					continue;
 				// add delta to result
-				SnapshotDeep child0 = snapshot0.getOrCreateChild(child.getName(), child.getHistoCountsLength());
-				SnapshotDeep resultChild = result.getOrCreateChild(child.getName(), child.getHistoCountsLength());
+				SnapshotDeep child0 = snapshot0.getOrCreateChild(child.getName(), child.isArray(), child.getHistoCountsLength());
+				SnapshotDeep resultChild = result.getOrCreateChild(child.getName(), child.isArray(), child.getHistoCountsLength());
 				resultChild.addDeep(child);
 				resultChild.subDeep(child0);
 			}

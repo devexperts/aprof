@@ -58,19 +58,22 @@ public class SnapshotShallow implements Serializable {
 
 	// --------- instance fields ---------
 
-	protected final String name;
-	protected long count;
-	protected long size;
-	protected final long[] histoCounts;
-	protected transient long histoCountsSum; // recomputes on deserialization
+	private final String name;
+	private long count;
+	private long size;
+	private final boolean isArray;
+	private final long[] histoCounts;
+	private transient long histoCountsSum; // recomputes on deserialization
 
 	public SnapshotShallow() {
 		name = null;
+		isArray = false;
 		histoCounts = EMPTY_HISTO_COUNTS;
 	}
 
-	public SnapshotShallow(String name, int histogramLength) {
+	public SnapshotShallow(String name, boolean isArray, int histogramLength) {
 		this.name = name;
+		this.isArray = isArray;
 		this.histoCounts = histogramLength == 0 ? EMPTY_HISTO_COUNTS : new long[histogramLength];
 	}
 
@@ -94,13 +97,18 @@ public class SnapshotShallow implements Serializable {
 		return size;
 	}
 
-	public long[] getHistoCounts() {
-		return histoCounts;
+	public boolean isArray() {
+		return isArray;
 	}
 
 	public int getHistoCountsLength() {
 		return histoCounts.length;
 	}
+
+	public long[] getHistoCounts() {
+		return histoCounts;
+	}
+
 
 	public boolean isEmpty() {
 		if (count != 0 || size != 0)
