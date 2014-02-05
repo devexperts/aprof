@@ -138,7 +138,7 @@ class IndexMap<T extends IndexMap> {
 	}
 
 	private void putInternal(T[] children, T child) {
-		int i = child.location & (children.length - 1); // always power of 2 in length
+		int i = child.getLocation() & (children.length - 1); // always power of 2 in length
 		while (children[i] != null) {
 			if (i == 0)
 				i = children.length;
