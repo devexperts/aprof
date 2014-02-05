@@ -22,25 +22,29 @@ import java.lang.instrument.Instrumentation;
 
 import com.devexperts.aprof.util.UnsafeHolder;
 
-/**
- * @author Dmitry Paraschenko
- */
 public class AProfSizeUtil {
-	private static final int SIZE_CACHE = 1024;
+	private AProfSizeUtil() {} // do not create
 
-	private static final long[] booleanSizeCache = new long[SIZE_CACHE];
-	private static final long[] byteSizeCache = new long[SIZE_CACHE];
-	private static final long[] charSizeCache = new long[SIZE_CACHE];
-	private static final long[] shortSizeCache = new long[SIZE_CACHE];
-	private static final long[] intSizeCache = new long[SIZE_CACHE];
-	private static final long[] longSizeCache = new long[SIZE_CACHE];
-	private static final long[] floatSizeCache = new long[SIZE_CACHE];
-	private static final long[] doubleSizeCache = new long[SIZE_CACHE];
-	private static final long[] objectSizeCache = new long[SIZE_CACHE];
+	private static long BOOLEAN_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(boolean[].class);
+	private static long BOOLEAN_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(boolean[].class);
+	private static long BYTE_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(byte[].class);
+	private static long BYTE_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(byte[].class);
+	private static long CHAR_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(char[].class);
+	private static long CHAR_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(char[].class);
+	private static long SHORT_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(short[].class);
+	private static long SHORT_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(short[].class);
+	private static long INT_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(int[].class);
+	private static long INT_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(int[].class);
+	private static long LONG_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(long[].class);
+	private static long LONG_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(long[].class);
+	private static long FLOAT_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(float[].class);
+	private static long FLOAT_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(float[].class);
+	private static long DOUBLE_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(double[].class);
+	private static long DOUBLE_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(double[].class);
+	private static long OBJECT_BASE_OFFSET = UnsafeHolder.UNSAFE.arrayBaseOffset(Object[].class);
+	private static long OBJECT_INDEX_SCALE = UnsafeHolder.UNSAFE.arrayIndexScale(Object[].class);
 
 	private static Instrumentation inst;
-
-	private AProfSizeUtil() {} // do not create
 
 	public static void init(Instrumentation instrumentation) {
 		if (inst != null)
@@ -48,101 +52,44 @@ public class AProfSizeUtil {
 		inst = instrumentation;
 	}
 
+	private static long align(long size) {
+		return (size + 7) & ~7L;
+	}
+
 	public static long getArraySize(boolean[] o) {
-		long size;
-		if (o.length < SIZE_CACHE) {
-			size = booleanSizeCache[o.length];
-			if (size == 0)
-				booleanSizeCache[o.length] = size = getObjectSize(o);
-		} else
-			size = getObjectSize(o);
-		return size;
+		return align(BOOLEAN_BASE_OFFSET + BOOLEAN_INDEX_SCALE * o.length);
 	}
 
 	public static long getArraySize(byte[] o) {
-		long size;
-		if (o.length < SIZE_CACHE) {
-			size = byteSizeCache[o.length];
-			if (size == 0)
-				byteSizeCache[o.length] = size = getObjectSize(o);
-		} else
-			size = getObjectSize(o);
-		return size;
+		return align(BYTE_BASE_OFFSET + BYTE_INDEX_SCALE * o.length);
 	}
 
 	public static long getArraySize(char[] o) {
-		if (o.length < SIZE_CACHE) {
-			long size = charSizeCache[o.length];
-			if (size == 0)
-				charSizeCache[o.length] = size = getObjectSize(o);
-			return size;
-		} else
-			return getObjectSize(o);
+		return align(CHAR_BASE_OFFSET + CHAR_INDEX_SCALE * o.length);
 	}
 
 	public static long getArraySize(short[] o) {
-		long size;
-		if (o.length < SIZE_CACHE) {
-			size = shortSizeCache[o.length];
-			if (size == 0)
-				shortSizeCache[o.length] = size = getObjectSize(o);
-		} else
-			size = getObjectSize(o);
-		return size;
+		return align(SHORT_BASE_OFFSET + SHORT_INDEX_SCALE * o.length);
 	}
 
 	public static long getArraySize(int[] o) {
-		long size;
-		if (o.length < SIZE_CACHE) {
-			size = intSizeCache[o.length];
-			if (size == 0)
-				intSizeCache[o.length] = size = getObjectSize(o);
-		} else
-			size = getObjectSize(o);
-		return size;
+		return align(INT_BASE_OFFSET + INT_INDEX_SCALE * o.length);
 	}
 
 	public static long getArraySize(long[] o) {
-		long size;
-		if (o.length < SIZE_CACHE) {
-			size = longSizeCache[o.length];
-			if (size == 0)
-				longSizeCache[o.length] = size = getObjectSize(o);
-		} else
-			size = getObjectSize(o);
-		return size;
+		return align(LONG_BASE_OFFSET + LONG_INDEX_SCALE * o.length);
 	}
 
 	public static long getArraySize(float[] o) {
-		long size;
-		if (o.length < SIZE_CACHE) {
-			size = floatSizeCache[o.length];
-			if (size == 0)
-				floatSizeCache[o.length] = size = getObjectSize(o);
-		} else
-			size = getObjectSize(o);
-		return size;
+		return align(FLOAT_BASE_OFFSET + FLOAT_INDEX_SCALE * o.length);
 	}
 
 	public static long getArraySize(double[] o) {
-		long size;
-		if (o.length < SIZE_CACHE) {
-			size = doubleSizeCache[o.length];
-			if (size == 0)
-				doubleSizeCache[o.length] = size = getObjectSize(o);
-		} else
-			size = getObjectSize(o);
-		return size;
+		return align(DOUBLE_BASE_OFFSET + DOUBLE_INDEX_SCALE * o.length);
 	}
 
 	public static long getArraySize(Object[] o) {
-		if (o.length < SIZE_CACHE) {
-			long size = objectSizeCache[o.length];
-			if (size == 0)
-				objectSizeCache[o.length] = size = getObjectSize(o);
-			return size;
-		} else
-			return getObjectSize(o);
+		return align(OBJECT_BASE_OFFSET + OBJECT_INDEX_SCALE * o.length);
 	}
 
 	public static long getObjectSize(Object o) {

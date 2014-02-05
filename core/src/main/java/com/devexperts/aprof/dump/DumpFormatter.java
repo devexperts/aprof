@@ -57,6 +57,7 @@ public class DumpFormatter {
 		dumpSnapshotByLocations(out, ss);
 		out.println("Top allocated data types with reverse location traces");
 		printlnTearLine(out, '-');
+		ss.sortChildrenDeep(getOutputComparator());
 		dumpSnapshotByDataTypes(out, ss);
 	}
 
@@ -137,8 +138,6 @@ public class DumpFormatter {
 	}
 
 	public void dumpSnapshotByDataTypes(PrintWriter out, SnapshotRoot ss) {
-		// sort snapshot (deep)
-		ss.sortChildrenDeep(getOutputComparator());
 		// compute class levels -- classes of level 0 are classes that exceed threshold
 		classLevel.fill(Integer.MAX_VALUE);
 		for (int csi = 0; csi < ss.getUsed(); csi++) {

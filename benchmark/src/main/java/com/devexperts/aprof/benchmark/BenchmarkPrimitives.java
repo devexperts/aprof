@@ -33,13 +33,22 @@ public class BenchmarkPrimitives {
 		return newBox().getValue();
 	}
 
+	private static Box newBox() {
+		return new Box(1);
+	}
+
+	@GenerateMicroBenchmark
+	public int testArrayEscapeAnalysis() {
+		return newArray()[0];
+	}
+
+	private static int[] newArray() {
+		return new int[] { 1 };
+	}
+
 	@GenerateMicroBenchmark
 	public String testNewString() {
 		return new String(CHARS);
-	}
-
-	private static Box newBox() {
-		return new Box(1);
 	}
 
 	private static class Box {

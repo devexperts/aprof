@@ -41,6 +41,7 @@ public class TestSuite {
 			new TryTest(),
 			new DeserializationTest(),
 			new ArrayNewInstanceTest(),
+			new ArraySizeTest(),
 			new ObjectArrayCopyTest()
 	);
 
@@ -138,6 +139,7 @@ public class TestSuite {
 	private static String snapshotToString(Configuration config, SnapshotRoot snapshot) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		PrintWriter out = new PrintWriter(bos);
+		snapshot.sortChildrenDeep(SnapshotShallow.COMPARATOR_NAME);
 		new DumpFormatter(config).dumpSnapshotByDataTypes(out, snapshot);
 		out.flush();
 		return new String(bos.toByteArray());
