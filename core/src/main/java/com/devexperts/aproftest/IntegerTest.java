@@ -42,7 +42,7 @@ class IntegerTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		int objSize = AProfSizeUtil.getObjectSize(new Integer(0)) << AProfSizeUtil.SIZE_SHIFT;
+		long objSize = AProfSizeUtil.getObjectSize(new Integer(0));
 		return fmt(
 			"java.lang.Integer: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
 			"\tjava.lang.Integer.valueOf: {size} bytes in {count} objects\n" +

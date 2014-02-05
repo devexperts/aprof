@@ -26,7 +26,7 @@ import java.util.Comparator;
 final class DatatypeInfo {
 	private final String name;
 	private final IndexMap index;
-	private volatile int size;
+	private volatile long size;
 	private volatile boolean directClone;
 
 	public DatatypeInfo(String name, int id, int[] histogram) {
@@ -54,11 +54,11 @@ final class DatatypeInfo {
 		this.directClone = directClone;
 	}
 
-	public int getSize() {
+	public long getSize() {
 		return size;
 	}
 
-	public void setSize(int size) {
+	public void setSize(long size) {
 		this.size = size;
 	}
 

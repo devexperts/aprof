@@ -63,7 +63,7 @@ class DeserializationTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		int objSize = AProfSizeUtil.getObjectSize(new Entity(0)) << AProfSizeUtil.SIZE_SHIFT;
+		long objSize = AProfSizeUtil.getObjectSize(new Entity(0));
 		return fmt(
 			"{class}$Entity: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
 			"\tsun.reflect.GeneratedSerializationConstructorAccessor.newInstance: {size} bytes in {count} objects\n" +

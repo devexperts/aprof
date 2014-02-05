@@ -42,7 +42,7 @@ class DoubleTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		int objSize = AProfSizeUtil.getObjectSize(new Double(0)) << AProfSizeUtil.SIZE_SHIFT;
+		long objSize = AProfSizeUtil.getObjectSize(new Double(0));
 		return fmt(
 			"java.lang.Double: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
 			"\tjava.lang.Double.valueOf: {size} bytes in {count} objects\n" +

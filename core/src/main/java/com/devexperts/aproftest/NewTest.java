@@ -42,7 +42,7 @@ class NewTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		int objSize = AProfSizeUtil.getObjectSize(new Entity()) << AProfSizeUtil.SIZE_SHIFT;
+		long objSize = AProfSizeUtil.getObjectSize(new Entity());
 		return fmt(
 			"{class}$Entity: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
 			"\t{class}.doTest: {size} bytes in {count} objects\n",

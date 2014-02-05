@@ -57,4 +57,8 @@ public class FastArrayList<T> {
 		}
 		list[i] = val;
 	}
+
+	public int length() {
+		return list.length;
+	}
 }

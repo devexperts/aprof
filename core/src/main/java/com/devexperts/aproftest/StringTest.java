@@ -42,8 +42,8 @@ class StringTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		int charsObjSize = AProfSizeUtil.getObjectSize(CHARS) << AProfSizeUtil.SIZE_SHIFT;
-		int stringObjSize = AProfSizeUtil.getObjectSize(new String()) << AProfSizeUtil.SIZE_SHIFT;
+		long charsObjSize = AProfSizeUtil.getObjectSize(CHARS);
+		long stringObjSize = AProfSizeUtil.getObjectSize(new String());
 		return fmt(
 			"char[]: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
 			"\tjava.util.Arrays.copyOf: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +

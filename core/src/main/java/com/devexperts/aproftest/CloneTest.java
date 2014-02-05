@@ -42,7 +42,7 @@ class CloneTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		int objSize = AProfSizeUtil.getObjectSize(new Entity()) << AProfSizeUtil.SIZE_SHIFT;
+		long objSize = AProfSizeUtil.getObjectSize(new Entity());
 		return fmt(
 			"{class}$Entity: {size1} bytes in {count1} objects (avg size {objSize} bytes)\n" +
 			"\t{class}$Entity.dup;via-clone: {size} bytes in {count} objects\n" +

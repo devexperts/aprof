@@ -43,7 +43,7 @@ class ObjectArrayCopyTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		int objSize = AProfSizeUtil.getObjectSize(ARRAY) << AProfSizeUtil.SIZE_SHIFT;
+		long objSize = AProfSizeUtil.getObjectSize(ARRAY);
 		return fmt(
 			"{class}$Entity[]: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
 			"\tjava.util.Arrays.copyOf: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +

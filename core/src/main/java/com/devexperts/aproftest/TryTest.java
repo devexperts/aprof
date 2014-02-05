@@ -42,8 +42,8 @@ class TryTest implements TestCase {
 	}
 
 	public String getExpectedStatistics() {
-		int doubleObjSize = AProfSizeUtil.getObjectSize(new Double(0)) << AProfSizeUtil.SIZE_SHIFT;
-		int floatObjSize = AProfSizeUtil.getObjectSize(new Float(0)) << AProfSizeUtil.SIZE_SHIFT;
+		long doubleObjSize = AProfSizeUtil.getObjectSize(new Double(0));
+		long floatObjSize = AProfSizeUtil.getObjectSize(new Float(0));
 		return fmt(
 			"java.lang.Double: {doubleSize} bytes in {count} objects (avg size {doubleObjSize} bytes)\n" +
 			"\tjava.lang.Double.valueOf: {doubleSize} bytes in {count} objects\n" +

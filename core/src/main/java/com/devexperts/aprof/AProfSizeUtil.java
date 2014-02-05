@@ -26,19 +26,17 @@ import com.devexperts.aprof.util.UnsafeHolder;
  * @author Dmitry Paraschenko
  */
 public class AProfSizeUtil {
-	public static final int SIZE_SHIFT = 3;
-
 	private static final int SIZE_CACHE = 1024;
 
-	private static final int[] booleanSizeCache = new int[SIZE_CACHE];
-	private static final int[] byteSizeCache = new int[SIZE_CACHE];
-	private static final int[] charSizeCache = new int[SIZE_CACHE];
-	private static final int[] shortSizeCache = new int[SIZE_CACHE];
-	private static final int[] intSizeCache = new int[SIZE_CACHE];
-	private static final int[] longSizeCache = new int[SIZE_CACHE];
-	private static final int[] floatSizeCache = new int[SIZE_CACHE];
-	private static final int[] doubleSizeCache = new int[SIZE_CACHE];
-	private static final int[] objectSizeCache = new int[SIZE_CACHE];
+	private static final long[] booleanSizeCache = new long[SIZE_CACHE];
+	private static final long[] byteSizeCache = new long[SIZE_CACHE];
+	private static final long[] charSizeCache = new long[SIZE_CACHE];
+	private static final long[] shortSizeCache = new long[SIZE_CACHE];
+	private static final long[] intSizeCache = new long[SIZE_CACHE];
+	private static final long[] longSizeCache = new long[SIZE_CACHE];
+	private static final long[] floatSizeCache = new long[SIZE_CACHE];
+	private static final long[] doubleSizeCache = new long[SIZE_CACHE];
+	private static final long[] objectSizeCache = new long[SIZE_CACHE];
 
 	private static Instrumentation inst;
 
@@ -50,8 +48,8 @@ public class AProfSizeUtil {
 		inst = instrumentation;
 	}
 
-	public static int getArraySize(boolean[] o) {
-		int size;
+	public static long getArraySize(boolean[] o) {
+		long size;
 		if (o.length < SIZE_CACHE) {
 			size = booleanSizeCache[o.length];
 			if (size == 0)
@@ -61,8 +59,8 @@ public class AProfSizeUtil {
 		return size;
 	}
 
-	public static int getArraySize(byte[] o) {
-		int size;
+	public static long getArraySize(byte[] o) {
+		long size;
 		if (o.length < SIZE_CACHE) {
 			size = byteSizeCache[o.length];
 			if (size == 0)
@@ -72,9 +70,9 @@ public class AProfSizeUtil {
 		return size;
 	}
 
-	public static int getArraySize(char[] o) {
+	public static long getArraySize(char[] o) {
 		if (o.length < SIZE_CACHE) {
-			int size = charSizeCache[o.length];
+			long size = charSizeCache[o.length];
 			if (size == 0)
 				charSizeCache[o.length] = size = getObjectSize(o);
 			return size;
@@ -82,8 +80,8 @@ public class AProfSizeUtil {
 			return getObjectSize(o);
 	}
 
-	public static int getArraySize(short[] o) {
-		int size;
+	public static long getArraySize(short[] o) {
+		long size;
 		if (o.length < SIZE_CACHE) {
 			size = shortSizeCache[o.length];
 			if (size == 0)
@@ -93,8 +91,8 @@ public class AProfSizeUtil {
 		return size;
 	}
 
-	public static int getArraySize(int[] o) {
-		int size;
+	public static long getArraySize(int[] o) {
+		long size;
 		if (o.length < SIZE_CACHE) {
 			size = intSizeCache[o.length];
 			if (size == 0)
@@ -104,8 +102,8 @@ public class AProfSizeUtil {
 		return size;
 	}
 
-	public static int getArraySize(long[] o) {
-		int size;
+	public static long getArraySize(long[] o) {
+		long size;
 		if (o.length < SIZE_CACHE) {
 			size = longSizeCache[o.length];
 			if (size == 0)
@@ -115,8 +113,8 @@ public class AProfSizeUtil {
 		return size;
 	}
 
-	public static int getArraySize(float[] o) {
-		int size;
+	public static long getArraySize(float[] o) {
+		long size;
 		if (o.length < SIZE_CACHE) {
 			size = floatSizeCache[o.length];
 			if (size == 0)
@@ -126,8 +124,8 @@ public class AProfSizeUtil {
 		return size;
 	}
 
-	public static int getArraySize(double[] o) {
-		int size;
+	public static long getArraySize(double[] o) {
+		long size;
 		if (o.length < SIZE_CACHE) {
 			size = doubleSizeCache[o.length];
 			if (size == 0)
@@ -137,9 +135,9 @@ public class AProfSizeUtil {
 		return size;
 	}
 
-	public static int getArraySize(Object[] o) {
+	public static long getArraySize(Object[] o) {
 		if (o.length < SIZE_CACHE) {
-			int size = objectSizeCache[o.length];
+			long size = objectSizeCache[o.length];
 			if (size == 0)
 				objectSizeCache[o.length] = size = getObjectSize(o);
 			return size;
@@ -147,12 +145,12 @@ public class AProfSizeUtil {
 			return getObjectSize(o);
 	}
 
-	public static int getObjectSize(Object o) {
-		return (int)(inst.getObjectSize(o) >> SIZE_SHIFT);
+	public static long getObjectSize(Object o) {
+		return inst.getObjectSize(o);
 	}
 
-	public static int getObjectSizeByClass(Class objectClass) {
-		int size;
+	public static long getObjectSizeByClass(Class objectClass) {
+		long size;
 		try {
 			size = getObjectSize(UnsafeHolder.UNSAFE.allocateInstance(objectClass));
 		} catch (InstantiationException e) {
@@ -161,7 +159,7 @@ public class AProfSizeUtil {
 		return size;
 	}
 
-	public static int getArraySizeMultiRec(Object o) {
+	public static long getArraySizeMultiRec(Object o) {
 		if (o instanceof Object[]) {
 			return getArraySizeMultiRec((Object[])o);
 		} else if (o instanceof char[]) {
@@ -173,8 +171,8 @@ public class AProfSizeUtil {
 		}
 	}
 
-	public static int getArraySizeMultiRec(Object[] o) {
-		int size = getArraySize(o);
+	public static long getArraySizeMultiRec(Object[] o) {
+		long size = getArraySize(o);
 		if (o.getClass().getComponentType().isArray() && o.length > 0)
 			size += o.length * getArraySizeMultiRec(o[0]);
 		return size;

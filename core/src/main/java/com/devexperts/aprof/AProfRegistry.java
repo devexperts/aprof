@@ -36,8 +36,6 @@ public class AProfRegistry {
 	// because they don't invoke constructor and need to be counted separately.
 	private static final String OBJECT_CLONE_SUFFIX = ";via-clone";
 
-	private static final int OVERFLOW_THRESHOLD = 1 << 30;
-
 	/**
 	 * Locations are created at transformation time
 	 */
@@ -263,22 +261,13 @@ public class AProfRegistry {
 		return result;
 	}
 
-	public static boolean isOverflowThreshold() {
-		int n = getLocationCount();
-		for (int i = 1; i <= n; i++) {
-			IndexMap map = getRootIndex(i);
-			if (map == null) {
+	public static synchronized boolean isOverflowThreshold() {
+		int n = DATATYPE_INFOS.length();
+		for (int i = 0; i < n; i++) {
+			DatatypeInfo datatypeInfo = DATATYPE_INFOS.getUnsync(i);
+			if (datatypeInfo == null)
 				continue;
-			}
-			if (map.getCount() >= OVERFLOW_THRESHOLD)
-				return true;
-			int[] counters = map.getHistogramCounts();
-			if (counters != null) {
-				for (int cnt : counters)
-					if (cnt >= OVERFLOW_THRESHOLD)
-						return true;
-			}
-			if (map.getSize() >= OVERFLOW_THRESHOLD)
+			if (datatypeInfo.getIndex().isOverflowThreshold())
 				return true;
 		}
 		return false;
@@ -333,7 +322,7 @@ public class AProfRegistry {
 			DatatypeInfo datatypeInfo = SORTED_DATATYPES[i];
 			String name = datatypeInfo.getName();
 			IndexMap map = datatypeInfo.getIndex();
-			int classSize = datatypeInfo.getSize();
+			long classSize = datatypeInfo.getSize();
 			if (classSize < 0) // If failed to compute size
 				classSize = 0;
 			int[] histogram = map.getHistogram();
@@ -396,18 +385,17 @@ public class AProfRegistry {
 		ss.updateSnapshotSumShallow();
 	}
 
-	private static void takeSnapshotShallow(SnapshotShallow ss, IndexMap map, int classSize) {
+	private static void takeSnapshotShallow(SnapshotShallow ss, IndexMap map, long classSize) {
 		long count = map.takeCount(); // SIC! Its long to avoid overflows
 		if (map.hasHistogram()) {
 			// Array (dynamically tracked sum size with histograms)
-			long size = ((long)map.takeSize()) << AProfSizeUtil.SIZE_SHIFT;
+			long size = map.takeSize();
 			ss.add(count, size);
 			for (int i = 0; i < map.getHistogramLength(); i++)
 				ss.addHistoCount(i, map.takeHistogramCount(i));
 		} else {
-			// Regular object (fixed size)
-			long size = (count * classSize) << AProfSizeUtil.SIZE_SHIFT;
-			ss.add(count, size);
+			// Regular object (fixed known size)
+			ss.add(count, count * classSize);
 		}
 	}
 
@@ -416,7 +404,7 @@ public class AProfRegistry {
 	 * (which is zero for arrays or when size is not being tracked).
 	 */
 	// PRE-CONDITION: ss.sortChildrenDeep(SnapshotDeep.COMPARATOR_NAME)
-	private static void takeSnapshotDeep(SnapshotDeep ss, IndexMap map, int classSize) {
+	private static void takeSnapshotDeep(SnapshotDeep ss, IndexMap map, long classSize) {
 		ss.ensureChildrenCapacity(map.size());
 		// process all children in map
 		for (IntIterator it = map.iterator(); it.hasNext();) {

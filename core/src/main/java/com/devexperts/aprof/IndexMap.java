@@ -21,6 +21,8 @@ package com.devexperts.aprof;
 import com.devexperts.aprof.util.*;
 
 class IndexMap {
+	private static final int COUNT_OVERFLOW_THRESHOLD = 1 << 30;
+
 	private static final long COUNT_OFFSET;
 	private static final long SIZE_OFFSET;
 	private static final int INT_ARRAY_BASE_OFFSET;
@@ -56,15 +58,15 @@ class IndexMap {
 
 	/**
 	 * For non-arrays acts as an ordinal instance counter.
-	 * For arrays counts instances created via {@link #increment(int size)} and this count is usually 0,
+	 * For arrays counts instances created via {@link #incrementArraySize(int size)} and this count is usually 0,
 	 * with the exception of reflective allocations that do not support histograms and increment this count.
 	 */
 	private int count;
 
 	/**
-	 * Total size of all instances.
+	 * Total size of all allocated array instances. Always zero for non-arrays.
 	 */
-	private int size;
+	private long size;
 
 	/**
 	 * Instance counter for arrays of specific lengths (as specified in {@link #histogram}).
@@ -127,7 +129,7 @@ class IndexMap {
 		return count;
 	}
 
-	public int getSize() {
+	public long getSize() {
 		return size;
 	}
 
@@ -154,11 +156,11 @@ class IndexMap {
 		return val;
 	}
 
-	public int takeSize() {
-		int val;
+	public long takeSize() {
+		long val;
 		do {
 			val = size;
-		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, SIZE_OFFSET, val, 0));
+		} while (!UnsafeHolder.UNSAFE.compareAndSwapLong(this, SIZE_OFFSET, val, 0));
 		return val;
 	}
 
@@ -178,12 +180,12 @@ class IndexMap {
 		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, COUNT_OFFSET, val, val + 1));
 	}
 
-	public void increment(int size) {
+	public void incrementArraySize(long size) {
 		increment();
 		incrementSize(size);
 	}
 
-	public void increment(int length, int size) {
+	public void incrementArraySize(int length, long size) {
 		int i = getHistogramIndex(length);
 		int val;
 		do {
@@ -193,11 +195,11 @@ class IndexMap {
 		incrementSize(size);
 	}
 
-	private void incrementSize(int size) {
-		int val;
+	private void incrementSize(long size) {
+		long val;
 		do {
 			val = this.size;
-		} while (!UnsafeHolder.UNSAFE.compareAndSwapInt(this, SIZE_OFFSET, val, val + size));
+		} while (!UnsafeHolder.UNSAFE.compareAndSwapLong(this, SIZE_OFFSET, val, val + size));
 	}
 
 	private int getHistogramIndex(int length) {
@@ -206,5 +208,19 @@ class IndexMap {
 				return i;
 		}
 		return histogram.length;
+	}
+
+	public boolean isOverflowThreshold() {
+		if (count >= COUNT_OVERFLOW_THRESHOLD)
+			return true;
+		int[] histogramCounts = this.histogramCounts;
+		if (histogramCounts != null)
+			for (int cnt : histogramCounts)
+				if (cnt >= COUNT_OVERFLOW_THRESHOLD)
+					return true;
+		for (IntIterator it = iterator(); it.hasNext();)
+			if (items.get(it.next()).isOverflowThreshold())
+				return true;
+		return false;
 	}
 }

@@ -35,8 +35,6 @@ public class BenchmarkPrimitives {
 		return new Box(1);
 	}
 
-
-
 	private static class Box {
 		private int value;
 
