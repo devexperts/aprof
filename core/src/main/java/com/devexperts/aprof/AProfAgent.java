@@ -25,8 +25,7 @@ import java.net.URL;
 import java.util.*;
 
 import com.devexperts.aprof.dump.*;
-import com.devexperts.aprof.util.InnerJarClassLoader;
-import com.devexperts.aprof.util.Log;
+import com.devexperts.aprof.util.*;
 
 /**
  * @author Roman Elizarov
@@ -95,10 +94,10 @@ public class AProfAgent {
 		return dumper;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void go() throws Exception {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Loading ").append(Version.full()).append("...");
-		Log.out.println(sb);
+		logClearSbAlways(sb.append("Loading ").append(Version.full()).append("..."));
 		config.showNotes(Log.out, false);
 
 		InnerJarClassLoader classLoader = getClassLoader();
@@ -111,66 +110,8 @@ public class AProfAgent {
 		Class<ClassFileTransformer> transformerClass = (Class<ClassFileTransformer>)classLoader.loadClass(TRANSFORMER_CLASS);
 		Constructor<ClassFileTransformer> transformerConstructor = transformerClass.getConstructor(Configuration.class);
 		ClassFileTransformer transformer = transformerConstructor.newInstance(config);
+		redefine(transformer);
 
-		// make sure we transform certain classes in the first pass to avoid "unexpected" allocation locations
-		ArrayList<Class> classes = new ArrayList<Class>();
-		HashSet<Class> done = new HashSet<Class>();
-		for (int pass = 1;; pass++) {
-			classes.addAll(Arrays.asList(inst.getAllLoadedClasses()));
-			List<ClassDefinition> cdl = new ArrayList<ClassDefinition>(classes.size());
-			sb.setLength(0);
-			sb.append("Retransforming classes pass #").append(pass).append("...");
-			log(sb);
-			for (Class clazz : classes) {
-				if (clazz.isArray())
-					continue;
-				if (!done.add(clazz))
-					continue;
-				String name = clazz.getName().replace('.', '/');
-				sb.setLength(0);
-				sb.append("/").append(name).append(".class");
-				// trick to remove "unexpected" allocation location here
-				InputStream is = clazz.getResourceAsStream(new String(sb));
-				if (is == null) {
-					sb.setLength(0);
-					sb.append("Cannot retransform ").append(name);
-					log(sb);
-					continue;
-				}
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				copy(is, baos);
-				is.close();
-				byte[] result = transformer.transform(
-					clazz.getClassLoader(), name, clazz, clazz.getProtectionDomain(),
-					baos.toByteArray());
-				if (result != null)
-					cdl.add(new ClassDefinition(clazz, result));
-			}
-			classes.clear();
-			if (cdl.isEmpty())
-				break; // all classes were redefined
-			sb.setLength(0);
-			sb.append("Redefining classes pass #").append(pass).append("...");
-			log(sb);
-
-			if (config.isVerboseRedefinition()) {
-				for (ClassDefinition cd : cdl) {
-					String name = cd.getDefinitionClass().getName();
-					sb.setLength(0);
-					sb.append("Redefining class ").append(name);
-					log(sb);
-					try {
-						inst.redefineClasses(new ClassDefinition[] {cd});
-					} catch (Exception e) {
-						sb.setLength(0);
-						sb.append("Failed to redefine class ").append(name).append(": ").append(e);
-						log(sb);
-					}
-				}
-			} else {
-				inst.redefineClasses(cdl.toArray(new ClassDefinition[cdl.size()]));
-			}
-		}
 		inst.addTransformer(transformer);
 		log("Done redefining, transformer installed");
 
@@ -186,25 +127,79 @@ public class AProfAgent {
 		}
 
 		long finish = System.currentTimeMillis();
-		long trtime = AProfRegistry.getTime();
+		long transformTime = AProfRegistry.getTime();
 		log("Attaching shutdown hook...");
-		Runtime.getRuntime().addShutdownHook(new DumpShutdownThread(dumper, finish, trtime, dpt));
+		Runtime.getRuntime().addShutdownHook(new DumpShutdownThread(dumper, finish, transformTime, dpt));
 
 		// listening on port
 		if (config.getPort() > 0) {
-			sb.setLength(0);
-			sb.append("Listening on port ");
-			sb.append(config.getPort());
-			log(sb);
+			logClearSb(sb.append("Listening on port ").append(config.getPort()));
 			Thread t = new ConnectionListenerThread(config.getPort(), dumper);
 			t.start();
 		}
 
 		// done
-		sb.setLength(0);
-		sb.append("Loaded in ").append(finish - start).append(" ms with ").append(trtime).
-			append(" ms in transformer (").append(finish - start - trtime).append(" ms other)");
-		Log.out.println(sb);
+		logClearSbAlways(sb.append("Loaded in ").append(finish - start).append(" ms with ").append(transformTime).
+			append(" ms in transformer (").append(finish - start - transformTime).append(" ms other)"));
+	}
+
+	private void redefine(ClassFileTransformer transformer)
+		throws IllegalClassFormatException, ClassNotFoundException, UnmodifiableClassException
+	{
+		StringBuilder sb = new StringBuilder();
+		ArrayList<Class> classes = new ArrayList<Class>();
+		HashSet<Class> done = new HashSet<Class>();
+		FastByteBuffer buf = new FastByteBuffer();
+		for (int pass = 1;; pass++) {
+			classes.addAll(Arrays.asList(inst.getAllLoadedClasses()));
+			List<ClassDefinition> cdl = new ArrayList<ClassDefinition>(classes.size());
+			logClearSb(sb.append("Redefining classes pass #").append(pass).append("..."));
+			for (Class clazz : classes) {
+				if (clazz.isArray())
+					continue;
+				if (!done.add(clazz))
+					continue;
+				String name = clazz.getName().replace('.', '/');
+				InputStream is = clazz.getResourceAsStream("/" + name + ".class");
+				buf.clear();
+				if (is != null)
+					try {
+						try {
+							buf.readFrom(is);
+						} finally {
+							is.close();
+						}
+					} catch (IOException e) {
+						logClearSb(sb.append("Failed to read class resource: ").append(name).append(' ').append(e));
+					}
+				if (buf.isEmpty()) {
+					logClearSb(sb.append("Cannot read class resource: ").append(name));
+					continue;
+				}
+				byte[] result = transformer.transform(
+					clazz.getClassLoader(), name, clazz, clazz.getProtectionDomain(), buf.getBytes());
+				if (result != null)
+					cdl.add(new ClassDefinition(clazz, result));
+			}
+			classes.clear();
+			if (cdl.isEmpty())
+				break; // all classes were redefined
+			logClearSb(sb.append("Redefining classes pass #").append(pass).append("..."));
+
+			if (config.isVerboseRedefinition()) {
+				for (ClassDefinition cd : cdl) {
+					String name = cd.getDefinitionClass().getName();
+					logClearSb(sb.append("Redefining class ").append(name));
+					try {
+						inst.redefineClasses(new ClassDefinition[] {cd});
+					} catch (Exception e) {
+						logClearSb(sb.append("Failed to redefine class ").append(name).append(": ").append(e));
+					}
+				}
+			} else {
+				inst.redefineClasses(cdl.toArray(new ClassDefinition[cdl.size()]));
+			}
+		}
 	}
 
 	private void log(Object o) {
@@ -212,10 +207,14 @@ public class AProfAgent {
 			Log.out.println(o);
 	}
 
-	private static void copy(InputStream in, OutputStream out) throws IOException {
-		byte[] buf = new byte[4096];
-		int n;
-		while ((n = in.read(buf)) > 0)
-			out.write(buf, 0, n);
+	private void logClearSb(StringBuilder sb) {
+		log(sb);
+		sb.setLength(0);
 	}
+
+	private void logClearSbAlways(StringBuilder sb) {
+		Log.out.println(sb);
+		sb.setLength(0);
+	}
+
 }
