@@ -19,28 +19,29 @@
 package com.devexperts.aprof;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.net.Socket;
+import java.net.URL;
 import java.util.Locale;
 
 import com.devexperts.aprof.dump.DumpFormatter;
 import com.devexperts.aprof.dump.SnapshotRoot;
-import com.devexperts.aprof.selftest.TestCase;
-import com.devexperts.aprof.selftest.TestSuite;
 import com.devexperts.aprof.util.FastOutputStreamWriter;
+import com.devexperts.aprof.util.InnerJarClassLoader;
 
 /**
  * @author Denis Davydov
  */
 public class AProfTools {
 
-	private static final String STARTUP_NOTICE = Version.full() +
+	public static final String STARTUP_NOTICE = Version.full() +
 			"\nThis program comes with ABSOLUTELY NO WARRANTY." +
 			"\nThis is free software, and you are welcome to redistribute it under certain conditions." +
 			"\nSource code and documentation are available at <http://code.devexperts.com/>.";
 
 	private static final String ENCODING = "UTF-8";
 
-	public static void main(final String[] args) throws IOException, ClassNotFoundException {
+	public static void main(final String[] args) throws Exception {
 		if (args.length > 0) {
 			String command = args[0].trim().toLowerCase(Locale.US);
 			if ("dump".equals(command)) {
@@ -88,15 +89,13 @@ public class AProfTools {
 		return s;
 	}
 
-	private static void helpSelfTest() throws IOException {
-		PrintWriter out = new PrintWriter(new FastOutputStreamWriter(System.out), true);
-		out.println(STARTUP_NOTICE);
-		out.println();
-		out.println("Usage: java -ea -javaagent:aprof.jar -jar aprof.jar selftest [<test> ...]");
-		out.println("Where <test> is 'all' or one of tests:");
-		for (TestCase test : TestSuite.getTestCases()) {
-			out.println("\t" + test.name());
-		}
+	private static void runSelfTest(String[] args) throws Exception {
+		// run self-tests from an inner jar file
+		URL url = Thread.currentThread().getContextClassLoader().getResource("selftest.jar");
+		InnerJarClassLoader classLoader = new InnerJarClassLoader(url);
+		Class<?> testSuiteClass = classLoader.loadClass("com.devexperts.aprof.selftest.TestSuite");
+		Method mainMethod = testSuiteClass.getMethod("main", String[].class);
+		mainMethod.invoke(null, (Object)args);
 	}
 
 	private static void runDumpCommand(String[] args) throws IOException, ClassNotFoundException {
@@ -142,41 +141,6 @@ public class AProfTools {
 		out.flush();
 		if (fileName != null) {
 			out.close();
-		}
-	}
-
-	private static void runSelfTest(String[] args) throws IOException {
-		if (args.length < 2) {
-			helpSelfTest();
-			return;
-		}
-		boolean ok = true;
-		for (int i = 1; i < args.length; i++) {
-			String testName = args[i].trim();
-			if ("all".equalsIgnoreCase(testName)) {
-				if (!TestSuite.testAllApplicableCases())
-					ok = false;
-				continue;
-			}
-			boolean done = false;
-			for (TestCase test : TestSuite.getTestCases()) {
-				if (test.name().equalsIgnoreCase(testName)) {
-					if (!TestSuite.testSingleCase(test))
-						ok = false;
-					done = true;
-				}
-			}
-			if (!done) {
-				helpSelfTest();
-				return;
-			}
-		}
-		if (ok) {
-			System.out.println("==== ALL TESTS HAVE PASSED");
-			System.exit(0);
-		} else {
-			System.out.println("==== SOME TESTS HAVE FAILED !!!");
-			System.exit(1);
 		}
 	}
 }

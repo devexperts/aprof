@@ -21,6 +21,8 @@ package com.devexperts.aprof;
 import java.io.*;
 import java.util.*;
 
+import com.devexperts.aprof.util.Log;
+
 /**
  * @author Dmitry Paraschenko
  */
@@ -29,21 +31,26 @@ class DetailsConfiguration {
 
 	private static final String ANY_METHOD = "*";
 
-	/** Class name --> set of method names. */
-	private Map<String, Set<String>> trackedLocations = new HashMap<String, Set<String>>();
+	/**
+	 * Maps class name to a set of tracked method names.
+	 */
+	private final Map<String, Set<String>> trackedLocations = new HashMap<String, Set<String>>();
 
-	private HashSet<String> remainingClasses = new HashSet<String>();
-	private boolean reloadTrackedClasses;
+	private final Set<String> remainingClasses = new LinkedHashSet<String>();
+
+	private boolean bootstrapLoaderAnalyzed;
+
+	private ClassLoader lastAnalyzedLoader; // leak at most one class per class loader
 
 	public DetailsConfiguration() {}
 
-	public void loadFromResource() throws IOException {
+	public synchronized void loadFromResource() throws IOException {
 		loadFromStream(ClassLoader.getSystemResourceAsStream(RESOURCE));
 		for (String str : trackedLocations.keySet())
 			remainingClasses.add(str);
 	}
 
-	public void loadFromFile(String fileName) throws IOException {
+	public synchronized void loadFromFile(String fileName) throws IOException {
 		if (fileName == null || fileName.trim().length() == 0)
 			return;
 		loadFromStream(new FileInputStream(fileName));
@@ -51,7 +58,7 @@ class DetailsConfiguration {
 			remainingClasses.add(str);
 	}
 
-	public void addClassMethods(String[] locations) throws IOException {
+	public synchronized void addClassMethods(String[] locations) throws IOException {
 		for (String location : locations) {
 			int pos = location.lastIndexOf('.');
 			if (pos < 0)
@@ -62,52 +69,47 @@ class DetailsConfiguration {
 		}
 	}
 
-	public void reloadTrackedClasses() {
-		reloadTrackedClasses = true;
-	}
-
-	public boolean isLocationTracked(String locationClass, String locationMethod) {
-		Map<String, Set<String>> tracked = getTrackedMethods();
+	public synchronized boolean isLocationTracked(String locationClass, String locationMethod) {
+		Map<String, Set<String>> tracked = trackedLocations;
 		Set<String> trackedMethods = tracked.get(locationClass);
 		return trackedMethods != null &&
 			(trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(locationMethod));
 	}
 
-	private Map<String, Set<String>> getTrackedMethods() {
-		if (reloadTrackedClasses) {
-			reloadTrackedClasses = false;
-			ArrayList<String> processedClasses = null;
-			for (String className : remainingClasses) {
-				try {
-					Class clazz = Class.forName(className);
-					Set<String> methods = trackedLocations.get(className);
-					while (clazz != null && clazz != Object.class) {
-						addInterfaces(clazz, methods);
-						clazz = clazz.getSuperclass();
-					}
-					if (processedClasses == null)
-						processedClasses = new ArrayList<String>();
-					processedClasses.add(className);
-				} catch (ClassNotFoundException e) {
-					// do nothing
-				}
-			}
-			if (processedClasses != null) {
-				remainingClasses.removeAll(processedClasses);
-			}
+	/**
+	 * Analyzes tracked classes in the specified class loader.
+	 */
+	public synchronized void analyzeTrackedClasses(ClassLoader loader, TransformerAnalyzer analyzer, boolean verbose) {
+		if (remainingClasses.isEmpty() || (loader == null ? bootstrapLoaderAnalyzed : loader == lastAnalyzedLoader))
+			return;
+		List<String> processedClasses = new ArrayList<String>();
+		for (String className : remainingClasses) {
+			Set<String> methods = trackedLocations.get(className);
+			List<String> parents = analyzer.getImmediateClassParents(className, loader);
+			if (parents == null)
+				continue;
+			if (verbose)
+				Log.out.println("Resolving tracked class: " + className);
+			for (String parent : parents)
+				analyzeClassRec(parent, loader, analyzer, methods);
+			processedClasses.add(className);
 		}
-		return trackedLocations;
+		remainingClasses.removeAll(processedClasses);
+		if (loader == null)
+			bootstrapLoaderAnalyzed = true;
+		else
+			lastAnalyzedLoader = loader;
 	}
 
-	private void addInterfaces(Class clazz, Set<String> classMethods) {
-		Set<String> methods = trackedLocations.get(clazz.getName());
+	private void analyzeClassRec(String className, ClassLoader loader, TransformerAnalyzer analyzer, Set<String> newMethods) {
+		Set<String> methods = trackedLocations.get(className);
 		if (methods == null)
-			trackedLocations.put(clazz.getName(), methods = new HashSet<String>());
-		methods.addAll(classMethods);
-		Class[] interfaces = clazz.getInterfaces();
-		if (interfaces != null)
-			for (Class anInterface : interfaces)
-				addInterfaces(anInterface, classMethods);
+			trackedLocations.put(className, methods = new HashSet<String>());
+		methods.addAll(newMethods);
+		List<String> parents = analyzer.getImmediateClassParents(className, loader);
+		if (parents != null)
+			for (String parent : parents)
+				analyzeClassRec(parent, loader, analyzer, newMethods);
 	}
 
 	private void loadFromStream(InputStream stream) throws IOException {

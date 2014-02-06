@@ -19,7 +19,6 @@
 package com.devexperts.aprof.transformer;
 
 import java.io.*;
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.*;
@@ -34,13 +33,52 @@ import org.objectweb.asm.commons.*;
  * @author Dmitry Paraschenko
  * @author Denis Davydov
  */
-public class AProfTransformer implements ClassFileTransformer {
+public class AProfTransformer implements TransformerAnalyzer {
 	private final Configuration config;
 	private final StringBuilder sharedStringBuilder = new StringBuilder();
 
 	public AProfTransformer(Configuration config) {
 		this.config = config;
 		AProfRegistry.addDirectCloneClass(TransformerUtil.OBJECT_CLASS_NAME);
+	}
+
+	public List<String> getImmediateClassParents(String className, ClassLoader loader) {
+		String classFileName = className.replace('.', '/') + ".class";
+		InputStream in;
+		if (loader == null)
+			in = getClass().getResourceAsStream("/" + classFileName);
+		else
+			in = loader.getResourceAsStream(classFileName);
+		if (in == null)
+			return null;
+		final List<String> result = new ArrayList<String>();
+		try {
+			try {
+				ClassReader cr = new ClassReader(in);
+				ClassVisitor visitor = new ClassVisitor(Opcodes.ASM4) {
+					@Override
+					public void visit(int version, int access, String name, String signature, String superName,
+						String[] interfaces)
+					{
+			  	        addClassName(result, superName);
+						if (interfaces != null)
+							for (String it : interfaces)
+								addClassName(result, it);
+					}
+				};
+				cr.accept(visitor, ClassReader.SKIP_DEBUG + ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
+			} finally {
+                in.close();
+			}
+		} catch (IOException e) {
+			log(0, "Failed load class", className, loader, e);
+		}
+		return result;
+	}
+
+	private void addClassName(List<String> result, String binaryName) {
+		if (binaryName != null)
+			result.add(binaryName.replace('/', '.'));
 	}
 
 	public byte[] transform(ClassLoader loader, String binaryClassName,
@@ -59,39 +97,29 @@ public class AProfTransformer implements ClassFileTransformer {
 	private byte[] transformImpl(ClassLoader loader, String binaryClassName,
 						Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
 			throws IllegalClassFormatException {
-		config.reloadTrackedClasses();
+		// update tracking configuration under this (potentially new) class loader
+		config.analyzeTrackedClasses(loader, this);
+		// start transformation
 		long start = System.currentTimeMillis();
 		if (binaryClassName == null) {
-			sharedStringBuilder.setLength(0);
-			sharedStringBuilder.append("Cannot transform class with no name");
-			describeClassLoader(sharedStringBuilder, loader);
-			Log.out.println(sharedStringBuilder);
+			log(0, "Cannot transform class with no name", null, loader, null);
 			return null;
 		}
 		String cname = binaryClassName.replace('/', '.');
 		for (String s : config.getExcludedClasses()) {
 			if (cname.equals(s)) {
-				sharedStringBuilder.setLength(0);
-				sharedStringBuilder.append("Skipping transformation of excluded class: ");
-				sharedStringBuilder.append(cname);
-				describeClassLoader(sharedStringBuilder, loader);
-				Log.out.println(sharedStringBuilder);
+				log(0, "Skipping transformation of excluded class", cname, loader, null);
 				return null;
 			}
 		}
 		int classNo = AProfRegistry.incrementCount();
-		if (config.isVerbose()) {
-			synchronized (sharedStringBuilder) {
-				describeTransformation(sharedStringBuilder, classNo, cname);
-				describeClassLoader(sharedStringBuilder, loader);
-				Log.out.println(sharedStringBuilder);
-			}
-		}
+		if (config.isVerbose())
+			log(classNo, null, cname, loader, null);
 		try {
 			ClassReader cr = new ClassReader(classfileBuffer);
 
 			// 1ST PASS: ANALYZE CLASS
-			ClassAnalyzer classAnalyzer = new ClassAnalyzer(new EmptyClassVisitor(), binaryClassName, cname);
+			ClassAnalyzer classAnalyzer = new ClassAnalyzer(binaryClassName, cname);
 			cr.accept(classAnalyzer, ClassReader.SKIP_DEBUG + ClassReader.SKIP_FRAMES);
 
 			// check if transformation is needed
@@ -118,20 +146,52 @@ public class AProfTransformer implements ClassFileTransformer {
 
 			// Convert transformed class to byte array, dump (if needed) and return
 			byte[] bytes = cw.toByteArray();
-			dumpClass(binaryClassName, classNo, cname, bytes);
+			dumpClass(binaryClassName, classNo, cname, loader, bytes);
 			return bytes;
 		} catch (Throwable t) {
-			synchronized (sharedStringBuilder) {
-				describeTransformation(sharedStringBuilder, classNo, cname);
-				describeClassLoader(sharedStringBuilder, loader);
-				sharedStringBuilder.append(" failed with error: ");
-				sharedStringBuilder.append(t.toString());
-				Log.out.println(sharedStringBuilder);
-				t.printStackTrace(Log.out);
-			}
+			log(classNo, "failed", cname, loader, t);
 			return null;
 		} finally {
 			AProfRegistry.incrementTime(System.currentTimeMillis() - start);
+		}
+	}
+
+	private void log(int classNo, String message, String cname, ClassLoader loader, Throwable error) {
+		synchronized (sharedStringBuilder) {
+			sharedStringBuilder.setLength(0);
+			if (classNo != 0) {
+				sharedStringBuilder.append("Transforming class");
+				sharedStringBuilder.append(" #");
+				sharedStringBuilder.append(classNo);
+			}
+			if (message != null) {
+				sharedStringBuilder.append(' ');
+				sharedStringBuilder.append(message);
+			}
+			if (cname != null) {
+				sharedStringBuilder.append(": ");
+				sharedStringBuilder.append(cname);
+			}
+			if (loader != null) {
+				sharedStringBuilder.append(" [in ");
+				String loaderClassName = loader.getClass().getName();
+				String loaderString = loader.toString();
+				if (loaderString.startsWith(loaderClassName)) {
+					sharedStringBuilder.append(loaderString);
+				} else {
+					sharedStringBuilder.append(loaderClassName);
+					sharedStringBuilder.append(": ");
+					sharedStringBuilder.append(loaderString);
+				}
+				sharedStringBuilder.append("]");
+			}
+			if (error != null) {
+				sharedStringBuilder.append(" with error ");
+				sharedStringBuilder.append(error);
+			}
+			Log.out.println(sharedStringBuilder);
+			if (error != null)
+				error.printStackTrace(Log.out);
 		}
 	}
 
@@ -155,15 +215,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		return version & 0xffff;
 	}
 
-	private static void describeTransformation(StringBuilder sb, int classNo, String cname) {
-		sb.setLength(0);
-		sb.append("Transforming class #");
-		sb.append(classNo);
-		sb.append(": ");
-		sb.append(cname);
-	}
-
-	private void dumpClass(String binaryClassName, int classNo, String cname, byte[] bytes) {
+	private void dumpClass(String binaryClassName, int classNo, String cname, ClassLoader loader, byte[] bytes) {
 		String dir = config.getDumpClassesDir();
 		if (dir.length() == 0)
 			return;
@@ -177,29 +229,7 @@ public class AProfTransformer implements ClassFileTransformer {
 	            out.close();
 			}
 		} catch (IOException e) {
-			synchronized (sharedStringBuilder) {
-				describeTransformation(sharedStringBuilder, classNo, cname);
-				sharedStringBuilder.append(" dump failed with error: ");
-				sharedStringBuilder.append(e.toString());
-				Log.out.println(sharedStringBuilder);
-			}
-			e.printStackTrace();
-		}
-	}
-
-	private static void describeClassLoader(StringBuilder sharedStringBuilder, ClassLoader loader) {
-		if (loader != null) {
-			sharedStringBuilder.append(" [in ");
-			String lcname = loader.getClass().getName();
-			String lstr = loader.toString();
-			if (lstr.startsWith(lcname)) {
-				sharedStringBuilder.append(lstr);
-			} else {
-				sharedStringBuilder.append(lcname);
-				sharedStringBuilder.append(": ");
-				sharedStringBuilder.append(lstr);
-			}
-			sharedStringBuilder.append("]");
+			log(classNo, "failed", cname, loader, e);
 		}
 	}
 
@@ -212,8 +242,8 @@ public class AProfTransformer implements ClassFileTransformer {
 		final List<Context> contexts = new ArrayList<Context>();
 		int classVersion;
 
-		public ClassAnalyzer(final ClassVisitor cv, String binaryClassName, String cname) {
-			super(Opcodes.ASM4, cv);
+		public ClassAnalyzer(String binaryClassName, String cname) {
+			super(Opcodes.ASM4);
 			this.binaryClassName = binaryClassName;
 			this.locationClass = AProfRegistry.normalize(cname);
 			this.isNormal = AProfRegistry.isNormal(cname);

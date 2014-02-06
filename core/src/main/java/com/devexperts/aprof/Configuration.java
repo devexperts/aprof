@@ -59,8 +59,11 @@ public class Configuration {
 	@Description("Be verbose and log every class transformation.")
 	private boolean verbose = false;
 
-	@Description("Be verbose about class redefinitions too.")
+	@Description("Be verbose about class redefinitions.")
 	private boolean verbose_redefinition = false;
+
+	@Description("Be verbose about available tracked classes.")
+	private boolean verbose_tracked = false;
 
 	@Description("Dump aprof-instrumented class into a specified directory.")
 	private String dump_classes_dir = "";
@@ -242,8 +245,8 @@ public class Configuration {
 		return port;
 	}
 
-	public void reloadTrackedClasses() {
-		detailsConfig.reloadTrackedClasses();
+	public void analyzeTrackedClasses(ClassLoader loader, TransformerAnalyzer analyzer) {
+		detailsConfig.analyzeTrackedClasses(loader, analyzer, verbose_tracked);
 	}
 
 	public boolean isLocationTracked(String locationClass, String locationMethod) {

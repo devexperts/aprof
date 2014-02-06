@@ -27,45 +27,10 @@
 
 	<packaging>jar</packaging>
 
-	<artifactId>transformer</artifactId>
-	<name>Aprof Transformer</name>
-
-	<properties>
-		<asm.version>4.2</asm.version>
-	</properties>
+	<artifactId>selftest</artifactId>
+	<name>Aprof Integration tests (selftest)</name>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.ow2.asm</groupId>
-			<artifactId>asm-all</artifactId>
-			<version>${asm.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.ow2.asm</groupId>
-			<artifactId>asm</artifactId>
-			<version>${asm.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.ow2.asm</groupId>
-			<artifactId>asm-commons</artifactId>
-			<version>${asm.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.ow2.asm</groupId>
-			<artifactId>asm-tree</artifactId>
-			<version>${asm.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.ow2.asm</groupId>
-			<artifactId>asm-analysis</artifactId>
-			<version>${asm.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.ow2.asm</groupId>
-			<artifactId>asm-util</artifactId>
-			<version>${asm.version}</version>
-		</dependency>
 		<dependency>
 			<groupId>com.devexperts.aprof</groupId>
 			<artifactId>core</artifactId>

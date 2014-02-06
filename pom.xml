@@ -39,6 +39,7 @@
 	<modules>
 		<module>transformer</module>
 		<module>core</module>
+		<module>selftest</module>
 		<module>agent</module>
 		<module>benchmark</module>
 	</modules>

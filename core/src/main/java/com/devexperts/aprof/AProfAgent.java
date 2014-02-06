@@ -107,9 +107,14 @@ public class AProfAgent {
 		AProfSizeUtil.init(inst);
 		AProfRegistry.init(config, resolverClass.newInstance());
 
-		Class<ClassFileTransformer> transformerClass = (Class<ClassFileTransformer>)classLoader.loadClass(TRANSFORMER_CLASS);
-		Constructor<ClassFileTransformer> transformerConstructor = transformerClass.getConstructor(Configuration.class);
-		ClassFileTransformer transformer = transformerConstructor.newInstance(config);
+		Class<TransformerAnalyzer> transformerClass = (Class<TransformerAnalyzer>)classLoader.loadClass(TRANSFORMER_CLASS);
+		Constructor<TransformerAnalyzer> transformerConstructor = transformerClass.getConstructor(Configuration.class);
+		TransformerAnalyzer transformer = transformerConstructor.newInstance(config);
+
+		// Analyze tracked classes in bootstrap classloader using transfers for class-hierarchy analysis
+		config.analyzeTrackedClasses(null, transformer);
+
+		// redefine all classes loader so far
 		redefine(transformer);
 
 		inst.addTransformer(transformer);
