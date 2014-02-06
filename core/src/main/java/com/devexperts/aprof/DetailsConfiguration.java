@@ -70,7 +70,7 @@ class DetailsConfiguration {
 		Map<String, Set<String>> tracked = getTrackedMethods();
 		Set<String> trackedMethods = tracked.get(locationClass);
 		return trackedMethods != null &&
-			(trackedMethods.isEmpty() || trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(locationMethod));
+			(trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(locationMethod));
 	}
 
 	private Map<String, Set<String>> getTrackedMethods() {
