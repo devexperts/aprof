@@ -65,6 +65,9 @@ public class Configuration {
 	@Description("Be verbose about available tracked classes.")
 	private boolean verbose_tracked = false;
 
+	@Description("Write aprof log to file")
+	private String log_file = "";
+
 	@Description("Dump aprof-instrumented class into a specified directory.")
 	private String dump_classes_dir = "";
 
@@ -191,6 +194,10 @@ public class Configuration {
 
 	public boolean isVerboseRedefinition() {
 		return verbose_redefinition;
+	}
+
+	public String getLogFile() {
+		return log_file;
 	}
 
 	public String getDumpClassesDir() {

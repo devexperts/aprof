@@ -64,6 +64,7 @@ public class AProfAgent {
 		Configuration config = new Configuration(agentArgs);
 		File configFile = new File(config.getConfigFile());
 		config = new Configuration(configFile, agentArgs);
+		Log.initFile(config.getLogFile());
 		INSTANCE = new AProfAgent(config, inst);
 		INSTANCE.go();
 	}

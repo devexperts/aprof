@@ -18,7 +18,7 @@
 
 package com.devexperts.aprof.util;
 
-import java.io.PrintWriter;
+import java.io.*;
 
 /**
  * @author Roman Elizarov
@@ -26,7 +26,24 @@ import java.io.PrintWriter;
 public class Log {
 	private static final String HEADER = ": aprof: ";
 
-	public static PrintWriter out = new PrintWriter(new FastOutputStreamWriter(System.out), true) {
+	public static PrintWriter out = new LogPrintWriter(System.out);
+
+	public static void initFile(String logFile) {
+		if (logFile.length() == 0)
+			return;
+		try {
+			out = new LogPrintWriter(new FileOutputStream(logFile));
+		} catch (IOException e) {
+			out.println("Failed to log to file: " + e);
+			e.printStackTrace(out);
+		}
+	}
+
+	private static class LogPrintWriter extends PrintWriter {
+		public LogPrintWriter(OutputStream out) {
+			super(new FastOutputStreamWriter(out), true);
+		}
+
 		public void println(Object x) {
 			if (x instanceof CharSequence)
 				println((CharSequence)x);
@@ -51,5 +68,5 @@ public class Log {
 				super.println();
 			}
 		}
-	};
+	}
 }
