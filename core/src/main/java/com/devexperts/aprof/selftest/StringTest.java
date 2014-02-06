@@ -45,7 +45,7 @@ class StringTest implements TestCase {
 		return TestUtil.fmt(
 			"char[]: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
 				"\tjava.util.Arrays.copyOf: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
-				"\t\tjava.lang.String.<init>: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
+				"\t\tjava.lang.String.<init>(char[]): {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
 				"\t\t\t{class}.doTest: {charsSize} bytes in {count} objects (avg size {charsObjSize} bytes)\n" +
 				"\n" +
 				"java.lang.String: {stringSize} bytes in {count} objects (avg size {stringObjSize} bytes)\n" +

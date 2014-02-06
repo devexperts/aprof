@@ -28,6 +28,7 @@ class Context {
 	private final Configuration config;
 	private final String locationClass;
 	private final String locationMethod;
+	private final String locationDesc;
 	private final boolean accessMethod;
 	private final boolean methodTracked;
 	private final boolean objectInit;
@@ -44,8 +45,9 @@ class Context {
 	public Context(Configuration config, String binaryClassName, String cname, String mname, String desc, int access) {
 		this.config = config;
 		this.locationClass = AProfRegistry.normalize(cname);
-		this.locationMethod = getLocationMethod(locationClass, mname, desc);
+		this.locationMethod = mname;
 		this.accessMethod = mname.startsWith(TransformerUtil.ACCESS_METHOD);
+		this.locationDesc = desc;
 		this.methodTracked = !isInternalLocation() && isLocationTracked(locationClass, locationMethod);
 		this.objectInit = locationClass.equals(TransformerUtil.OBJECT_CLASS_NAME) && mname.equals(TransformerUtil.OBJECT_INIT);
 		this.intrinsicArraysCopyOf = TransformerUtil.isIntrinsicArraysCopyOf(binaryClassName, mname, desc);
@@ -63,14 +65,35 @@ class Context {
 		return config;
 	}
 
-	public String getLocationClass() {
-		return locationClass;
-	}
-
 	public String getLocation() {
 		if (location == null)
-			location = locationClass + "." + locationMethod;
+			location = buildLocationString();
 		return location;
+	}
+
+	private String buildLocationString() {
+		StringBuilder sb = new StringBuilder(locationClass.length() + locationMethod.length() + 1);
+		sb.append(locationClass);
+		sb.append('.');
+		sb.append(locationMethod);
+		for (String s : config.getSignatureLocations())
+			if (s.contentEquals(sb)) {
+				buildSignatureString(sb);
+				break;
+			}
+		return sb.toString();
+	}
+
+	private void buildSignatureString(StringBuilder sb) {
+		sb.append('(');
+		Type[] types = Type.getArgumentTypes(locationDesc);
+		for (int i = 0; i < types.length; i++) {
+			if (i > 0)
+				sb.append(',');
+			appendShortType(sb, types[i]);
+		}
+		sb.append(')');
+		appendShortType(sb, Type.getReturnType(locationDesc));
 	}
 
 	public boolean isMethodTracked() {
@@ -113,28 +136,6 @@ class Context {
 		this.locationStack = locationStack;
 	}
 
-	public String getLocationMethod(String locationClass, String mname, String desc) {
-		for (String s : config.getSignatureLocations())
-			if (locationClass.equals(s)) {
-				StringBuilder sb = new StringBuilder(mname);
-				convertDesc(sb, desc);
-				return sb.toString();
-			}
-		return mname;
-	}
-
-	private void convertDesc(StringBuilder sb, String desc) {
-		sb.append('(');
-		Type[] types = Type.getArgumentTypes(desc);
-		for (int i = 0; i < types.length; i++) {
-			if (i > 0)
-				sb.append(',');
-			appendShortType(sb, types[i]);
-		}
-		sb.append(')');
-		appendShortType(sb, Type.getReturnType(desc));
-	}
-
 	private void appendShortType(StringBuilder sb, Type type) {
 		if (type == Type.VOID_TYPE)
 			return;
@@ -151,12 +152,14 @@ class Context {
 		return "Context{" +
 			"locationClass='" + locationClass + '\'' +
 			", locationMethod='" + locationMethod + '\'' +
+			", locationDesc='" + locationDesc + '\'' +
 			", accessMethod=" + accessMethod +
 			", methodTracked=" + methodTracked +
 			", objectInit=" + objectInit +
 			", intrinsicArraysCopyOf=" + intrinsicArraysCopyOf +
 			", aprofOpsImpl='" + aprofOpsImpl + '\'' +
 			", location='" + location + '\'' +
+			", transformationNeeded=" + transformationNeeded +
 			", locationStackNeeded=" + locationStackNeeded +
 			", locationStack=" + locationStack +
 			'}';

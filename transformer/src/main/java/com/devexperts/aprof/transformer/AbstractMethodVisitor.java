@@ -187,8 +187,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 		boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(cname);
 
 		String locationClass = AProfRegistry.normalize(cname);
-		boolean isMethodTracked = context.isLocationTracked(locationClass,
-				context.getLocationMethod(locationClass, name, desc));
+		boolean isMethodTracked = context.isLocationTracked(locationClass, name);
 
 		if (isMethodTracked) {
 			Label start = new Label();
