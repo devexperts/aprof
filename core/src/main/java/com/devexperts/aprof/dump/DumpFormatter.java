@@ -54,7 +54,12 @@ public class DumpFormatter {
 		dumpSnapshotHeader(out, ss, kind);
 		out.println("Top allocation-inducing locations with data types allocated from them");
 		printlnTearLine(out, '-');
-		dumpSnapshotByLocations(out, ss);
+		dumpSnapshotByLocations(out, ss, SnapshotDeep.UNKNOWN);
+		if (AProfRegistry.TRACK_TRANSFORM_DETAILS) {
+			out.println("Top allocation-inducing locations inside transform with data types allocated from them");
+			printlnTearLine(out, '-');
+			dumpSnapshotByLocations(out, ss, AProfRegistry.TRANSFORM_NAME);
+		}
 		out.println("Top allocated data types with reverse location traces");
 		printlnTearLine(out, '-');
 		ss.sortChildrenDeep(getOutputComparator());
@@ -65,7 +70,7 @@ public class DumpFormatter {
 		return config.isSize() ? SnapshotShallow.COMPARATOR_SIZE : SnapshotShallow.COMPARATOR_COUNT;
 	}
 
-	private void dumpSnapshotByLocations(PrintWriter out, SnapshotRoot ss) {
+	private void dumpSnapshotByLocations(PrintWriter out, SnapshotRoot ss, String insideOf) {
 		// rebuild locations
 		locations.clearDeep();
 		locations.sortChildrenDeep(SnapshotShallow.COMPARATOR_NAME);
@@ -73,7 +78,7 @@ public class DumpFormatter {
 		for (int i = 0; i < ss.getUsed(); i++) {
 			SnapshotDeep cs = ss.getChild(i);
 			String dataTypeName = cs.getName();
-			findLocationsDeep(cs, dataTypeName, cs.getHistoCountsLength());
+			findLocationsDeep(cs, dataTypeName, cs.getHistoCountsLength(), insideOf);
 		}
 		locations.updateSnapshotSumDeep();
 		// sort them and print
@@ -81,19 +86,19 @@ public class DumpFormatter {
 		printLocationsDeep(out, 0, locations, ss);
 	}
 
-	private void findLocationsDeep(SnapshotDeep ss, String dataTypeName, int histoCountsLength) {
-		if (!ss.hasChildren()) {
+	private void findLocationsDeep(SnapshotDeep ss, String dataTypeName, int histoCountsLength, String insideOf) {
+		if (!ss.hasChildren() && insideOf.equals(SnapshotDeep.UNKNOWN)) {
 			processLeafLocation(ss, AProfRegistry.getLocationNameWithoutSuffix(ss.getName()), dataTypeName, histoCountsLength);
 			return;
 		}
 		// has children -- go recursive with a special treatment for UNKNOWN children -- attribute them this location's name
 		for (int i = 0; i < ss.getUsed(); i++) {
 			SnapshotDeep cs = ss.getChild(i);
-			if (cs.getName().equals(SnapshotDeep.UNKNOWN)) {
-				assert !cs.hasChildren() : "unknown location shall not have children";
+			if (cs.getName().equals(insideOf)) {
+				assert !cs.hasChildren() : insideOf + " location shall not have children";
 				processLeafLocation(cs, AProfRegistry.getLocationNameWithoutSuffix(ss.getName()), dataTypeName, histoCountsLength);
 			} else
-				findLocationsDeep(cs, dataTypeName, histoCountsLength);
+				findLocationsDeep(cs, dataTypeName, histoCountsLength, insideOf);
 		}
 	}
 

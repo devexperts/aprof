@@ -31,8 +31,6 @@ import com.devexperts.aprof.util.*;
  */
 @Internal
 public class AProfRegistry {
-	static final boolean TRACK_TRANSFORM_DETAILS = Boolean.getBoolean("com.devexperts.aprof.trackTransformDetails");
-
 	private static final String PROXY_CLASS_TOKEN = "$Proxy";
 
 	// locations that correspond to "clone" method invocation are internally marked with this suffix,
@@ -82,6 +80,12 @@ public class AProfRegistry {
 	private static SnapshotDeepVisitor[] SNAPSHOT_DEEP_VISITOR = new SnapshotDeepVisitor[4];
 
 	public static final int UNKNOWN_LOC = registerLocation(SnapshotDeep.UNKNOWN);
+
+	public static final boolean TRACK_TRANSFORM_DETAILS = Boolean.getBoolean("com.devexperts.aprof.trackTransformDetails");
+
+	public static final String TRANSFORM_NAME = "com.devexperts.aprof.transformer.AProfTransformer.transform";
+
+	public static final int TRANSFORM_LOC = registerLocation(TRANSFORM_NAME) ;
 
 	private static Configuration config;
 	private static ClassNameResolver classNameResolver;

@@ -35,8 +35,6 @@ import org.objectweb.asm.commons.*;
  * @author Denis Davydov
  */
 public class AProfTransformer implements ClassFileTransformer {
-	private static final int TRANSFORM_LOC = AProfRegistry.registerLocation(AProfTransformer.class.getName() + ".transform") ;
-
 	private final Configuration config;
 	private final StringBuilder sharedStringBuilder = new StringBuilder();
 
@@ -50,7 +48,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			throws IllegalClassFormatException {
 		// always track invocations of transform method as a separate location
 		LocationStack locationStack = LocationStack.get();
-		LocationStack savedCopy = locationStack.pushStackForTransform(TRANSFORM_LOC);
+		LocationStack savedCopy = locationStack.pushStackForTransform(AProfRegistry.TRANSFORM_LOC);
 		try {
 			return transformImpl(loader, binaryClassName, classBeingRedefined, protectionDomain, classfileBuffer);
 		} finally {
