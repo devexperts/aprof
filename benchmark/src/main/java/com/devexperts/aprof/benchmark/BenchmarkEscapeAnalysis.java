@@ -20,29 +20,64 @@ package com.devexperts.aprof.benchmark;
 
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 
-public class BenchmarkPrimitives {
-	private static final char[] CHARS = "TEST".toCharArray();
+public class BenchmarkEscapeAnalysis {
+	private static final Box BOX = newBox();
+	private static int[] ARRAY = newArray();
 
-	@GenerateMicroBenchmark
-	public Box testNewBox() {
+	private static Box newBox() {
 		return new Box(1);
 	}
 
-	@GenerateMicroBenchmark
-	public String testNewString() {
-		return new String(CHARS);
+	private static Box cloneBox() {
+		return BOX.clone();
+	}
+
+	private static int[] newArray() {
+		return new int[] { 1 };
+	}
+
+	private static int[] cloneArray() {
+		return ARRAY.clone();
 	}
 
 	@GenerateMicroBenchmark
-	public Integer testIntegerValueOf() {
-		return 1; // auto-boxing
+	public int testNewBox() {
+		return newBox().getValue();
 	}
 
-	private static class Box {
+	@GenerateMicroBenchmark
+	public int testCloneBox() {
+		return cloneBox().getValue();
+	}
+
+	@GenerateMicroBenchmark
+	public int testNewArray() {
+		return newArray()[0];
+	}
+
+	@GenerateMicroBenchmark
+	public int testCloneArray() {
+		return cloneArray()[0];
+	}
+
+	private static class Box implements Cloneable {
 		private int value;
 
 		Box(int value) {
 			this.value = value;
+		}
+
+		@Override
+		public Box clone() {
+			try {
+				return (Box)super.clone();
+			} catch (CloneNotSupportedException e) {
+				throw new AssertionError(e);
+			}
+		}
+
+		private int getValue() {
+			return value;
 		}
 	}
 }
