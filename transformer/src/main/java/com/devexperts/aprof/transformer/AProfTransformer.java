@@ -50,7 +50,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			throws IllegalClassFormatException {
 		// always track invocations of transform method as a separate location
 		LocationStack locationStack = LocationStack.get();
-		LocationStack savedCopy = locationStack.pushStackAndForceInvokedMethod(TRANSFORM_LOC);
+		LocationStack savedCopy = locationStack.pushStackForTransform(TRANSFORM_LOC);
 		try {
 			return transformImpl(loader, binaryClassName, classBeingRedefined, protectionDomain, classfileBuffer);
 		} finally {

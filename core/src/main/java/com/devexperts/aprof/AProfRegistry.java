@@ -31,6 +31,8 @@ import com.devexperts.aprof.util.*;
  */
 @Internal
 public class AProfRegistry {
+	static final boolean TRACK_TRANSFORM_DETAILS = Boolean.getBoolean("com.devexperts.aprof.trackTransformDetails");
+
 	private static final String PROXY_CLASS_TOKEN = "$Proxy";
 
 	// locations that correspond to "clone" method invocation are internally marked with this suffix,
@@ -286,6 +288,9 @@ public class AProfRegistry {
 			map = map.registerChild(loc1);
 		if (loc2 != UNKNOWN_LOC)
 			map = map.registerChild(loc2);
+		// HotSpot will statically elide the following check when TRACK_TRANSFORM_DETAILS is off (by default)
+		if (TRACK_TRANSFORM_DETAILS && stack.transform_loc != UNKNOWN_LOC && stack.transform_loc != loc2)
+			map = map.registerChild(stack.transform_loc);
 		return map;
 	}
 

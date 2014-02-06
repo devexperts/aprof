@@ -27,6 +27,7 @@ public final class LocationStack {
 	int invocation_point_count;
 	int invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
 	int invoked_method_count = 0;
+	int transform_loc = AProfRegistry.UNKNOWN_LOC; // only used when AProfRegistry.TRACK_TRANSFORM_DETAILS is true
 
 	private static final ThreadLocal<LocationStack> LOCATION_STACK = new LocationStackThreadLocal();
 
@@ -74,13 +75,25 @@ public final class LocationStack {
 		}
 	}
 
-	public LocationStack pushStackAndForceInvokedMethod(int loc) {
+	public LocationStack pushStackForTransform(int loc) {
 		LocationStack savedCopy = new LocationStack();
 		savedCopy.copyFrom(this);
-		invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
-		invocation_point_count = 1;
-		invoked_method_loc = loc;
-		invoked_method_count = 1;
+		if (AProfRegistry.TRACK_TRANSFORM_DETAILS) {
+			// clear stack of detailed invocations and remember transformation location separately,
+			// so that tracked method details performed during transformation will be available.
+			invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
+			invocation_point_count = 0;
+			invoked_method_loc = AProfRegistry.UNKNOWN_LOC;
+			invoked_method_count = 0;
+			transform_loc = loc;
+		} else {
+			// force transform location as an outermost invoked method, so further details on
+			// tracked methods inside transform will not be available.
+			invocation_point_loc = AProfRegistry.UNKNOWN_LOC;
+			invocation_point_count = 1;
+			invoked_method_loc = loc;
+			invoked_method_count = 1;
+		}
 		return savedCopy;
 	}
 
@@ -93,6 +106,7 @@ public final class LocationStack {
 		invocation_point_count = other.invocation_point_count;
 		invoked_method_loc = other.invoked_method_loc;
 		invoked_method_count = other.invoked_method_count;
+		transform_loc = other.transform_loc;
 	}
 
 }
