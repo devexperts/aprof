@@ -15,7 +15,7 @@ class TransformerUtil {
 	static final String OBJECT_CLASS_NAME = "java.lang.Object";
 
 	static final String ACCESS_METHOD = "access$";
-	static final String OBJECT_INIT = "<init>";
+	static final String INIT = "<init>";
 	static final String CLONE = "clone";
 
 	static final String NOARG_RETURNS_OBJECT = "()Ljava/lang/Object;";

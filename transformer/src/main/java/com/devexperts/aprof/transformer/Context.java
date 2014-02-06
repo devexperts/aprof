@@ -49,7 +49,7 @@ class Context {
 		this.accessMethod = mname.startsWith(TransformerUtil.ACCESS_METHOD);
 		this.locationDesc = desc;
 		this.methodTracked = !isInternalLocation() && isLocationTracked(locationClass, locationMethod);
-		this.objectInit = locationClass.equals(TransformerUtil.OBJECT_CLASS_NAME) && mname.equals(TransformerUtil.OBJECT_INIT);
+		this.objectInit = locationClass.equals(TransformerUtil.OBJECT_CLASS_NAME) && mname.equals(TransformerUtil.INIT);
 		this.intrinsicArraysCopyOf = TransformerUtil.isIntrinsicArraysCopyOf(binaryClassName, mname, desc);
 		this.aprofOpsImpl = isInternalLocation() ? TransformerUtil.APROF_OPS_INTERNAL : TransformerUtil.APROF_OPS;
 	}

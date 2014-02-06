@@ -36,49 +36,63 @@ import org.objectweb.asm.commons.*;
 public class AProfTransformer implements TransformerAnalyzer {
 	private final Configuration config;
 	private final StringBuilder sharedStringBuilder = new StringBuilder();
+	private final Map<String, ClassHierarchy> classHierarchyMap = new HashMap<String, ClassHierarchy>();
 
 	public AProfTransformer(Configuration config) {
 		this.config = config;
 		AProfRegistry.addDirectCloneClass(TransformerUtil.OBJECT_CLASS_NAME);
 	}
 
-	public List<String> getImmediateClassParents(String className, ClassLoader loader) {
-		String classFileName = className.replace('.', '/') + ".class";
-		InputStream in;
-		if (loader == null)
-			in = getClass().getResourceAsStream("/" + classFileName);
-		else
-			in = loader.getResourceAsStream(classFileName);
-		if (in == null)
-			return null;
-		final List<String> result = new ArrayList<String>();
+	public synchronized ClassHierarchy getClassHierarchy(String className, ClassLoader loader) {
+		ClassHierarchy result = classHierarchyMap.get(className);
+		if (result != null)
+			return result;
+		result = buildClassHierarchy(className, loader);
+		if (result != null)
+			classHierarchyMap.put(className, result);
+		return result;
+	}
+
+	private ClassHierarchy buildClassHierarchy(String className, ClassLoader loader) {
 		try {
+			String classFileName = className.replace('.', '/') + ".class";
+			InputStream in;
+			if (loader == null)
+				in = getClass().getResourceAsStream("/" + classFileName);
+			else
+				in = loader.getResourceAsStream(classFileName);
+			if (in == null)
+				return null;
+			ClassHierarchyVisitor visitor = new ClassHierarchyVisitor();
 			try {
 				ClassReader cr = new ClassReader(in);
-				ClassVisitor visitor = new ClassVisitor(Opcodes.ASM4) {
-					@Override
-					public void visit(int version, int access, String name, String signature, String superName,
-						String[] interfaces)
-					{
-			  	        addClassName(result, superName);
-						if (interfaces != null)
-							for (String it : interfaces)
-								addClassName(result, it);
-					}
-				};
 				cr.accept(visitor, ClassReader.SKIP_DEBUG + ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
 			} finally {
                 in.close();
 			}
-		} catch (IOException e) {
-			log(0, "Failed load class", className, loader, e);
+			ClassHierarchy result = visitor.result;
+			Set<String> visitedClasses = new HashSet<String>();
+			visitedClasses.add(classFileName);
+			result.getAllVirtualMethods().addAll(result.getDeclaredVirtualMethods());
+			processInheritedMethods(result, result.getSuperClass(), loader, visitedClasses);
+			for (String intf : result.getDeclaredInterfaces())
+				processInheritedMethods(result, intf, loader, visitedClasses);
+			return result;
+		} catch (Throwable t) {
+			log(0, "Failed to load class", className, loader, t);
+			return null;
 		}
-		return result;
 	}
 
-	private void addClassName(List<String> result, String binaryName) {
-		if (binaryName != null)
-			result.add(binaryName.replace('/', '.'));
+	private void processInheritedMethods(ClassHierarchy result, String className, ClassLoader loader, Set<String> visitedClasses) {
+		if (className == null)
+			return;
+		if (!visitedClasses.add(className))
+			return; // just in case of circularity
+		ClassHierarchy inherits = getClassHierarchy(className, loader);
+		if (inherits == null)
+			return; // just ignore super classes that cannot be loaded
+		result.getAllVirtualMethods().addAll(inherits.getAllVirtualMethods());
 	}
 
 	public byte[] transform(ClassLoader loader, String binaryClassName,
@@ -174,15 +188,9 @@ public class AProfTransformer implements TransformerAnalyzer {
 			}
 			if (loader != null) {
 				sharedStringBuilder.append(" [in ");
-				String loaderClassName = loader.getClass().getName();
-				String loaderString = loader.toString();
-				if (loaderString.startsWith(loaderClassName)) {
-					sharedStringBuilder.append(loaderString);
-				} else {
-					sharedStringBuilder.append(loaderClassName);
-					sharedStringBuilder.append(": ");
-					sharedStringBuilder.append(loaderString);
-				}
+				sharedStringBuilder.append(loader.getClass().getName());
+				sharedStringBuilder.append('@');
+				sharedStringBuilder.append(System.identityHashCode(loader));
 				sharedStringBuilder.append("]");
 			}
 			if (error != null) {
@@ -230,6 +238,39 @@ public class AProfTransformer implements TransformerAnalyzer {
 			}
 		} catch (IOException e) {
 			log(classNo, "failed", cname, loader, e);
+		}
+	}
+
+	private static class ClassHierarchyVisitor extends ClassVisitor {
+		final ClassHierarchy result = new ClassHierarchy();
+
+		public ClassHierarchyVisitor() {
+			super(Opcodes.ASM4);
+		}
+
+		@Override
+		public void visit(int version, int access, String name, String signature, String superName,
+			String[] interfaces)
+		{
+	          if (superName != null)
+	            result.setSuperClass(superName.replace('/', '.'));
+			if (interfaces != null)
+				for (String it : interfaces)
+					result.getDeclaredInterfaces().add(it.replace('/', '.'));
+		}
+
+		@Override
+		public MethodVisitor visitMethod(int access, String name, String desc, String signature,
+			String[] exceptions)
+		{
+			if ((access & Opcodes.ACC_STATIC) == 0 &&
+				(access & Opcodes.ACC_PRIVATE) == 0 &&
+				(access & Opcodes.ACC_FINAL) == 0 &&
+				!name.equals(TransformerUtil.INIT))
+			{
+				result.getDeclaredVirtualMethods().add(name);
+			}
+			return null;
 		}
 	}
 
@@ -308,52 +349,6 @@ public class AProfTransformer implements TransformerAnalyzer {
 	private class EmptyMethodVisitor extends MethodVisitor {
 		public EmptyMethodVisitor() {
 			super(Opcodes.ASM4);
-		}
-	}
-
-	private class EmptyClassVisitor extends ClassVisitor {
-		public EmptyClassVisitor() {
-			super(Opcodes.ASM4);
-		}
-	}
-
-	private class FrameClassWriter extends ClassWriter {
-		private FrameClassWriter(ClassReader classReader) {
-			super(classReader, ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
-		}
-
-		/**
-		 * The reason of overriding is to avoid ClassCircularityError which occurs during processing of classes related
-		 * to java.util.TimeZone
-		 */
-		@Override
-		protected String getCommonSuperClass(String type1, String type2) {
-			ClassLoader classLoader = getClass().getClassLoader();
-			ClassInfo c, d;
-			try {
-				c = new ClassInfo(type1, classLoader);
-				d = new ClassInfo(type2, classLoader);
-			} catch (Throwable e) {
-				throw new RuntimeException(e);
-			}
-
-			if (c.isAssignableFrom(d)) {
-				return type1;
-			}
-
-			if (d.isAssignableFrom(c)) {
-				return type2;
-			}
-
-			if (c.isInterface() || d.isInterface()) {
-				return "java/lang/Object";
-			} else {
-				do {
-					c = c.getSuperclass();
-				} while (c != null && !c.isAssignableFrom(d));
-
-				return c == null ? "java/lang/Object" : c.getType().getInternalName();
-			}
 		}
 	}
 }

@@ -24,6 +24,10 @@ import java.io.InputStream;
 import org.objectweb.asm.*;
 
 /**
+ * Reads and keeps very limited information about a class in a specific class loader,
+ * so that {@link FrameClassWriter} can be implemented without having to actually load
+ * any classes through class loader.
+ *
  * @author Denis Davydov
  */
 class ClassInfo {
@@ -43,7 +47,7 @@ class ClassInfo {
 			is = loader.getResourceAsStream(s);
 			cr = new ClassReader(is);
 		} catch (IOException e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException("Cannot load type '" + type + "'", e);
 		} finally {
 			if (is != null) {
 				try {

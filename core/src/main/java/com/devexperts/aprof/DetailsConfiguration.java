@@ -34,7 +34,7 @@ class DetailsConfiguration {
 	/**
 	 * Maps class name to a set of tracked method names.
 	 */
-	private final Map<String, Set<String>> trackedLocations = new HashMap<String, Set<String>>();
+	private final Map<String, Set<String>> trackedLocations = new LinkedHashMap<String, Set<String>>();
 
 	private final Set<String> remainingClasses = new LinkedHashSet<String>();
 
@@ -46,16 +46,14 @@ class DetailsConfiguration {
 
 	public synchronized void loadFromResource() throws IOException {
 		loadFromStream(ClassLoader.getSystemResourceAsStream(RESOURCE));
-		for (String str : trackedLocations.keySet())
-			remainingClasses.add(str);
+		remainingClasses.addAll(trackedLocations.keySet());
 	}
 
 	public synchronized void loadFromFile(String fileName) throws IOException {
 		if (fileName == null || fileName.trim().length() == 0)
 			return;
 		loadFromStream(new FileInputStream(fileName));
-		for (String str : trackedLocations.keySet())
-			remainingClasses.add(str);
+		remainingClasses.addAll(trackedLocations.keySet());
 	}
 
 	public synchronized void addClassMethods(String[] locations) throws IOException {
@@ -70,8 +68,7 @@ class DetailsConfiguration {
 	}
 
 	public synchronized boolean isLocationTracked(String locationClass, String locationMethod) {
-		Map<String, Set<String>> tracked = trackedLocations;
-		Set<String> trackedMethods = tracked.get(locationClass);
+		Set<String> trackedMethods = trackedLocations.get(locationClass);
 		return trackedMethods != null &&
 			(trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(locationMethod));
 	}
@@ -83,17 +80,9 @@ class DetailsConfiguration {
 		if (remainingClasses.isEmpty() || (loader == null ? bootstrapLoaderAnalyzed : loader == lastAnalyzedLoader))
 			return;
 		List<String> processedClasses = new ArrayList<String>();
-		for (String className : remainingClasses) {
-			Set<String> methods = trackedLocations.get(className);
-			List<String> parents = analyzer.getImmediateClassParents(className, loader);
-			if (parents == null)
-				continue;
-			if (verbose)
-				Log.out.println("Resolving tracked class: " + className);
-			for (String parent : parents)
-				analyzeClassRec(parent, loader, analyzer, methods);
-			processedClasses.add(className);
-		}
+		for (String className : remainingClasses)
+			if (analyzeTrackedClass(className, loader, analyzer, verbose))
+				processedClasses.add(className);
 		remainingClasses.removeAll(processedClasses);
 		if (loader == null)
 			bootstrapLoaderAnalyzed = true;
@@ -101,15 +90,42 @@ class DetailsConfiguration {
 			lastAnalyzedLoader = loader;
 	}
 
-	private void analyzeClassRec(String className, ClassLoader loader, TransformerAnalyzer analyzer, Set<String> newMethods) {
+	private boolean analyzeTrackedClass(String className, ClassLoader loader, TransformerAnalyzer analyzer,
+		boolean verbose)
+	{
+		ClassHierarchy hierarchy = analyzer.getClassHierarchy(className, loader);
+		if (hierarchy == null)
+			return false;
+		if (verbose)
+			Log.out.println("Resolving tracked class: " + className);
 		Set<String> methods = trackedLocations.get(className);
-		if (methods == null)
-			trackedLocations.put(className, methods = new HashSet<String>());
-		methods.addAll(newMethods);
-		List<String> parents = analyzer.getImmediateClassParents(className, loader);
-		if (parents != null)
-			for (String parent : parents)
-				analyzeClassRec(parent, loader, analyzer, newMethods);
+		Set<String> processedClasses = new HashSet<String>();
+		processedClasses.add(className);
+		processParent(hierarchy.getSuperClass(), processedClasses, methods, loader, analyzer);
+		for (String intf : hierarchy.getDeclaredInterfaces())
+			processParent(intf, processedClasses, methods, loader, analyzer);
+		return true;
+	}
+
+	private void processParent(String className, Set<String> processedClasses, Set<String> overridesMethods,
+		ClassLoader loader, TransformerAnalyzer analyzer)
+	{
+		if (className == null)
+			return;
+		if (!processedClasses.add(className))
+			return; // to avoid infinite recursive just in case there is one
+		ClassHierarchy hierarchy = analyzer.getClassHierarchy(className, loader);
+		if (hierarchy == null)
+			return; // cannot load parent class info. Should not happen, but we'll just ignore
+		Set<String> inheritedMethods = new HashSet<String>(overridesMethods);
+		// retain only virtual methods that are declared or inherited in this parent
+		inheritedMethods.retainAll(hierarchy.getAllVirtualMethods());
+		if (inheritedMethods.isEmpty())
+			return; // nothing is inherited from this parent
+		Set<String> trackedMethods = trackedLocations.get(className);
+		if (trackedMethods == null)
+			trackedLocations.put(className, trackedMethods = new HashSet<String>());
+		trackedMethods.addAll(inheritedMethods);
 	}
 
 	private void loadFromStream(InputStream stream) throws IOException {

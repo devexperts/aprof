@@ -40,9 +40,9 @@ public class InnerJarClassLoader extends URLClassLoader {
 	/** The context to be used for loading classes and resources. */
 	private final AccessControlContext acc;
 	/** All cached classes. */
-	private final List<CachedClass> classes = new ArrayList<CachedClass>();
+	private final Map<String, CachedClass> classes = new HashMap<String, CachedClass>();
 	/** All cached classes and other resources. */
-	private final List<CachedResource> resources = new ArrayList<CachedResource>();
+	private final Map<String, CachedResource> resources = new HashMap<String, CachedResource>();
 
 	/** Creates class loader for specified JAR files. */
 	public InnerJarClassLoader(URL... jars) throws IOException {
@@ -53,27 +53,14 @@ public class InnerJarClassLoader extends URLClassLoader {
 	public InnerJarClassLoader(List<URL> jars) throws IOException {
 		super(new URL[0]);
 		acc = AccessController.getContext();
-		for (URL jar : jars) {
+		for (URL jar : jars)
 			cacheJar(jar);
-		}
-	}
-
-	/** Forces all classes with names starting with specified prefixed to be loaded. */
-	public void forceLoad(String... prefixes) throws ClassNotFoundException {
-		for (CachedClass clazz : classes) {
-			for (String prefix : prefixes) {
-				if (clazz.className.startsWith(prefix)) {
-					loadClass(clazz.className);
-				}
-			}
-		}
 	}
 
 	/** Forces all classes to be loaded. */
 	public void forceLoadAllClasses() throws ClassNotFoundException {
-		for (CachedClass clazz : classes) {
-			loadClass(clazz.className);
-		}
+		for (String className : classes.keySet())
+			loadClass(className);
 	}
 
 	@Override
@@ -81,38 +68,30 @@ public class InnerJarClassLoader extends URLClassLoader {
 		// First, check if the class has already been loaded
 		Class clazz = findLoadedClass(name);
 		if (clazz == null) {
-			try {
-				clazz = findClass(name);
-			} catch (ClassNotFoundException e) {
-				// Do nothing
-			}
-			if (clazz == null) {
+			CachedClass cc = classes.get(name);
+			if (cc != null)
+				clazz = cc.define();
+			if (clazz == null)
 				clazz = getParent().loadClass(name);
-			}
 		}
-		if (resolve) {
+		if (resolve)
 			resolveClass(clazz);
-		}
 		return clazz;
 	}
 
 	@Override
-	protected Class<?> findClass(final String name) throws ClassNotFoundException {
-		for (CachedClass clazz : classes) {
-			if (name.equals(clazz.className)) {
-				return clazz.define();
-			}
-		}
+	protected Class<?> findClass(String name) throws ClassNotFoundException {
+		CachedClass cc = classes.get(name);
+		if (cc != null)
+			return cc.define();
 		throw new ClassNotFoundException(name);
 	}
 
 	@Override
 	public InputStream getResourceAsStream(String name) {
-		for (CachedResource resource : resources) {
-			if (name.equals(resource.resourceName)) {
-				return resource.openStream();
-			}
-		}
+		CachedResource resource = resources.get(name);
+		if (resource != null)
+			return resource.openStream();
 		return super.getResourceAsStream(name);
 	}
 
@@ -163,12 +142,12 @@ public class InnerJarClassLoader extends URLClassLoader {
 
 	private void cacheClass(URL url, Manifest manifest, String name, byte[] bytes, Certificate[] certificates) {
 		CachedClass cachedClass = new CachedClass(url, manifest, name, bytes, certificates);
-		classes.add(cachedClass);
-		resources.add(cachedClass);
+		classes.put(cachedClass.className, cachedClass);
+		resources.put(name, cachedClass);
 	}
 
 	private void cacheResource(URL url, Manifest manifest, String name, byte[] bytes, Certificate[] certificates) {
-		resources.add(new CachedResource(url, manifest, name, bytes, certificates));
+		resources.put(name, new CachedResource(url, manifest, name, bytes, certificates));
 	}
 
 	/** Cached resource. */
