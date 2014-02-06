@@ -33,6 +33,8 @@ public class TestSuite {
 
 	private static final List<TestCase> TEST_CASES = Arrays.asList(
 			new NewTest(),
+			new TrackingTest(),
+			new TrackingDeepTest(),
 			new DoubleTest(),
 			new IntegerTest(),
 			new StringTest(),

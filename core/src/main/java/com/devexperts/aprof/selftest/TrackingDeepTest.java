@@ -1,0 +1,80 @@
+/*
+ * Aprof - Java Memory Allocation Profiler
+ * Copyright (C) 2002-2014  Devexperts LLC
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.devexperts.aprof.selftest;
+
+import com.devexperts.aprof.AProfSizeUtil;
+import com.devexperts.aprof.Configuration;
+
+class TrackingDeepTest implements TestCase {
+	private static final int COUNT = 100000;
+
+	public String name() {
+		return "trackingDeep";
+	}
+
+	public String verifyConfiguration(Configuration configuration) {
+		return null;
+	}
+
+	public String[] getCheckedClasses() {
+		return new String[] {getClass().getName() + "$"};
+	}
+
+	public String getExpectedStatistics() {
+		long objSize = AProfSizeUtil.getObjectSize(new Entity());
+		return TestUtil.fmt(
+			"{class}$Entity: {size2} bytes in {count2} objects (avg size {objSize} bytes)\n" +
+			"\t{class}.newEntity: {size2} bytes in {count2} objects\n" +
+			"\t\t<unknown>: {size} bytes in {count} objects\n" +
+			"\t\t{class}.trackedMethod: {size} bytes in {count} objects\n" +
+			"\t\t\t{class}.doTest: {size} bytes in {count} objects\n",
+			"class=" + getClass().getName(),
+			"size=" + TestUtil.fmt(objSize * COUNT),
+			"count=" + TestUtil.fmt(COUNT),
+			"size2=" + TestUtil.fmt(2 * objSize * COUNT),
+			"count2=" + TestUtil.fmt(2 * COUNT),
+			"objSize=" + objSize);
+	}
+
+	public void doTest() {
+		for (int i = 0; i < COUNT; i++) {
+			trackedMethod();
+			notTrackedMethod();
+		}
+	}
+
+	public Entity trackedMethod() {
+		return newEntityDeepInStack();
+	}
+
+	public Entity notTrackedMethod() {
+		return newEntityDeepInStack();
+	}
+
+	private Entity newEntityDeepInStack() {
+		return newEntity();
+	}
+
+	private Entity newEntity() {
+		return new Entity();
+	}
+
+	private static class Entity {
+	}
+}
