@@ -5,6 +5,7 @@ import org.objectweb.asm.Opcodes;
 class TransformerUtil {
 	private TransformerUtil() {} // do not create
 
+	static final int MAJOR_VERSION_MASK = 0xffff;
 	static final int MIN_CLASS_VERSION = Opcodes.V1_5; // needed to support ldc <class> and avoid "Illegal type in constant pool"
 
 	static final String APROF_OPS = "com/devexperts/aprof/AProfOps";

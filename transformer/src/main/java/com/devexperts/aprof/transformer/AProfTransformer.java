@@ -107,11 +107,11 @@ public class AProfTransformer implements ClassFileTransformer {
 				}
 			}
 			if (!transformationNeeded)
-				return classFileBuffer; // don't transform classes that don't need transformation
+				return null; // don't transform classes that don't need transformation
 
 			// ---- 2ST PASS: TRANSFORM CLASS ----
 
-			boolean computeFrames = compareVersion(classAnalyzer.classVersion, Opcodes.V1_6) >= 0;
+			boolean computeFrames = classAnalyzer.classVersion >= Opcodes.V1_6;
 			ClassWriter cw = computeFrames ?
 				new FrameClassWriter(cr, loader) :
 				new ClassWriter(ClassWriter.COMPUTE_MAXS);
@@ -160,26 +160,6 @@ public class AProfTransformer implements ClassFileTransformer {
 		}
 	}
 
-	private int compareVersion(int version1, int version2) {
-		if (major(version1) > major(version2))
-			return 1;
-		if (major(version1) < major(version2))
-			return -1;
-		if (minor(version1) > minor(version2))
-			return 1;
-		if (minor(version1) < minor(version2))
-			return -1;
-		return 0;
-	}
-
-	private int minor(int version) {
-		return version >>> 16;
-	}
-
-	private int major(int version) {
-		return version & 0xffff;
-	}
-
 	private void dumpClass(String binaryClassName, int classNo, String cname, ClassLoader loader, byte[] bytes) {
 		String dir = config.getDumpClassesDir();
 		if (dir.length() == 0)
@@ -222,7 +202,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			// chain to ClassInfoVisitor if needed
 			super.visit(version, access, name, signature, superName, interfaces);
 			// analyze class
-			classVersion = version;
+			classVersion = version & TransformerUtil.MAJOR_VERSION_MASK;
 			AProfRegistry.registerDatatypeInfo(locationClass);
 			if (superName != null && isNormal && AProfRegistry.isDirectCloneClass(superName.replace('/', '.')))
 				// candidate for direct clone
@@ -255,8 +235,10 @@ public class AProfTransformer implements ClassFileTransformer {
 
 		@Override
 		public void visit(int version, final int access, final String name, final String signature, final String superName, final String[] interfaces) {
-			if (compareVersion(version, TransformerUtil.MIN_CLASS_VERSION) < 0)
-				version = TransformerUtil.MIN_CLASS_VERSION;
+			// roll-forward version to MIN_CLASS_VERSION so that we can use ldc <class-constant> instruction,
+			// but keep deprecated flag intact.
+			if ((version & TransformerUtil.MAJOR_VERSION_MASK) < TransformerUtil.MIN_CLASS_VERSION)
+				version = TransformerUtil.MIN_CLASS_VERSION | (version & Opcodes.ACC_DEPRECATED);
 			super.visit(version, access, name, signature, superName, interfaces);
 		}
 

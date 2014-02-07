@@ -23,6 +23,10 @@ class ClassInfoCache {
 		this.config = config;
 	}
 
+	synchronized ClassInfo getClassInfo(String internalClassName, ClassLoader loader) {
+		return getOrInitClassInfoMap(loader).get(internalClassName);
+	}
+
 	// Returns null if not found or failed to load
 	synchronized ClassInfo getOrBuildClassInfo(String internalClassName, ClassLoader loader) {
 		ClassInfo classInfo = getOrInitClassInfoMap(loader).get(internalClassName);

@@ -114,9 +114,9 @@ class Context {
 			return false; // special or static invocation cannot got though superclass/super interface
 		// Check for invocation via super class or interface
 		// Load target class information
-		ClassInfo classInfo = ciCache.getOrBuildRequiredClassInfo(owner, loader);
+		ClassInfo classInfo = ciCache.getClassInfo(owner, loader);
 		if (classInfo == null)
-			return false; // don't have class info -- don't track
+			return false; // we don't have class info, which means we don't track it, then
 		// Check if tracked method
 		Set<String> descSet = classInfo.getTrackedMethodInvocations().get(name);
 		return descSet != null && descSet.contains(desc);
