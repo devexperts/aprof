@@ -22,7 +22,7 @@
 	<parent>
 		<groupId>com.devexperts.aprof</groupId>
 		<artifactId>aprof</artifactId>
-		<version>28-SNAPSHOT</version>
+		<version>28</version>
 	</parent>
 
 	<packaging>jar</packaging>
@@ -69,7 +69,7 @@
 		<dependency>
 			<groupId>com.devexperts.aprof</groupId>
 			<artifactId>core</artifactId>
-			<version>28-SNAPSHOT</version>
+			<version>28</version>
 		</dependency>
 	</dependencies>
 </project>
