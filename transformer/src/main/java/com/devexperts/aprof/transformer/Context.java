@@ -102,7 +102,6 @@ class Context {
 			appendShortType(sb, types[i]);
 		}
 		sb.append(')');
-		appendShortType(sb, Type.getReturnType(locationDesc));
 	}
 
 	public boolean isMethodInvocationTracked(String cname, int opcode, String owner, String name, String desc) {
