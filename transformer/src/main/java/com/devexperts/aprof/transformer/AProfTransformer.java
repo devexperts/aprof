@@ -109,7 +109,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			if (!transformationNeeded)
 				return null; // don't transform classes that don't need transformation
 
-			// ---- 2ST PASS: TRANSFORM CLASS ----
+			// ---- 2ND PASS: TRANSFORM CLASS ----
 
 			boolean computeFrames = classAnalyzer.classVersion >= Opcodes.V1_6 && !config.isNoFrames();
 			ClassWriter cw = computeFrames ?
