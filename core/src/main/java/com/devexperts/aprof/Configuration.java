@@ -74,6 +74,9 @@ public class Configuration {
 	@Description("Skip debug information (line numbers and local variables) during class transformation.")
 	private boolean skipdebug = false;
 
+	@Description("Omit stack frames during class transformation for 1.6+ classes.")
+	private boolean noframes = false;
+
 	@Description("Instrument array allocations via 'new' operation.")
 	private boolean arrays = true;
 
@@ -210,6 +213,10 @@ public class Configuration {
 
 	public boolean isSkipDebug() {
 		return skipdebug;
+	}
+
+	public boolean isNoFrames() {
+		return noframes;
 	}
 
 	public boolean isArrays() {

@@ -111,14 +111,14 @@ public class AProfTransformer implements ClassFileTransformer {
 
 			// ---- 2ST PASS: TRANSFORM CLASS ----
 
-			boolean computeFrames = classAnalyzer.classVersion >= Opcodes.V1_6;
+			boolean computeFrames = classAnalyzer.classVersion >= Opcodes.V1_6 && !config.isNoFrames();
 			ClassWriter cw = computeFrames ?
 				new FrameClassWriter(cr, loader) :
 				new ClassWriter(ClassWriter.COMPUTE_MAXS);
 			ClassVisitor classTransformer = new ClassTransformer(cw, cname, classAnalyzer.contexts);
 			int transformFlags =
 				(config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) +
-				(computeFrames ? ClassReader.SKIP_FRAMES : 0);
+				(config.isNoFrames() || computeFrames ? ClassReader.SKIP_FRAMES : 0);
 			cr.accept(classTransformer, transformFlags);
 
 			// Convert transformed class to byte array, dump (if needed) and return
