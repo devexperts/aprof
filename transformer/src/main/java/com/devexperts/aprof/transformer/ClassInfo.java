@@ -18,85 +18,143 @@
 
 package com.devexperts.aprof.transformer;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.util.*;
 
-import org.objectweb.asm.*;
+import org.objectweb.asm.Opcodes;
 
 /**
  * Reads and keeps very limited information about a class in a specific class loader,
- * so that {@link FrameClassWriter} can be implemented without having to actually load
- * any classes through class loader.
- *
- * @author Denis Davydov
+ * so that frames can be computed without having to actually load any classes through class loader.
  */
 class ClassInfo {
-	private final ClassLoader loader;
-	private final Type type;
+	enum State {
+		NEW,                        // just created
+		NO_METHODS,                 // was loaded without analysis of methods (virtualMethods is null)
+		DECLARED_METHODS,           // set of declared virtual methods loaded
+		INHERITED_METHODS,          // virtual methods == declared + iherited
+		SEALED                      // trackedMethodInvocations are finalized
+	}
+
+	private static final ClassInfo[] EMPTY_INFOS = new ClassInfo[0];
+
+	private State state = State.NEW;
+
 	private final int access;
-	private final String superClass;
-	private final String[] interfaces;
+	private final String internalName;
+	private final String internalSuperName;
+	private final String[] internalInterfaceNames;
 
-	ClassInfo(String type, ClassLoader loader) {
-		this.loader = loader;
-		this.type = Type.getObjectType(type);
-		String s = type.replace('.', '/') + ".class";
-		InputStream is = null;
-		ClassReader cr;
-		try {
-			is = loader.getResourceAsStream(s);
-			cr = new ClassReader(is);
-		} catch (IOException e) {
-			throw new RuntimeException("Cannot load type '" + type + "'", e);
-		} finally {
-			if (is != null) {
-				try {
-					is.close();
-				} catch (Exception ignored) {
-				}
-			}
-		}
+	// created on first need
+	private String className;
+	private ClassInfo superClassInfo;
+	private ClassInfo[] interfaceInfos;
 
-		access = cr.getAccess();
-		superClass = cr.getSuperName();
-		interfaces = cr.getInterfaces();
+	private Map<String, Set<String>> virtualMethods;
+	private Map<String, Set<String>> trackedMethodInvocations;
+
+	ClassInfo(int access, String internalName, String internalSuperName, String[] internalInterfaceNames) {
+		this.access = access;
+		this.internalName = internalName;
+		this.internalSuperName = internalSuperName;
+		this.internalInterfaceNames = internalInterfaceNames;
 	}
 
-	Type getType() {
-		return type;
+	boolean isSealed() {
+		return state == State.SEALED;
 	}
 
-	int getModifiers() {
-		return access;
+	void markSealed() {
+		assert state == State.INHERITED_METHODS;
+		state = State.SEALED;
 	}
 
-	ClassInfo getSuperclass() {
-		if (superClass == null) {
-			return null;
-		}
-		return new ClassInfo(superClass, loader);
+	boolean hasInheritedMethods() {
+		return state == State.INHERITED_METHODS;
 	}
 
-	ClassInfo[] getInterfaces() {
-		if (interfaces == null) {
-			return new ClassInfo[0];
-		}
-		ClassInfo[] result = new ClassInfo[interfaces.length];
-		for (int i = 0; i < result.length; ++i) {
-			result[i] = new ClassInfo(interfaces[i], loader);
-		}
-		return result;
+	void markInheritedMethods() {
+		assert state == State.DECLARED_METHODS;
+		state = State.INHERITED_METHODS;
+	}
+
+	String getInternalName() {
+		return internalName;
+	}
+
+	String getClassName() {
+		if (className == null)
+			className = internalName.replace('/', '.');
+		return className;
+	}
+
+	Map<String, Set<String>> getVirtualMethods() {
+		return virtualMethods;
+	}
+
+	void setVirtualMethods(Map<String, Set<String>> virtualMethods) {
+		assert state == State.NEW : "Can set virtual methods just once";
+		this.state = virtualMethods == null ? State.NO_METHODS : State.DECLARED_METHODS;
+		this.virtualMethods = virtualMethods;
+	}
+
+	Map<String, Set<String>> getTrackedMethodInvocations() {
+		if (trackedMethodInvocations == null)
+			trackedMethodInvocations = new HashMap<String, Set<String>>();
+		return trackedMethodInvocations;
 	}
 
 	boolean isInterface() {
-		return (getModifiers() & Opcodes.ACC_INTERFACE) > 0;
+		return (access & Opcodes.ACC_INTERFACE) != 0;
 	}
 
-	private boolean implementsInterface(final ClassInfo that) {
-		for (ClassInfo c = this; c != null; c = c.getSuperclass()) {
-			ClassInfo[] tis = c.getInterfaces();
-			for (ClassInfo ti : tis) {
-				if (ti.type.equals(that.type) || ti.implementsInterface(that)) {
+	// Returns null if not found or failed to load
+	ClassInfo getSuperclassInfo(ClassInfoCache ciCache, ClassLoader loader) {
+		if (internalSuperName == null)
+			return null;
+		if (superClassInfo == null)
+			superClassInfo = ciCache.getOrBuildClassInfo(internalSuperName, loader);
+		return superClassInfo;
+	}
+
+	// throws RuntimeException if not found or failed to load
+	ClassInfo getRequiredSuperclassInfo(ClassInfoCache ciCache, ClassLoader loader) {
+		if (internalSuperName == null)
+			return null;
+		if (superClassInfo == null)
+			superClassInfo = ciCache.getOrBuildRequiredClassInfo(internalSuperName, loader);
+		return superClassInfo;
+	}
+
+	// Returns null infos inside if not found or failed to load
+	ClassInfo[] getInterfaceInfos(ClassInfoCache ciCache, ClassLoader loader) {
+		if (interfaceInfos == null) {
+			if (internalInterfaceNames == null || internalInterfaceNames.length == 0)
+				interfaceInfos = EMPTY_INFOS;
+			else {
+				int n = internalInterfaceNames.length;
+				interfaceInfos = new ClassInfo[n];
+				for (int i = 0; i < n; i++)
+					interfaceInfos[i] = ciCache.getOrBuildClassInfo(internalInterfaceNames[i], loader);
+			}
+		}
+		return interfaceInfos;
+	}
+
+	// throws RuntimeException if not found or failed to load
+	ClassInfo[] getRequiredInterfaceInfos(ClassInfoCache ciCache, ClassLoader loader) {
+		ClassInfo[] ii = getInterfaceInfos(ciCache, loader);
+		for (int i = 0; i < ii.length; i++)
+			if (ii[i] == null)
+				ii[i] = ciCache.getOrBuildRequiredClassInfo(internalInterfaceNames[i], loader);
+		return ii;
+	}
+
+	private boolean implementsInterface(ClassInfo that, ClassInfoCache ciCache, ClassLoader loader) {
+		for (ClassInfo c = this; c != null; c = c.getRequiredSuperclassInfo(ciCache, loader)) {
+			for (ClassInfo ti : c.getRequiredInterfaceInfos(ciCache, loader)) {
+				if (ti.getInternalName().equals(that.getInternalName())
+					|| ti.implementsInterface(that, ciCache, loader))
+				{
 					return true;
 				}
 			}
@@ -104,29 +162,20 @@ class ClassInfo {
 		return false;
 	}
 
-	private boolean isSubclassOf(final ClassInfo that) {
-		for (ClassInfo c = this; c != null; c = c.getSuperclass()) {
-			if (c.getSuperclass() != null
-					&& c.getSuperclass().type.equals(that.type)) {
+	private boolean isSubclassOf(ClassInfo that, ClassInfoCache ciCache, ClassLoader loader) {
+		for (ClassInfo c = this; c != null; c = c.getRequiredSuperclassInfo(ciCache, loader)) {
+			if (c.getRequiredSuperclassInfo(ciCache, loader) != null
+				&& c.getRequiredSuperclassInfo(ciCache, loader).getInternalName().equals(that.getInternalName()))
+			{
 				return true;
 			}
 		}
 		return false;
 	}
 
-	public boolean isAssignableFrom(final ClassInfo that) {
-		if (this == that) {
-			return true;
-		}
-
-		if (that.isSubclassOf(this)) {
-			return true;
-		}
-
-		if (that.implementsInterface(this)) {
-			return true;
-		}
-
-		return false;
+	boolean isAssignableFrom(ClassInfo that, ClassInfoCache ciCache, ClassLoader loader) {
+		return this == that
+			|| that.isSubclassOf(this, ciCache, loader)
+			|| that.implementsInterface(this, ciCache, loader);
 	}
 }

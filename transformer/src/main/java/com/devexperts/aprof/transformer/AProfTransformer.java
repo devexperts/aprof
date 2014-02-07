@@ -19,6 +19,7 @@
 package com.devexperts.aprof.transformer;
 
 import java.io.*;
+import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.*;
@@ -33,93 +34,47 @@ import org.objectweb.asm.commons.*;
  * @author Dmitry Paraschenko
  * @author Denis Davydov
  */
-public class AProfTransformer implements TransformerAnalyzer {
+public class AProfTransformer implements ClassFileTransformer {
 	private final Configuration config;
+	private final ClassInfoCache ciCache;
 	private final StringBuilder sharedStringBuilder = new StringBuilder();
-	private final Map<String, ClassHierarchy> classHierarchyMap = new HashMap<String, ClassHierarchy>();
 
 	public AProfTransformer(Configuration config) {
 		this.config = config;
+		ciCache = new ClassInfoCache(config);
 		AProfRegistry.addDirectCloneClass(TransformerUtil.OBJECT_CLASS_NAME);
 	}
 
-	public synchronized ClassHierarchy getClassHierarchy(String className, ClassLoader loader) {
-		ClassHierarchy result = classHierarchyMap.get(className);
-		if (result != null)
-			return result;
-		result = buildClassHierarchy(className, loader);
-		if (result != null)
-			classHierarchyMap.put(className, result);
-		return result;
-	}
-
-	private ClassHierarchy buildClassHierarchy(String className, ClassLoader loader) {
-		try {
-			String classFileName = className.replace('.', '/') + ".class";
-			InputStream in;
-			if (loader == null)
-				in = getClass().getResourceAsStream("/" + classFileName);
-			else
-				in = loader.getResourceAsStream(classFileName);
-			if (in == null)
-				return null;
-			ClassHierarchyVisitor visitor = new ClassHierarchyVisitor();
-			try {
-				ClassReader cr = new ClassReader(in);
-				cr.accept(visitor, ClassReader.SKIP_DEBUG + ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
-			} finally {
-                in.close();
-			}
-			ClassHierarchy result = visitor.result;
-			Set<String> visitedClasses = new HashSet<String>();
-			visitedClasses.add(classFileName);
-			result.getAllVirtualMethods().addAll(result.getDeclaredVirtualMethods());
-			processInheritedMethods(result, result.getSuperClass(), loader, visitedClasses);
-			for (String intf : result.getDeclaredInterfaces())
-				processInheritedMethods(result, intf, loader, visitedClasses);
-			return result;
-		} catch (Throwable t) {
-			log(0, "Failed to load class", className, loader, t);
-			return null;
-		}
-	}
-
-	private void processInheritedMethods(ClassHierarchy result, String className, ClassLoader loader, Set<String> visitedClasses) {
-		if (className == null)
-			return;
-		if (!visitedClasses.add(className))
-			return; // just in case of circularity
-		ClassHierarchy inherits = getClassHierarchy(className, loader);
-		if (inherits == null)
-			return; // just ignore super classes that cannot be loaded
-		result.getAllVirtualMethods().addAll(inherits.getAllVirtualMethods());
-	}
-
-	public byte[] transform(ClassLoader loader, String binaryClassName,
-							Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
-			throws IllegalClassFormatException {
+	public byte[] transform(ClassLoader loader, String internalClassName,
+							Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classFileBuffer)
+			throws IllegalClassFormatException
+	{
 		// always track invocations of transform method as a separate location
 		LocationStack locationStack = LocationStack.get();
 		LocationStack savedCopy = locationStack.pushStackForTransform(AProfRegistry.TRANSFORM_LOC);
 		try {
-			return transformImpl(loader, binaryClassName, classBeingRedefined, protectionDomain, classfileBuffer);
+			return transformImpl(loader, internalClassName, classBeingRedefined, protectionDomain, classFileBuffer);
 		} finally {
 			locationStack.popStack(savedCopy);
 		}
 	}
 
-	private byte[] transformImpl(ClassLoader loader, String binaryClassName,
-						Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
-			throws IllegalClassFormatException {
-		// update tracking configuration under this (potentially new) class loader
-		config.analyzeTrackedClasses(loader, this);
-		// start transformation
+	private byte[] transformImpl(ClassLoader loader, String internalClassName,
+						Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classFileBuffer)
+			throws IllegalClassFormatException
+	{
+		// measure time spent
 		long start = System.currentTimeMillis();
-		if (binaryClassName == null) {
+
+		// init class info map for this classloader (if needed)
+		ClassInfoMap classInfoMap = ciCache.getOrInitClassInfoMap(loader);
+
+		// start transformation
+		if (internalClassName == null) {
 			log(0, "Cannot transform class with no name", null, loader, null);
 			return null;
 		}
-		String cname = binaryClassName.replace('/', '.');
+		String cname = internalClassName.replace('/', '.');
 		for (String s : config.getExcludedClasses()) {
 			if (cname.equals(s)) {
 				log(0, "Skipping transformation of excluded class", cname, loader, null);
@@ -130,11 +85,18 @@ public class AProfTransformer implements TransformerAnalyzer {
 		if (config.isVerbose())
 			log(classNo, null, cname, loader, null);
 		try {
-			ClassReader cr = new ClassReader(classfileBuffer);
+			ClassReader cr = new ClassReader(classFileBuffer);
 
-			// 1ST PASS: ANALYZE CLASS
-			ClassAnalyzer classAnalyzer = new ClassAnalyzer(binaryClassName, cname);
+			// ---- 1ST PASS: ANALYZE CLASS ----
+
+			// Also build class info if we don't have it yet in cache
+			ClassInfo classInfo = classInfoMap.get(internalClassName);
+			ClassInfoVisitor classInfoVisitor = classInfo == null ?
+				new ClassInfoVisitor(classInfoMap.isInitTrackedClasses()) : null;
+			ClassAnalyzer classAnalyzer = new ClassAnalyzer(internalClassName, loader, cname, classInfoVisitor);
 			cr.accept(classAnalyzer, ClassReader.SKIP_DEBUG + ClassReader.SKIP_FRAMES);
+			if (classInfoVisitor != null)
+				classInfoMap.put(internalClassName, classInfoVisitor.result);
 
 			// check if transformation is needed
 			boolean transformationNeeded = false;
@@ -145,12 +107,13 @@ public class AProfTransformer implements TransformerAnalyzer {
 				}
 			}
 			if (!transformationNeeded)
-				return classfileBuffer; // don't transform classes that don't need transformation
+				return classFileBuffer; // don't transform classes that don't need transformation
 
-			// 2ST PASS: TRANSFORM CLASS
+			// ---- 2ST PASS: TRANSFORM CLASS ----
+
 			boolean computeFrames = compareVersion(classAnalyzer.classVersion, Opcodes.V1_6) >= 0;
 			ClassWriter cw = computeFrames ?
-				new FrameClassWriter(cr) :
+				new FrameClassWriter(cr, loader) :
 				new ClassWriter(ClassWriter.COMPUTE_MAXS);
 			ClassVisitor classTransformer = new ClassTransformer(cw, cname, classAnalyzer.contexts);
 			int transformFlags =
@@ -160,7 +123,7 @@ public class AProfTransformer implements TransformerAnalyzer {
 
 			// Convert transformed class to byte array, dump (if needed) and return
 			byte[] bytes = cw.toByteArray();
-			dumpClass(binaryClassName, classNo, cname, loader, bytes);
+			dumpClass(internalClassName, classNo, cname, loader, bytes);
 			return bytes;
 		} catch (Throwable t) {
 			log(classNo, "failed", cname, loader, t);
@@ -186,13 +149,7 @@ public class AProfTransformer implements TransformerAnalyzer {
 				sharedStringBuilder.append(": ");
 				sharedStringBuilder.append(cname);
 			}
-			if (loader != null) {
-				sharedStringBuilder.append(" [in ");
-				sharedStringBuilder.append(loader.getClass().getName());
-				sharedStringBuilder.append('@');
-				sharedStringBuilder.append(System.identityHashCode(loader));
-				sharedStringBuilder.append("]");
-			}
+			TransformerUtil.describeClassLoaderForLog(sharedStringBuilder, loader);
 			if (error != null) {
 				sharedStringBuilder.append(" with error ");
 				sharedStringBuilder.append(error);
@@ -241,41 +198,9 @@ public class AProfTransformer implements TransformerAnalyzer {
 		}
 	}
 
-	private static class ClassHierarchyVisitor extends ClassVisitor {
-		final ClassHierarchy result = new ClassHierarchy();
-
-		public ClassHierarchyVisitor() {
-			super(Opcodes.ASM4);
-		}
-
-		@Override
-		public void visit(int version, int access, String name, String signature, String superName,
-			String[] interfaces)
-		{
-	          if (superName != null)
-	            result.setSuperClass(superName.replace('/', '.'));
-			if (interfaces != null)
-				for (String it : interfaces)
-					result.getDeclaredInterfaces().add(it.replace('/', '.'));
-		}
-
-		@Override
-		public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-			String[] exceptions)
-		{
-			if ((access & Opcodes.ACC_STATIC) == 0 &&
-				(access & Opcodes.ACC_PRIVATE) == 0 &&
-				(access & Opcodes.ACC_FINAL) == 0 &&
-				!name.equals(TransformerUtil.INIT))
-			{
-				result.getDeclaredVirtualMethods().add(name);
-			}
-			return null;
-		}
-	}
-
 	private class ClassAnalyzer extends ClassVisitor {
 		private final String binaryClassName;
+		private final ClassLoader loader;
 		private final String locationClass;
 		private final boolean isNormal;
 		private final String cname;
@@ -283,9 +208,10 @@ public class AProfTransformer implements TransformerAnalyzer {
 		final List<Context> contexts = new ArrayList<Context>();
 		int classVersion;
 
-		public ClassAnalyzer(String binaryClassName, String cname) {
-			super(Opcodes.ASM4);
+		public ClassAnalyzer(String binaryClassName, ClassLoader loader, String cname, ClassVisitor cv) {
+			super(Opcodes.ASM4, cv);
 			this.binaryClassName = binaryClassName;
+			this.loader = loader;
 			this.locationClass = AProfRegistry.normalize(cname);
 			this.isNormal = AProfRegistry.isNormal(cname);
 			this.cname = cname;
@@ -293,7 +219,9 @@ public class AProfTransformer implements TransformerAnalyzer {
 
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+			// chain to ClassInfoVisitor if needed
 			super.visit(version, access, name, signature, superName, interfaces);
+			// analyze class
 			classVersion = version;
 			AProfRegistry.registerDatatypeInfo(locationClass);
 			if (superName != null && isNormal && AProfRegistry.isDirectCloneClass(superName.replace('/', '.')))
@@ -303,12 +231,15 @@ public class AProfTransformer implements TransformerAnalyzer {
 
 		@Override
 		public MethodVisitor visitMethod(final int access, final String mname, final String desc, final String signature, final String[] exceptions) {
+			// chain to ClassInfoVisitor if needed
+			super.visitMethod(access, mname, desc, signature, exceptions);
+			// analyze method
 			if (isNormal && ((access & Opcodes.ACC_STATIC) == 0) && !locationClass.equals(TransformerUtil.OBJECT_CLASS_NAME) &&
 					mname.equals(TransformerUtil.CLONE) && desc.equals(TransformerUtil.NOARG_RETURNS_OBJECT)) {
 				// no -- does not implement clone directly
 				AProfRegistry.removeDirectCloneClass(locationClass);
 			}
-			Context context = new Context(config, binaryClassName, cname, mname, desc, access);
+			Context context = new Context(config, ciCache, loader, binaryClassName, cname, mname, desc);
 			contexts.add(context);
 			return new MethodAnalyzer(new GeneratorAdapter(new EmptyMethodVisitor(), access, mname, desc), context);
 		}
@@ -349,6 +280,41 @@ public class AProfTransformer implements TransformerAnalyzer {
 	private class EmptyMethodVisitor extends MethodVisitor {
 		public EmptyMethodVisitor() {
 			super(Opcodes.ASM4);
+		}
+	}
+
+	class FrameClassWriter extends ClassWriter {
+		// internalClassName -> ClassInfo
+		private final ClassLoader loader;
+
+		FrameClassWriter(ClassReader classReader, ClassLoader loader) {
+			super(classReader, ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
+			this.loader = loader;
+		}
+
+		/**
+		 * The reason of overriding is to avoid ClassCircularityError which occurs during processing of classes related
+		 * to java.util.TimeZone and use cache of ClassInfo.
+		 */
+		@Override
+		protected String getCommonSuperClass(String type1, String type2) {
+			ClassInfo c = ciCache.getOrBuildRequiredClassInfo(type1, loader);
+			ClassInfo d = ciCache.getOrBuildRequiredClassInfo(type2, loader);
+
+			if (c.isAssignableFrom(d, ciCache, loader))
+				return type1;
+			if (d.isAssignableFrom(c, ciCache, loader))
+				return type2;
+
+			if (c.isInterface() || d.isInterface()) {
+				return TransformerUtil.OBJECT;
+			} else {
+				do {
+					c = c.getSuperclassInfo(ciCache, loader);
+				} while (c != null && !c.isAssignableFrom(d, ciCache, loader));
+
+				return c == null ? TransformerUtil.OBJECT : c.getInternalName();
+			}
 		}
 	}
 }

@@ -18,7 +18,10 @@
 
 package com.devexperts.aprof.transformer;
 
+import java.util.Set;
+
 import com.devexperts.aprof.*;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /**
@@ -26,11 +29,13 @@ import org.objectweb.asm.Type;
  */
 class Context {
 	private final Configuration config;
+	private final ClassInfoCache ciCache;
+	private final ClassLoader loader;
 	private final String locationClass;
 	private final String locationMethod;
 	private final String locationDesc;
 	private final boolean accessMethod;
-	private final boolean methodTracked;
+	private final boolean methodBodyTracked;
 	private final boolean objectInit;
 	private final boolean intrinsicArraysCopyOf;
 	private final String aprofOpsImpl;
@@ -42,13 +47,17 @@ class Context {
 
 	private int locationStack = -1;
 
-	public Context(Configuration config, String binaryClassName, String cname, String mname, String desc, int access) {
+	public Context(Configuration config, ClassInfoCache ciCache, ClassLoader loader,
+		String binaryClassName, String cname, String mname, String desc)
+	{
 		this.config = config;
+		this.ciCache = ciCache;
+		this.loader = loader;
 		this.locationClass = AProfRegistry.normalize(cname);
 		this.locationMethod = mname;
 		this.accessMethod = mname.startsWith(TransformerUtil.ACCESS_METHOD);
 		this.locationDesc = desc;
-		this.methodTracked = !isInternalLocation() && isLocationTracked(locationClass, locationMethod);
+		this.methodBodyTracked = !isInternalLocation() && config.isMethodTracked(cname, mname) && !accessMethod;
 		this.objectInit = locationClass.equals(TransformerUtil.OBJECT_CLASS_NAME) && mname.equals(TransformerUtil.INIT);
 		this.intrinsicArraysCopyOf = TransformerUtil.isIntrinsicArraysCopyOf(binaryClassName, mname, desc);
 		this.aprofOpsImpl = isInternalLocation() ? TransformerUtil.APROF_OPS_INTERNAL : TransformerUtil.APROF_OPS;
@@ -96,8 +105,25 @@ class Context {
 		appendShortType(sb, Type.getReturnType(locationDesc));
 	}
 
-	public boolean isMethodTracked() {
-		return methodTracked;
+	public boolean isMethodInvocationTracked(String cname, int opcode, String owner, String name, String desc) {
+		if (owner.startsWith("["))
+			return false; // do not track array method invocations
+		if (config.isMethodTracked(cname, name))
+			return true; // direct invocation of tracked method through its actual class
+		if (opcode != Opcodes.INVOKEVIRTUAL && opcode != Opcodes.INVOKEINTERFACE)
+			return false; // special or static invocation cannot got though superclass/super interface
+		// Check for invocation via super class or interface
+		// Load target class information
+		ClassInfo classInfo = ciCache.getOrBuildRequiredClassInfo(owner, loader);
+		if (classInfo == null)
+			return false; // don't have class info -- don't track
+		// Check if tracked method
+		Set<String> descSet = classInfo.getTrackedMethodInvocations().get(name);
+		return descSet != null && descSet.contains(desc);
+	}
+
+	public boolean isMethodBodyTracked() {
+		return methodBodyTracked;
 	}
 
 	public boolean isObjectInit() {
@@ -143,10 +169,6 @@ class Context {
 		sb.append(s, s.lastIndexOf('.') + 1, s.length());
 	}
 
-	public boolean isLocationTracked(String locationClass, String locationMethod) {
-		return config.isLocationTracked(locationClass, locationMethod) && !accessMethod;
-	}
-
 	@Override
 	public String toString() {
 		return "Context{" +
@@ -154,7 +176,7 @@ class Context {
 			", locationMethod='" + locationMethod + '\'' +
 			", locationDesc='" + locationDesc + '\'' +
 			", accessMethod=" + accessMethod +
-			", methodTracked=" + methodTracked +
+			", methodTracked=" + methodBodyTracked +
 			", objectInit=" + objectInit +
 			", intrinsicArraysCopyOf=" + intrinsicArraysCopyOf +
 			", aprofOpsImpl='" + aprofOpsImpl + '\'' +
@@ -164,4 +186,5 @@ class Context {
 			", locationStack=" + locationStack +
 			'}';
 	}
+
 }

@@ -43,7 +43,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 			return;
 		}
 		int locationStack = context.getLocationStack();
-		if (context.isMethodTracked()) {
+		if (context.isMethodBodyTracked()) {
 			assert locationStack >= 0 : context;
 			mv.loadLocal(locationStack);
 			return;
@@ -72,7 +72,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	protected void visitMarkDeclareLocationStack() {
 		if (context.isLocationStackNeeded()) {
 			int locationStack = mv.newLocal(Type.getType(LocationStack.class));
-			if (context.isMethodTracked()) {
+			if (context.isMethodBodyTracked()) {
 				mv.visitMethodInsn(Opcodes.INVOKESTATIC, TransformerUtil.LOCATION_STACK, "get", TransformerUtil.NOARG_RETURNS_STACK);
 			} else {
 				mv.visitInsn(Opcodes.ACONST_NULL);

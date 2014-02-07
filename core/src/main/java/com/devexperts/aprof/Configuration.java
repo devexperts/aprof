@@ -196,6 +196,10 @@ public class Configuration {
 		return verbose_redefinition;
 	}
 
+	public boolean isVerboseTracked() {
+		return verbose_tracked;
+	}
+
 	public String getLogFile() {
 		return log_file;
 	}
@@ -252,12 +256,12 @@ public class Configuration {
 		return port;
 	}
 
-	public void analyzeTrackedClasses(ClassLoader loader, TransformerAnalyzer analyzer) {
-		detailsConfig.analyzeTrackedClasses(loader, analyzer, verbose_tracked);
+	public Set<String> getTrackedClasses() {
+		return detailsConfig.getTrackedClasses();
 	}
 
-	public boolean isLocationTracked(String locationClass, String locationMethod) {
-		return detailsConfig.isLocationTracked(locationClass, locationMethod);
+	public boolean isMethodTracked(String className, String methodName) {
+		return detailsConfig.isMethodTracked(className, methodName);
 	}
 
 	public void applyString(String string) {

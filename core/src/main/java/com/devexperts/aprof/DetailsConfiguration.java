@@ -21,10 +21,9 @@ package com.devexperts.aprof;
 import java.io.*;
 import java.util.*;
 
-import com.devexperts.aprof.util.Log;
-
 /**
- * @author Dmitry Paraschenko
+ * This class keeps details configuration as read from file and configuration options.
+ * It is not modified during run-time. Class hierarchy is analyzed and cached by transformer.
  */
 class DetailsConfiguration {
 	public static String RESOURCE = "details.config";
@@ -36,27 +35,19 @@ class DetailsConfiguration {
 	 */
 	private final Map<String, Set<String>> trackedLocations = new LinkedHashMap<String, Set<String>>();
 
-	private final Set<String> remainingClasses = new LinkedHashSet<String>();
-
-	private boolean bootstrapLoaderAnalyzed;
-
-	private ClassLoader lastAnalyzedLoader; // leak at most one class per class loader
-
 	public DetailsConfiguration() {}
 
-	public synchronized void loadFromResource() throws IOException {
+	public void loadFromResource() throws IOException {
 		loadFromStream(ClassLoader.getSystemResourceAsStream(RESOURCE));
-		remainingClasses.addAll(trackedLocations.keySet());
 	}
 
-	public synchronized void loadFromFile(String fileName) throws IOException {
+	public void loadFromFile(String fileName) throws IOException {
 		if (fileName == null || fileName.trim().length() == 0)
 			return;
 		loadFromStream(new FileInputStream(fileName));
-		remainingClasses.addAll(trackedLocations.keySet());
 	}
 
-	public synchronized void addClassMethods(String[] locations) throws IOException {
+	public void addClassMethods(String[] locations) throws IOException {
 		for (String location : locations) {
 			int pos = location.lastIndexOf('.');
 			if (pos < 0)
@@ -67,65 +58,14 @@ class DetailsConfiguration {
 		}
 	}
 
-	public synchronized boolean isLocationTracked(String locationClass, String locationMethod) {
-		Set<String> trackedMethods = trackedLocations.get(locationClass);
-		return trackedMethods != null &&
-			(trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(locationMethod));
+	public Set<String> getTrackedClasses() {
+		return trackedLocations.keySet();
 	}
 
-	/**
-	 * Analyzes tracked classes in the specified class loader.
-	 */
-	public synchronized void analyzeTrackedClasses(ClassLoader loader, TransformerAnalyzer analyzer, boolean verbose) {
-		if (remainingClasses.isEmpty() || (loader == null ? bootstrapLoaderAnalyzed : loader == lastAnalyzedLoader))
-			return;
-		List<String> processedClasses = new ArrayList<String>();
-		for (String className : remainingClasses)
-			if (analyzeTrackedClass(className, loader, analyzer, verbose))
-				processedClasses.add(className);
-		remainingClasses.removeAll(processedClasses);
-		if (loader == null)
-			bootstrapLoaderAnalyzed = true;
-		else
-			lastAnalyzedLoader = loader;
-	}
-
-	private boolean analyzeTrackedClass(String className, ClassLoader loader, TransformerAnalyzer analyzer,
-		boolean verbose)
-	{
-		ClassHierarchy hierarchy = analyzer.getClassHierarchy(className, loader);
-		if (hierarchy == null)
-			return false;
-		if (verbose)
-			Log.out.println("Resolving tracked class: " + className);
-		Set<String> methods = trackedLocations.get(className);
-		Set<String> processedClasses = new HashSet<String>();
-		processedClasses.add(className);
-		processParent(hierarchy.getSuperClass(), processedClasses, methods, loader, analyzer);
-		for (String intf : hierarchy.getDeclaredInterfaces())
-			processParent(intf, processedClasses, methods, loader, analyzer);
-		return true;
-	}
-
-	private void processParent(String className, Set<String> processedClasses, Set<String> overridesMethods,
-		ClassLoader loader, TransformerAnalyzer analyzer)
-	{
-		if (className == null)
-			return;
-		if (!processedClasses.add(className))
-			return; // to avoid infinite recursive just in case there is one
-		ClassHierarchy hierarchy = analyzer.getClassHierarchy(className, loader);
-		if (hierarchy == null)
-			return; // cannot load parent class info. Should not happen, but we'll just ignore
-		Set<String> inheritedMethods = new HashSet<String>(overridesMethods);
-		// retain only virtual methods that are declared or inherited in this parent
-		inheritedMethods.retainAll(hierarchy.getAllVirtualMethods());
-		if (inheritedMethods.isEmpty())
-			return; // nothing is inherited from this parent
+	public boolean isMethodTracked(String className, String methodName) {
 		Set<String> trackedMethods = trackedLocations.get(className);
-		if (trackedMethods == null)
-			trackedLocations.put(className, trackedMethods = new HashSet<String>());
-		trackedMethods.addAll(inheritedMethods);
+		return trackedMethods != null &&
+			(trackedMethods.contains(ANY_METHOD) || trackedMethods.contains(methodName));
 	}
 
 	private void loadFromStream(InputStream stream) throws IOException {

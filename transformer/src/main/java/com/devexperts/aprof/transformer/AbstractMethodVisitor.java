@@ -72,7 +72,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 	public void visitCode() {
 		mv.visitCode();
 		visitMarkDeclareLocationStack();
-		if (context.isMethodTracked()) {
+		if (context.isMethodBodyTracked()) {
 			startFinally = new Label();
 			visitMarkInvokedMethod();
 			mv.visitLabel(startFinally);
@@ -91,7 +91,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 				if (context.isObjectInit() && context.getConfig().isUnknown()) {
 					visitObjectInit();
 				}
-					if (context.isMethodTracked()) {
+				if (context.isMethodBodyTracked()) {
 					visitUnmarkInvokedMethod();
 				}
 				break;
@@ -101,7 +101,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 
 	@Override
 	public void visitMaxs(int maxStack, int maxLocals) {
-		if (context.isMethodTracked()) {
+		if (context.isMethodBodyTracked()) {
 			Label endFinally = new Label();
 			mv.visitTryCatchBlock(startFinally, endFinally, endFinally, null);
 			mv.visitLabel(endFinally);
@@ -186,10 +186,9 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 		boolean isArrayClone = isClone && owner.startsWith("[");
 		boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(cname);
 
-		String locationClass = AProfRegistry.normalize(cname);
-		boolean isMethodTracked = context.isLocationTracked(locationClass, name);
+		boolean isMethodInvocationTracked = context.isMethodInvocationTracked(cname, opcode, owner, name, desc) ;
 
-		if (isMethodTracked) {
+		if (isMethodInvocationTracked) {
 			Label start = new Label();
 			Label end = new Label();
 			Label handler = new Label();

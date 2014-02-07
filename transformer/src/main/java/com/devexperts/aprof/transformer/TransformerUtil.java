@@ -12,6 +12,7 @@ class TransformerUtil {
 
 	static final String LOCATION_STACK = "com/devexperts/aprof/LocationStack";
 
+	static final String OBJECT = "java/lang/Object";
 	static final String OBJECT_CLASS_NAME = "java.lang.Object";
 
 	static final String ACCESS_METHOD = "access$";
@@ -35,5 +36,15 @@ class TransformerUtil {
 		return owner.equals("java/util/Arrays") &&
 			((mname.equals("copyOf") && desc.equals("([Ljava/lang/Object;ILjava/lang/Class;)[Ljava/lang/Object;"))
 			|| (mname.equals("copyOfRange") && desc.equals("([Ljava/lang/Object;IILjava/lang/Class;)[Ljava/lang/Object;")));
+	}
+
+	static void describeClassLoaderForLog(StringBuilder sb, ClassLoader loader) {
+		if (loader != null) {
+			sb.append(" [in ");
+			sb.append(loader.getClass().getName());
+			sb.append('@');
+			sb.append(System.identityHashCode(loader));
+			sb.append("]");
+		}
 	}
 }

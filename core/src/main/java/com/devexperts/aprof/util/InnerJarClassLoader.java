@@ -57,12 +57,6 @@ public class InnerJarClassLoader extends URLClassLoader {
 			cacheJar(jar);
 	}
 
-	/** Forces all classes to be loaded. */
-	public void forceLoadAllClasses() throws ClassNotFoundException {
-		for (String className : classes.keySet())
-			loadClass(className);
-	}
-
 	@Override
 	protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
 		// First, check if the class has already been loaded
