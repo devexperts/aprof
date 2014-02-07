@@ -1,3 +1,19 @@
+AProf 28
+
+** Change Request
+APROF-104: Drop support for an empty list of tracked methods with a meaning of all methods. Use "*" to track all methods.
+** Defect Report
+APROF-106: Fix "signature" configuration option. String constructor signatures shall be distinguished by default.
+APROF-108: Tracking of calls to tracked methods via interface/super-classes fails when they are loaded in non-default class loader
+** Improvement
+APROF-102: Improve arrays size tracking, so that it does not prevent stack allocation
+APROF-103: More benchmarks to test JVM escape analysis capabilities
+APROF-105: A system option to track allocation details during class transformation at a very small performance penalty on all allocations
+APROF-107: Selftests for basic details tracking configuration
+APROF-109: Option to log into file
+APROF-110: Completely redesign tracked classes info loading/caching (multiple classloaders support, performance)
+APROF-111: "noframes" option to omit stackframes generation (very fast, but does not work with Swing)
+
 Aprof 27
 
 ** Change Request
