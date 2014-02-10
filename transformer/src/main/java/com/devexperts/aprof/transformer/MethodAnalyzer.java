@@ -72,14 +72,20 @@ class MethodAnalyzer extends AbstractMethodVisitor {
 	}
 
 	@Override
-	protected void visitAllocate(String desc) {
+	protected void visitAllocateBefore(String desc) {
 		requestLocationStack();
 	}
 
 	@Override
-	protected void visitAllocateArray(String desc) {
+	protected void visitAllocateAfter(String desc) {}
+
+	@Override
+	protected void visitAllocateArrayBefore(String desc) {
 		requestLocationStack();
 	}
+
+	@Override
+	protected void visitAllocateArrayAfter(String desc) {}
 
 	@Override
 	protected void visitAllocateArrayMulti(String desc) {

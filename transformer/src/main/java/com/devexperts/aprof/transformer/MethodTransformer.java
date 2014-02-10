@@ -27,6 +27,8 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * @author Dmitry Paraschenko
  */
 class MethodTransformer extends AbstractMethodVisitor {
+	private static final boolean COUNT_ALLOCATION_AFTER = Boolean.getBoolean("com.devexperts.aprof.countAllocationAfter");
+
 	public MethodTransformer(GeneratorAdapter mv, Context context) {
 		super(mv, context);
 	}
@@ -144,8 +146,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 * @see com.devexperts.aprof.AProfOps#allocate(LocationStack, int)
 	 * @see com.devexperts.aprof.AProfOps#allocateSize(LocationStack, int, Class)
 	 */
-	@Override
-	protected void visitAllocate(String desc) {
+	private void visitAllocate(String desc) {
 		assert context.getConfig().isLocation() : context;
 		pushLocationStack();
 		pushAllocationPoint(desc);
@@ -156,14 +157,24 @@ class MethodTransformer extends AbstractMethodVisitor {
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(), "allocate", TransformerUtil.STACK_INT_VOID);
 	}
 
+	@Override
+	protected void visitAllocateBefore(String desc) {
+		if (!COUNT_ALLOCATION_AFTER)
+			visitAllocate(desc);
+	}
+
+	@Override
+	protected void visitAllocateAfter(String desc) {
+		if (COUNT_ALLOCATION_AFTER)
+			visitAllocate(desc);
+	}
+
 	/**
 	 * OPS implementation is chosen based on the class doing the allocation.
 	 */
-	@Override
 	protected void visitAllocateArray(String desc) {
 		assert context.getConfig().isArrays() : context;
 		if (context.getConfig().isSize()) {
-			mv.dup();
 			pushLocationStack();
 			pushAllocationPoint(desc);
 			Type type = Type.getType(desc);
@@ -178,6 +189,23 @@ class MethodTransformer extends AbstractMethodVisitor {
 			pushAllocationPoint(desc);
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, context.getAprofOpsImplementation(),
 				"allocate", TransformerUtil.STACK_INT_VOID);
+		}
+	}
+
+	@Override
+	protected void visitAllocateArrayBefore(String desc) {
+		if (context.getConfig().isSize())
+			mv.dup(); // keep array size to be allocated
+		if (!COUNT_ALLOCATION_AFTER)
+			visitAllocateArray(desc);
+	}
+
+	@Override
+	protected void visitAllocateArrayAfter(String desc) {
+		if (COUNT_ALLOCATION_AFTER) {
+			if (context.getConfig().isSize())
+				mv.swap(); // retrieve array size from stack
+			visitAllocateArray(desc);
 		}
 	}
 

@@ -26,14 +26,14 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * @author Dmitry Paraschenko
  */
 abstract class AbstractMethodVisitor extends MethodVisitor {
-	private static final Type BOOLEAN_ARR_T = Type.getType(boolean[].class);
-	private static final Type CHAR_ARR_T = Type.getType(char[].class);
-	private static final Type FLOAT_ARR_T = Type.getType(float[].class);
-	private static final Type DOUBLE_ARR_T = Type.getType(double[].class);
-	private static final Type BYTE_ARR_T = Type.getType(byte[].class);
-	private static final Type SHORT_ARR_T = Type.getType(short[].class);
-	private static final Type INT_ARR_T = Type.getType(int[].class);
-	private static final Type LONG_ARR_T = Type.getType(long[].class);
+	private static final String BOOLEAN_ARR_T_DESC = Type.getType(boolean[].class).getDescriptor();
+	private static final String CHAR_ARR_T_DESC = Type.getType(char[].class).getDescriptor();
+	private static final String FLOAT_ARR_T_DESC = Type.getType(float[].class).getDescriptor();
+	private static final String DOUBLE_ARR_T_DESC = Type.getType(double[].class).getDescriptor();
+	private static final String BYTE_ARR_T_DESC = Type.getType(byte[].class).getDescriptor();
+	private static final String SHORT_ARR_T_DESC = Type.getType(short[].class).getDescriptor();
+	private static final String INT_ARR_T_DESC = Type.getType(int[].class).getDescriptor();
+	private static final String LONG_ARR_T_DESC = Type.getType(long[].class).getDescriptor();
 
 	protected final GeneratorAdapter mv;
 	protected final Context context;
@@ -58,9 +58,13 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 
 	protected abstract void visitObjectInit();
 
-	protected abstract void visitAllocate(String desc);
+	protected abstract void visitAllocateBefore(String desc);
 
-	protected abstract void visitAllocateArray(String desc);
+	protected abstract void visitAllocateAfter(String desc);
+
+	protected abstract void visitAllocateArrayBefore(String desc);
+
+	protected abstract void visitAllocateArrayAfter(String desc);
 
 	protected abstract void visitAllocateArrayMulti(String desc);
 
@@ -117,51 +121,60 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 	@Override
 	public void visitTypeInsn(final int opcode, final String desc) {
 		String name = desc.replace('/', '.');
-		if (opcode == Opcodes.NEW && context.getConfig().isLocation()) {
-			visitAllocate(desc);
-		}
-		if (opcode == Opcodes.ANEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf()) {
-			String arrayName = name.startsWith("[") ? "[" + name : "[L" + name + ";";
-			visitAllocateArray(arrayName);
-		}
+		boolean allocate = opcode == Opcodes.NEW && context.getConfig().isLocation();
+		boolean allocateArray = opcode == Opcodes.ANEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf();
+		String arrayDesc = allocateArray ? name.startsWith("[") ? "[" + name : "[L" + name + ";" : null;
+		if (allocate)
+			visitAllocateBefore(desc);
+		if (allocateArray)
+			visitAllocateArrayBefore(arrayDesc);
 		mv.visitTypeInsn(opcode, desc);
+		if (allocate)
+			visitAllocateAfter(desc);
+		if (allocateArray)
+			visitAllocateArrayAfter(arrayDesc);
 	}
 
 	@Override
 	public void visitIntInsn(final int opcode, final int operand) {
-		if (opcode == Opcodes.NEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf()) {
-			Type type;
+		boolean allocateArray = opcode == Opcodes.NEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf();
+		String arrayDesc = null;
+		if (allocateArray) {
 			switch (operand) {
 				case Opcodes.T_BOOLEAN:
-					type = BOOLEAN_ARR_T;
+					arrayDesc = BOOLEAN_ARR_T_DESC;
 					break;
 				case Opcodes.T_CHAR:
-					type = CHAR_ARR_T;
+					arrayDesc = CHAR_ARR_T_DESC;
 					break;
 				case Opcodes.T_FLOAT:
-					type = FLOAT_ARR_T;
+					arrayDesc = FLOAT_ARR_T_DESC;
 					break;
 				case Opcodes.T_DOUBLE:
-					type = DOUBLE_ARR_T;
+					arrayDesc = DOUBLE_ARR_T_DESC;
 					break;
 				case Opcodes.T_BYTE:
-					type = BYTE_ARR_T;
+					arrayDesc = BYTE_ARR_T_DESC;
 					break;
 				case Opcodes.T_SHORT:
-					type = SHORT_ARR_T;
+					arrayDesc = SHORT_ARR_T_DESC;
 					break;
 				case Opcodes.T_INT:
-					type = INT_ARR_T;
+					arrayDesc = INT_ARR_T_DESC;
 					break;
 				case Opcodes.T_LONG:
-					type = LONG_ARR_T;
+					arrayDesc = LONG_ARR_T_DESC;
 					break;
 				default:
-					return; // should not happen
+					assert false;  // should not happen
+					return;
 			}
-			visitAllocateArray(type.getDescriptor());
 		}
+		if (allocateArray)
+			visitAllocateArrayBefore(arrayDesc);
 		mv.visitIntInsn(opcode, operand);
+		if (allocateArray)
+			visitAllocateArrayAfter(arrayDesc);
 	}
 
 	@Override
