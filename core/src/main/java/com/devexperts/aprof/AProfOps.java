@@ -110,12 +110,12 @@ public class AProfOps {
 	}
 
 	public static void allocateReflect(Object o, LocationStack stack, int index) {
-		IndexMap map = getDetailedIndex(stack, getRootIndex(o.getClass().getName(), index));
+		IndexMap map = getDetailedIndex(stack, getRootIndex(AProfRegistry.resolveClassName(o.getClass().getName()), index));
 		map.incrementCount();
 	}
 
 	public static void allocateReflectSize(Object o, LocationStack stack, int index) {
-		RootIndexMap rootIndex = getRootIndex(o.getClass().getName(), index);
+		RootIndexMap rootIndex = getRootIndex(AProfRegistry.resolveClassName(o.getClass().getName()), index);
 		DatatypeInfo datatypeInfo = rootIndex.getDatatypeInfo();
 		IndexMap map = getDetailedIndex(stack, rootIndex);
 		if (datatypeInfo.isArray()) {

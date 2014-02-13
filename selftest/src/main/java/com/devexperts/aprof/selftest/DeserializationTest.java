@@ -52,7 +52,7 @@ class DeserializationTest implements TestCase {
 		return "deserialization";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -60,7 +60,7 @@ class DeserializationTest implements TestCase {
 		return new String[] {getClass().getName() + "$"};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(new Entity(0));
 		return TestUtil.fmt(
 			"{class}$Entity: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +

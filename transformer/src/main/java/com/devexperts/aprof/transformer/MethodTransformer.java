@@ -34,8 +34,7 @@ class MethodTransformer extends AbstractMethodVisitor {
 	}
 
 	protected void pushAllocationPoint(String desc) {
-		String cname = desc.replace('/', '.');
-		mv.push(AProfRegistry.registerAllocationPoint(cname, context.getLocation()));
+		mv.push(AProfRegistry.registerAllocationPoint(AProfRegistry.resolveClassName(desc), context.getLocation()));
 	}
 
 	public void pushLocationStack() {

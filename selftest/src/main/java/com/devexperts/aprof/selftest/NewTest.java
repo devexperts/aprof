@@ -31,7 +31,7 @@ class NewTest implements TestCase {
 		return "new";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -39,7 +39,7 @@ class NewTest implements TestCase {
 		return new String[] {getClass().getName() + "$"};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(new Entity());
 		return TestUtil.fmt(
 			"{class}$Entity: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +

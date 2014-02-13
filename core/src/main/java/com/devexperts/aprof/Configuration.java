@@ -21,6 +21,7 @@ package com.devexperts.aprof;
 import java.io.*;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.*;
 import java.util.*;
 
@@ -33,6 +34,9 @@ public class Configuration {
 	public static final String COMMENT = "#";
 	private static final int SEC = 1000;
 	private static final int MIN = 60 * SEC;
+
+	private static final String XX_UNLOCK_DIAGNOSTIC_VM_OPTIONS = "-XX:+UnlockDiagnosticVMOptions";
+	private static final String XX_LOG_COMPILATION = "-XX:+LogCompilation";
 
 	@Description("Configuration file.")
 	private String config_file = "aprof.config";
@@ -64,6 +68,12 @@ public class Configuration {
 
 	@Description("Be verbose about available tracked classes.")
 	private boolean verbose_tracked = false;
+
+	@Description("Be verbose about allocations eliminated by HotSpot during compilation.")
+	private boolean verbose_eliminate_allocation = false;
+
+	@Description("Check allocations eliminated by HotSpot during compilation and report them separately.")
+	private boolean check_eliminate_allocation = false;
 
 	@Description("Write aprof log to file")
 	private String log_file = "";
@@ -203,6 +213,14 @@ public class Configuration {
 		return verbose_tracked;
 	}
 
+	public boolean isVerboseEliminateAllocation() {
+		return verbose_eliminate_allocation;
+	}
+
+	public boolean isCheckEliminateAllocation() {
+		return check_eliminate_allocation;
+	}
+
 	public String getLogFile() {
 		return log_file;
 	}
@@ -243,8 +261,12 @@ public class Configuration {
 		return exclude;
 	}
 
-	public String[] getSignatureLocations() {
-		return signature;
+	public boolean isSignatureLocation(CharSequence location) {
+		for (String s : signature) {
+			if (s.contentEquals(location))
+				return true;
+		}
+		return false;
 	}
 
 	public String[] getAggregatedClasses() {
@@ -313,11 +335,27 @@ public class Configuration {
 		Arrays.sort(histogram);
 	}
 
-	public void showNotes(PrintWriter out, boolean all) {
-		if (all || histogram.length > 0 && (!arrays || !size))
+	public boolean showNotes(PrintWriter out, boolean all) {
+		boolean ok = true;
+		if (all || histogram.length > 0 && (!arrays || !size)) {
 			out.println("Note: 'histogram' option does not work without 'arrays' and 'size'.");
-		if (all || verbose_redefinition && !verbose)
+			ok = false;
+		}
+		if (all || verbose_redefinition && !verbose) {
 			out.println("Note: 'verbose.redefinition' does not work without 'verbose'.");
+			ok = false;
+		}
+		if (all || (verbose_eliminate_allocation || check_eliminate_allocation) && !isCompileLogEnabled()) {
+			out.println("Note: 'check.eliminate.allocation' and 'verbose.eliminate.allocation' requires running JVM with " +
+				"'" + XX_UNLOCK_DIAGNOSTIC_VM_OPTIONS + "' and '" + XX_LOG_COMPILATION + "' options.");
+			ok = false;
+		}
+		return ok;
+	}
+
+	private boolean isCompileLogEnabled() {
+		List<String> args = ManagementFactory.getRuntimeMXBean().getInputArguments();
+		return args.contains(XX_UNLOCK_DIAGNOSTIC_VM_OPTIONS) && args.contains(XX_LOG_COMPILATION);
 	}
 
 	@Override

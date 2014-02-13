@@ -24,7 +24,8 @@ import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
 
 class ObjectArrayCopyTest implements TestCase {
-	private static final int COUNT = 1000000;
+	private static final int COUNT = 100000;
+	private static Object temp; // prevent elimination
 
 	private static Entity[] ARRAY = new Entity[5];
 
@@ -32,7 +33,7 @@ class ObjectArrayCopyTest implements TestCase {
 		return "objectArrayCopy";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -40,7 +41,7 @@ class ObjectArrayCopyTest implements TestCase {
 		return new String[] { getClass().getName() + "$Entity[]" };
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(ARRAY);
 		return TestUtil.fmt(
 			"{class}$Entity[]: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
@@ -54,7 +55,7 @@ class ObjectArrayCopyTest implements TestCase {
 
 	public void doTest() throws Exception {
 		for (int i = 0; i < COUNT; i++)
-			Arrays.copyOf(ARRAY, ARRAY.length);
+			temp = Arrays.copyOf(ARRAY, ARRAY.length);
 	}
 
 	private static class Entity {

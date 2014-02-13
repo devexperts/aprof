@@ -23,12 +23,13 @@ import com.devexperts.aprof.Configuration;
 
 class TrackingIntfTest implements TestCase {
 	private static final int COUNT = 100000;
+	private static float[] temp; // prevent elimination
 
 	public String name() {
 		return "trackingIntf";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -36,7 +37,7 @@ class TrackingIntfTest implements TestCase {
 		return new String[] { "float[]" };
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(new float[1]);
 		return TestUtil.fmt(
 			"float[]: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
@@ -57,6 +58,6 @@ class TrackingIntfTest implements TestCase {
 	}
 
 	private void invokeTrackedViaIntf(TrackingIntf impl) {
-		impl.trackedMethod(); // interface call to tracked implementation
+		temp = impl.trackedMethod(); // interface call to tracked implementation
 	}
 }

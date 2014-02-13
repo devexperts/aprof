@@ -31,11 +31,12 @@ public interface TestCase {
 	public void doTest() throws Exception;
 
 	/** Verifies AProf configuration and returns <code>null</code> if it's valid or the reason otherwise. */
-	public String verifyConfiguration(Configuration configuration);
+	public String verifyConfiguration(Configuration config);
 
 	/** Returns prefixes of classes to be checked. */
 	public String[] getCheckedClasses();
 
-	/** Returns expected memory usage statistics for single invocation of the {@link #doTest()} method. */
-	public String getExpectedStatistics();
+	/** Returns expected memory usage statistics for single invocation of the {@link #doTest()} method.
+	 * @param config*/
+	public String getExpectedStatistics(Configuration config);
 }

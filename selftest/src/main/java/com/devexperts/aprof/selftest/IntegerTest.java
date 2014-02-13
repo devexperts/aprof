@@ -26,12 +26,13 @@ import com.devexperts.aprof.Configuration;
  */
 class IntegerTest implements TestCase {
 	private static final int COUNT = 1000000;
+	private static Integer temp; // prevent elimination
 
 	public String name() {
 		return "integer";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -39,7 +40,7 @@ class IntegerTest implements TestCase {
 		return new String[] {Integer.class.getName()};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(new Integer(0));
 		return TestUtil.fmt(
 			"java.lang.Integer: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
@@ -54,9 +55,9 @@ class IntegerTest implements TestCase {
 	public void doTest() {
 		for (int i = 0; i < COUNT; i++) {
 			if (i % 2 == 0)
-				Integer.valueOf(i + 10000);
+				temp = i + 10000;
 			else
-				Integer.valueOf(Integer.toString(i + 10000));
+				temp = Integer.valueOf(Integer.toString(i + 10000));
 		}
 	}
 

@@ -161,6 +161,8 @@ public class SnapshotShallow implements Serializable {
 		int n = Math.min(this.histoCounts.length, histoCounts.length);
 		for (int i = 0; i < n; i++)
 			addHistoCount(i, histoCounts[i]);
+		for (int i = n; i < histoCounts.length; i++)
+			count += histoCounts[i];
 	}
 
 	public void sub(long count, long size, long[] histoCounts) {
@@ -168,6 +170,8 @@ public class SnapshotShallow implements Serializable {
 		int n = Math.min(this.histoCounts.length, histoCounts.length);
 		for (int i = 0; i < n; i++)
 			subHistoCount(i, histoCounts[i]);
+		for (int i = n; i < histoCounts.length; i++)
+			count -= histoCounts[i];
 	}
 
 	public void addShallow(SnapshotShallow ss) {

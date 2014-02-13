@@ -26,12 +26,13 @@ import com.devexperts.aprof.Configuration;
  */
 class DoubleTest implements TestCase {
 	private static final int COUNT = 1000000;
+	private static Double temp; // prevent elimination
 
 	public String name() {
 		return "double";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -39,7 +40,7 @@ class DoubleTest implements TestCase {
 		return new String[] {Double.class.getName()};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(new Double(0));
 		return TestUtil.fmt(
 			"java.lang.Double: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
@@ -54,9 +55,9 @@ class DoubleTest implements TestCase {
 	public void doTest() {
 		for (int i = 0; i < COUNT; i++) {
 			if (i % 2 == 0)
-				Double.valueOf(10000 + i);
+				temp = (double)(10000 + i);
 			else
-				Double.valueOf(Double.toString(10000 + i));
+				temp = Double.valueOf(Double.toString(10000 + i));
 		}
 	}
 

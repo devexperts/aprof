@@ -29,11 +29,7 @@ public class IterationSpeedTest {
 	private static int location;
 
 	public static void main(String[] args) throws IOException {
-		AProfRegistry.init(new Configuration(), new ClassNameResolver() {
-			public String resolve(String id) {
-				return id;
-			}
-		});
+		AProfRegistry.init(new Configuration());
 		invPoint = AProfRegistry.registerLocation(IterationSpeedTest.class.getName() + ".testAprof");
 		invMethod = AProfRegistry.registerLocation(Integer.class.getName() + ".valueOf");
 		location = AProfRegistry.registerAllocationPoint(Integer.class.getName(), Integer.class.getName() + ".valueOf");

@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.*;
 
 import com.devexperts.aprof.dump.*;
+import com.devexperts.aprof.hotspot.CompileLogWatcher;
 import com.devexperts.aprof.util.*;
 
 /**
@@ -32,7 +33,6 @@ import com.devexperts.aprof.util.*;
  */
 public class AProfAgent {
 	private static final String TRANSFORMER_CLASS = "com.devexperts.aprof.transformer.AProfTransformer";
-	private static final String RESOLVER_CLASS = "com.devexperts.aprof.transformer.ClassNameResolverImpl";
 
 	private static final List<String> CLASSPATH_JARS = Arrays.asList(
 			"transformer.jar",
@@ -98,14 +98,19 @@ public class AProfAgent {
 	public void go() throws Exception {
 		StringBuilder sb = new StringBuilder();
 		logClearSbAlways(sb.append("Loading ").append(Version.full()).append("..."));
-		config.showNotes(Log.out, false);
+
+		if (!config.showNotes(Log.out, false))
+			throw new IllegalArgumentException("Invalid aprof configuration arguments.");
+
+		if (config.isCheckEliminateAllocation() || config.isVerboseEliminateAllocation()) {
+			CompileLogWatcher thread = new CompileLogWatcher(config);
+			thread.start();
+		}
 
 		InnerJarClassLoader classLoader = getClassLoader();
 
-		Class<ClassNameResolver> resolverClass = (Class<ClassNameResolver>)classLoader.loadClass(RESOLVER_CLASS);
-
 		AProfSizeUtil.init(inst);
-		AProfRegistry.init(config, resolverClass.newInstance());
+		AProfRegistry.init(config);
 
 		Class<ClassFileTransformer> transformerClass = (Class<ClassFileTransformer>)classLoader.loadClass(TRANSFORMER_CLASS);
 		Constructor<ClassFileTransformer> transformerConstructor = transformerClass.getConstructor(Configuration.class);

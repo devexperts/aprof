@@ -25,13 +25,13 @@ import com.devexperts.aprof.Configuration;
  * @author Dmitry Paraschenko
  */
 class CloneTest implements TestCase {
-	private static final int COUNT = 1000000;
+	private static final int COUNT = 100000;
 
 	public String name() {
 		return "clone";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -39,7 +39,7 @@ class CloneTest implements TestCase {
 		return new String[] {getClass().getName() + "$"};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(new Entity());
 		return TestUtil.fmt(
 			"{class}$Entity: {size1} bytes in {count1} objects (avg size {objSize} bytes)\n" +

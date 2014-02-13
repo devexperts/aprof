@@ -28,12 +28,13 @@ import static com.devexperts.aprof.selftest.TestUtil.fmt;
  */
 class TryTest implements TestCase {
 	private static final int COUNT = 100000;
+	private static Object temp; // prevent elimination
 
 	public String name() {
 		return "try";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -41,7 +42,7 @@ class TryTest implements TestCase {
 		return new String[] {Double.class.getName(), Float.class.getName()};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long doubleObjSize = AProfSizeUtil.getObjectSize(new Double(0));
 		long floatObjSize = AProfSizeUtil.getObjectSize(new Float(0));
 		return fmt(
@@ -62,9 +63,9 @@ class TryTest implements TestCase {
 	public void doTest() {
 		for (int i = 0; i < COUNT; i++) {
 			try {
-				Double.valueOf("16r7");
+				temp = Double.valueOf("16r7");
 			} catch (NumberFormatException e) {
-				new Float(10.6);
+				temp = new Float(10.6);
 			}
 		}
 	}

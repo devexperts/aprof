@@ -28,7 +28,7 @@ class TrackingTest implements TestCase {
 		return "tracking";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -36,7 +36,7 @@ class TrackingTest implements TestCase {
 		return new String[] {getClass().getName() + "$"};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(new Entity());
 		return TestUtil.fmt(
 			"{class}$Entity: {size2} bytes in {count2} objects (avg size {objSize} bytes)\n" +

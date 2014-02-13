@@ -38,6 +38,7 @@ public class DumpFormatter {
 
 	private final Configuration config;
 
+	private final SnapshotShallow possiblyEliminatedAllocations = new SnapshotShallow();
 	private final SnapshotShallow[] rest = new SnapshotShallow[MAX_DEPTH];
 	private final FastObjIntMap<String> classLevel = new FastObjIntMap<String>();
 	private final FastObjIntMap<String> locationIndex = new FastObjIntMap<String>();
@@ -112,7 +113,11 @@ public class DumpFormatter {
 		}
 		SnapshotDeep cs = locations.getChild(i);
 		// append data type info for this location, true to always print average size
-		cs.getOrCreateChild(dataTypeName, true, histoCountsLength).addShallow(ss);
+		SnapshotDeep child = cs.getOrCreateChild(dataTypeName, true, histoCountsLength);
+		child.addShallow(ss);
+		// count possibly eliminated allocations separately
+		if (ss.isPossiblyEliminatedAllocation())
+			child.getOrCreateChild("<possibly eliminated>").addShallow(ss);
 	}
 
 	public void dumpSnapshotHeader(PrintWriter out, SnapshotRoot ss, String kind) {
@@ -137,9 +142,34 @@ public class DumpFormatter {
 		out.print(" classes in ");
 		printNum(out, ss.countNonEmptyLeafs());
 		out.println(" locations");
+		//------ Line #3 (optional)
+		if (config.isCheckEliminateAllocation()) {
+			countPossibleEliminatedAllocations(ss);
+			out.print("HotSpot had possibly eliminated allocation of ");
+			if (config.isSize()) {
+				printNumPercent(out, possiblyEliminatedAllocations.getSize(), ss.getSize());
+				out.print(" bytes in ");
+			}
+			printNumPercent(out, possiblyEliminatedAllocations.getTotalCount(), ss.getTotalCount());
+			out.println(" objects");
+		}
 		//------ end with tear line
 		printlnTearLine(out, '=');
 		out.println();
+	}
+
+	private void countPossibleEliminatedAllocations(SnapshotRoot ss) {
+		possiblyEliminatedAllocations.clearShallow();
+		countPossibleEliminatedAllocationsRec(ss);
+	}
+
+	private void countPossibleEliminatedAllocationsRec(SnapshotDeep ss) {
+		if (ss.isPossiblyEliminatedAllocation()) {
+			possiblyEliminatedAllocations.addShallow(ss);
+			return;
+		}
+		for (int i = 0; i < ss.getUsed(); i++)
+			countPossibleEliminatedAllocationsRec(ss.getChild(i));
 	}
 
 	public void dumpSnapshotByDataTypes(PrintWriter out, SnapshotRoot ss) {
@@ -164,7 +194,7 @@ public class DumpFormatter {
 			SnapshotDeep cs = ss.getChild(csi);
 			if (!cs.isEmpty() && classLevel.get(cs.getName()) <= config.getLevel()) {
 				out.print(cs.getName());
-				printlnDetailsShallow(out, cs, ss, true);
+				printlnDetailsShallow(out, cs, ss, true, cs.isPossiblyEliminatedAllocation());
 				printLocationsDeep(out, 1, cs, ss);
 				out.println();
 			} else if (!cs.isEmpty()) {
@@ -176,11 +206,13 @@ public class DumpFormatter {
 			out.print("... ");
 			printNum(out, cskipped);
 			out.print(" more below threshold");
-			printlnDetailsShallow(out, rest[0], ss, true);
+			printlnDetailsShallow(out, rest[0], ss, true, false);
 		}
 	}
 
-	private void printlnDetailsShallow(PrintWriter out, SnapshotShallow item, SnapshotShallow total, boolean printAvg) {
+	private void printlnDetailsShallow(PrintWriter out, SnapshotShallow item, SnapshotShallow total, boolean printAvg,
+		boolean possiblyEliminated)
+	{
 		out.print(": ");
 		if (config.isSize()) {
 			printNumPercent(out, item.getSize(), total.getSize());
@@ -207,6 +239,8 @@ public class DumpFormatter {
 				out.print("]");
 			}
 		}
+		if (possiblyEliminated)
+			out.print("; possibly eliminated");
 		out.println();
 	}
 
@@ -257,7 +291,7 @@ public class DumpFormatter {
 				shown++;
 				printIndent(out, depth);
 				out.print(item.getName());
-				printlnDetailsShallow(out, item, total, item.isArray());
+				printlnDetailsShallow(out, item, total, item.isArray(), item.isPossiblyEliminatedAllocation());
 				if (item.hasChildren())
 					printLocationsDeep(out, depth + 1, item, total);
 				if (depth == 0)
@@ -272,7 +306,7 @@ public class DumpFormatter {
 			out.print("... ");
 			printNum(out, skipped);
 			out.print(" more below threshold");
-			printlnDetailsShallow(out, rest[depth], total, ss.isArray());
+			printlnDetailsShallow(out, rest[depth], total, ss.isArray(), false);
 			if (depth == 0)
 				out.println(); // empty lines on top level
 		}

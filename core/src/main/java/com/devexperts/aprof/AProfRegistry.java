@@ -88,15 +88,11 @@ public class AProfRegistry {
 	public static final int TRANSFORM_LOC = registerLocation(TRANSFORM_NAME) ;
 
 	private static Configuration config;
-	private static ClassNameResolver classNameResolver;
 
-	static void init(Configuration config, ClassNameResolver resolver) {
+	static void init(Configuration config) {
 		if (config == null)
 			throw new IllegalArgumentException("Aprof arguments must be specified");
-		if (resolver == null)
-			throw new IllegalArgumentException("Class-name resolver must be specified");
 		AProfRegistry.config = config;
-		AProfRegistry.classNameResolver = resolver;
 
 		registerDatatypeInfo(Object.class.getName());
 		registerDatatypeInfo(IndexMap.class.getName());
@@ -166,8 +162,76 @@ public class AProfRegistry {
 		return LAST_ROOT_INDEX.get();
 	}
 
-	private static String resolveClassName(String datatype) {
-		return classNameResolver.resolve(datatype);
+	public static String resolveClassName(CharSequence internalName) {
+		StringBuilder sb = resolveClassName(null, internalName);
+		return sb != null ? sb.toString() : internalName.toString();
+	}
+
+	public static StringBuilder resolveClassName(StringBuilder sb, CharSequence internalName) {
+		int aCnt = 0;
+		while (aCnt < internalName.length() && internalName.charAt(aCnt) == '[')
+			aCnt++;
+		if (aCnt > 0 && sb == null)
+			sb = new StringBuilder();
+		int first = aCnt;
+		if (aCnt > 0 && aCnt < internalName.length()) {
+			// array ...
+			char c = internalName.charAt(aCnt);
+			first++;
+			switch (c) {
+			case 'V':
+				sb.append("void");
+				break;
+			case 'Z':
+				sb.append("boolean");
+				break;
+			case 'C':
+				sb.append("char");
+				break;
+			case 'B':
+				sb.append("byte");
+				break;
+			case 'S':
+				sb.append("short");
+				break;
+			case 'I':
+				sb.append("int");
+				break;
+			case 'J':
+				sb.append("long");
+				break;
+			case 'F':
+				sb.append("float");
+				break;
+			case 'D':
+				sb.append("double");
+				break;
+			case 'L':
+				break;
+			default:
+				assert false : internalName; // cannot happen
+			}
+		}
+		if (sb == null) { // check if we need sb
+			for (int i = first; i < internalName.length(); i++) {
+				char c = internalName.charAt(i);
+				if (c == '/' || c == ';') {
+					sb = new StringBuilder();
+					break;
+				}
+			}
+		}
+		if (sb != null) {
+			for (int i = first; i < internalName.length(); i++) {
+				char c = internalName.charAt(i);
+				if (c != ';')
+					sb.append(c == '/' ? '.' : c);
+			}
+		}
+		// if aCnt > 0, then sb cannot be null (sic!)
+		for (int i = 0; i < aCnt; i++)
+			sb.append("[]");
+		return sb;
 	}
 
 	public static String getLocationNameWithoutSuffix(String name) {
@@ -198,6 +262,8 @@ public class AProfRegistry {
 
 	// allocates memory during class transformation only
 	public static DatatypeInfo registerDatatypeInfo(String locationClass) {
+		assert !locationClass.startsWith("[") : locationClass;
+		assert !locationClass.contains("/") : locationClass;
 		int id = DATATYPE_NAMES.get(locationClass);
 		if (id == 0) {
 			id = DATATYPE_NAMES.register(locationClass);
@@ -215,13 +281,7 @@ public class AProfRegistry {
 			DatatypeInfo datatypeInfo = DATATYPE_INFOS.getUnsync(id);
 			if (datatypeInfo == null) {
 				String datatype = DATATYPE_NAMES.get(id);
-				if (datatype.startsWith("[")) {
-					datatype = resolveClassName(datatype);
-					datatypeInfo = new DatatypeInfo(datatype, config.getHistogram(datatype));
-				} else {
-					datatype = resolveClassName(datatype);
-					datatypeInfo = new DatatypeInfo(datatype, null);
-				}
+				datatypeInfo = new DatatypeInfo(datatype, datatype.endsWith("]") ? config.getHistogram(datatype) : null);
 				DATATYPE_INFOS.putUnsync(id, datatypeInfo);
 			}
 			return datatypeInfo;
@@ -259,8 +319,8 @@ public class AProfRegistry {
 	}
 
 	// allocates memory during class transformation only
-	public static int registerAllocationPoint(String cname, String location) {
-		DatatypeInfo datatypeInfo = registerDatatypeInfo(normalize(cname));
+	public static int registerAllocationPoint(String className, String location) {
+		DatatypeInfo datatypeInfo = registerDatatypeInfo(normalize(className));
 		int loc = registerLocation(location);
 		return registerRootIndex(datatypeInfo, loc).getRootIndex();
 	}
@@ -439,6 +499,10 @@ public class AProfRegistry {
 			// reasons, so it will be appended to the end of the children list and will not be findable by
 			// "findChildInSorted" method that is used to find all other children
 			SnapshotDeep cs = ss.getOrCreateChildAt(loc == UNKNOWN_LOC ? ss.findChild(name) : ss.findChildInSorted(name), name);
+			if (childMap instanceof RootIndexMap && ((RootIndexMap)childMap).isPossiblyEliminatedAllocation()) {
+				// copy possibly eliminated allocation attribute
+				cs.setPossiblyEliminatedAllocation();
+			}
 			if (childMap.getChildrenCount() > 0) {
 				// if child will have children, then move whatever counters it had while it had no children to UNKNOWN
 				if (!cs.hasChildren())

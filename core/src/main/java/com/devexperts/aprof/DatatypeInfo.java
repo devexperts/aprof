@@ -23,7 +23,7 @@ import java.util.Comparator;
 /**
 * @author Dmitry Paraschenko
 */
-final class DatatypeInfo {
+public final class DatatypeInfo {
 	/**
 	 * Name of this data type.
 	 */

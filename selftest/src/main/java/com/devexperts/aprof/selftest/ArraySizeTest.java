@@ -31,7 +31,7 @@ class ArraySizeTest implements TestCase {
 		return "arraySize";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -49,7 +49,7 @@ class ArraySizeTest implements TestCase {
 		};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		LinkedHashMap<String, Long> totalSize = new LinkedHashMap<String, Long>();
 		for (int j = 0; j < MAX_LENGTH; j++) {
 			inc(totalSize, "boolean", AProfSizeUtil.getObjectSize(new boolean[j]));

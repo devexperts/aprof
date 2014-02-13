@@ -85,11 +85,8 @@ class Context {
 		sb.append(locationClass);
 		sb.append('.');
 		sb.append(locationMethod);
-		for (String s : config.getSignatureLocations())
-			if (s.contentEquals(sb)) {
-				buildSignatureString(sb);
-				break;
-			}
+		if (config.isSignatureLocation(sb))
+			buildSignatureString(sb);
 		return sb.toString();
 	}
 

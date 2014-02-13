@@ -135,7 +135,7 @@ public class TestSuite {
 		}
 
 		String received = snapshotToString(config, getCheckedClassesSnapshot(test, snapshot0, snapshot1));
-		String expected = test.getExpectedStatistics();
+		String expected = test.getExpectedStatistics(config);
 		String result = compareStatistics(received, expected);
 
 		if (result != null) {

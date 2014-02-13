@@ -25,13 +25,13 @@ class StringTest implements TestCase {
 	private static final int COUNT = 1000000;
 
 	private static final char[] CHARS = "TEST".toCharArray();
-	private static int temp; // prevents optimizations
+	private static String temp; // prevent elimination
 
 	public String name() {
 		return "string";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -39,7 +39,7 @@ class StringTest implements TestCase {
 		return new String[] {String.class.getName(), "char[]"};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long charsObjSize = AProfSizeUtil.getObjectSize(CHARS);
 		long stringObjSize = AProfSizeUtil.getObjectSize(new String());
 		return TestUtil.fmt(
@@ -60,6 +60,6 @@ class StringTest implements TestCase {
 
 	public void doTest() {
 		for (int i = 0; i < COUNT; i++)
-			temp += new String(CHARS).length();
+			temp = new String(CHARS);
 	}
 }

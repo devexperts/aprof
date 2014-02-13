@@ -41,6 +41,7 @@ public class SnapshotDeep extends SnapshotShallow {
 	private int used;
 	private transient SnapshotDeep[] children = EMPTY_CHILDREN; // serialize only used
 	private transient int sortedByNameTo;
+	private boolean possiblyEliminatedAllocation; // viral flag -- inherited by all children and never cleared
 
 	public SnapshotDeep() {}
 
@@ -63,6 +64,18 @@ public class SnapshotDeep extends SnapshotShallow {
 
 	public SnapshotDeep[] getChildren() {
 		return children;
+	}
+
+	public boolean isPossiblyEliminatedAllocation() {
+		return possiblyEliminatedAllocation;
+	}
+
+	public void setPossiblyEliminatedAllocation() {
+		if (possiblyEliminatedAllocation)
+			return;
+		possiblyEliminatedAllocation = true;
+		for (int i = 0; i < used; i++)
+			children[i].setPossiblyEliminatedAllocation();
 	}
 
 	public void clearDeep() {
@@ -89,6 +102,9 @@ public class SnapshotDeep extends SnapshotShallow {
 	}
 
 	public void addDeep(SnapshotDeep ss) {
+		// copy possibly eliminated flag
+		if (ss.isPossiblyEliminatedAllocation())
+			setPossiblyEliminatedAllocation(); // also recursively mark all children
 		// if this snapshot has children, but incoming snapshot has no children, then add incoming into UNKNOWN
 		if (hasChildren() && !ss.hasChildren()) {
 			addToUnknown(ss);
@@ -216,6 +232,8 @@ public class SnapshotDeep extends SnapshotShallow {
 		ensureChildrenCapacity(used + 1);
 		int i = used++;
 		children[i] = new SnapshotDeep(name, isArray, histogramLength);
+		if (isPossiblyEliminatedAllocation())
+			children[i].setPossiblyEliminatedAllocation();
 		return i;
 	}
 

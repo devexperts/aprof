@@ -135,13 +135,24 @@
 							<target>
 								<!-- default configuration -->
 								<java fork="true" dir="${project.build.directory}" jar="${project.build.directory}/aprof.jar" failonerror="true">
+									<jvmarg value="-ea" />
 									<jvmarg value="-javaagent:aprof.jar" />
 									<arg value="selftest" />
 									<arg value="all" />
 								</java>
 								<!-- with Object.<init> instrumentation -->
 								<java fork="true" dir="${project.build.directory}" jar="${project.build.directory}/aprof.jar" failonerror="true">
+									<jvmarg value="-ea" />
 									<jvmarg value="-javaagent:aprof.jar=+unknown" />
+									<arg value="selftest" />
+									<arg value="all" />
+								</java>
+								<!-- with allocation elimination checking instrumentation -->
+								<java fork="true" dir="${project.build.directory}" jar="${project.build.directory}/aprof.jar" failonerror="true">
+									<jvmarg value="-ea" />
+									<jvmarg value="-XX:+UnlockDiagnosticVMOptions" />
+									<jvmarg value="-XX:+LogCompilation" />
+									<jvmarg value="-javaagent:aprof.jar=+check.eliminate.allocation" />
 									<arg value="selftest" />
 									<arg value="all" />
 								</java>

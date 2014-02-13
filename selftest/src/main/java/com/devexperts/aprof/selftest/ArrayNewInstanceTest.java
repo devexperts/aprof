@@ -24,14 +24,15 @@ import com.devexperts.aprof.AProfSizeUtil;
 import com.devexperts.aprof.Configuration;
 
 class ArrayNewInstanceTest implements TestCase {
-	private static final int COUNT = 1000000;
+	private static final int COUNT = 100000;
 	private static final int LENGTH = 5;
+	private static Object temp; // prevent elimination
 
 	public String name() {
 		return "arrayNewInstance";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -39,7 +40,7 @@ class ArrayNewInstanceTest implements TestCase {
 		return new String[] { getClass().getName() + "$Entity[]" };
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(new Entity[LENGTH]);
 		return TestUtil.fmt(
 			"{class}$Entity[]: {size} bytes in {count} objects (avg size {objSize} bytes)\n" +
@@ -52,7 +53,7 @@ class ArrayNewInstanceTest implements TestCase {
 
 	public void doTest() throws Exception {
 		for (int i = 0; i < COUNT; i++)
-			Array.newInstance(Entity.class, LENGTH);
+			temp = Array.newInstance(Entity.class, LENGTH);
 	}
 
 	private static class Entity {}

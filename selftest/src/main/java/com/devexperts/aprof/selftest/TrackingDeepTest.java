@@ -23,12 +23,13 @@ import com.devexperts.aprof.Configuration;
 
 class TrackingDeepTest implements TestCase {
 	private static final int COUNT = 100000;
+	private static Entity temp; // prevent elimination
 
 	public String name() {
 		return "trackingDeep";
 	}
 
-	public String verifyConfiguration(Configuration configuration) {
+	public String verifyConfiguration(Configuration config) {
 		return null;
 	}
 
@@ -36,7 +37,7 @@ class TrackingDeepTest implements TestCase {
 		return new String[] {getClass().getName() + "$"};
 	}
 
-	public String getExpectedStatistics() {
+	public String getExpectedStatistics(Configuration config) {
 		long objSize = AProfSizeUtil.getObjectSize(new Entity());
 		return TestUtil.fmt(
 			"{class}$Entity: {size2} bytes in {count2} objects (avg size {objSize} bytes)\n" +
@@ -54,8 +55,8 @@ class TrackingDeepTest implements TestCase {
 
 	public void doTest() {
 		for (int i = 0; i < COUNT; i++) {
-			trackedMethod();
-			notTrackedMethod();
+			temp = trackedMethod();
+			temp = notTrackedMethod();
 		}
 	}
 

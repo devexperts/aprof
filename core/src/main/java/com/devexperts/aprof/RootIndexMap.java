@@ -1,6 +1,6 @@
 package com.devexperts.aprof;
 
-class RootIndexMap extends IndexMap {
+public class RootIndexMap extends IndexMap {
 	/**
 	 * The corresponding datatype.
 	 */
@@ -10,6 +10,11 @@ class RootIndexMap extends IndexMap {
 	 * Root index in AProfRegistry rootIndexes.
 	 */
 	private final int rootIndex;
+
+	/**
+	 * Allocation was possibly eliminated by HotSpot.
+	 */
+	private boolean possiblyEliminatedAllocation;
 
 	RootIndexMap(int location, int rootIndex, int[] histogram, DatatypeInfo datatypeInfo) {
 		super(location, histogram);
@@ -23,5 +28,13 @@ class RootIndexMap extends IndexMap {
 
 	int getRootIndex() {
 		return rootIndex;
+	}
+
+	public boolean isPossiblyEliminatedAllocation() {
+		return possiblyEliminatedAllocation;
+	}
+
+	public void setPossiblyEliminatedAllocation() {
+		possiblyEliminatedAllocation = true;
 	}
 }
