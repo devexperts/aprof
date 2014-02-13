@@ -23,6 +23,7 @@ import com.devexperts.aprof.Configuration;
 
 class TrackingTest implements TestCase {
 	private static final int COUNT = 100000;
+	private static Entity temp; // prevent elimination
 
 	public String name() {
 		return "tracking";
@@ -53,8 +54,8 @@ class TrackingTest implements TestCase {
 
 	public void doTest() {
 		for (int i = 0; i < COUNT; i++) {
-			trackedMethod();
-			notTrackedMethod();
+			temp = trackedMethod();
+			temp = notTrackedMethod();
 		}
 	}
 
