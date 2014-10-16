@@ -22,6 +22,7 @@ APROF-97: Add timestamp to aprof output in the same format as GC date stamps (-X
 ** Defect Report
 APROF-85: "Allocated objects in xxx locations of yyy classes" stats in report are wrong
 APROF-86: Array allocations are counted twice
+APROF-87: Reflection allocation location stack is not tracked
 APROF-88: Arrays.copyOf and Arrays.copyOfRange HotSpot intrinsic memory allocation is not tracked
 APROF-99: Unknown locations shall be attributed to their parent known locations in "Top allocation-inducing locations" section
 ** Improvement
