@@ -18,16 +18,24 @@
 
 package com.devexperts.aprof.transformer;
 
-import java.io.*;
+import com.devexperts.aprof.AProfRegistry;
+import com.devexperts.aprof.Configuration;
+import com.devexperts.aprof.LocationStack;
+import com.devexperts.aprof.util.Log;
+import org.objectweb.asm.*;
+import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.JSRInlinerAdapter;
+import org.objectweb.asm.commons.TryCatchBlockSorter;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.*;
-
-import com.devexperts.aprof.*;
-import com.devexperts.aprof.util.Log;
-import org.objectweb.asm.*;
-import org.objectweb.asm.commons.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author Roman Elizarov
@@ -261,7 +269,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 	private class EmptyMethodVisitor extends MethodVisitor {
 		public EmptyMethodVisitor() {
-			super(Opcodes.ASM4);
+			super(Opcodes.ASM5);
 		}
 	}
 

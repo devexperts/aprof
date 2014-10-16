@@ -19,7 +19,10 @@
 package com.devexperts.aprof.transformer;
 
 import com.devexperts.aprof.AProfRegistry;
-import org.objectweb.asm.*;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
 /**
@@ -185,10 +188,10 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 	}
 
 	@Override
-	public void visitMethodInsn(final int opcode, final String owner, final String name, final String desc) {
+	public void visitMethodInsn(final int opcode, final String owner, final String name, final String desc, boolean intf) {
 		if (context.isInternalLocation()) {
 			// do not instrument method invocations in internal locations
-			mv.visitMethodInsn(opcode, owner, name, desc);
+			mv.visitMethodInsn(opcode, owner, name, desc, intf);
 			return;
 		}
 
@@ -209,7 +212,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 			visitMarkInvocationPoint();
 			mv.visitTryCatchBlock(start, end, handler, null);
 			mv.visitLabel(start);
-			mv.visitMethodInsn(opcode, owner, name, desc);
+			mv.visitMethodInsn(opcode, owner, name, desc, intf);
 			mv.visitLabel(end);
 			visitUnmarkInvocationPoint();
 			mv.goTo(done);
@@ -221,7 +224,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 			mv.throwException();
 			mv.visitLabel(done);
 		} else {
-			mv.visitMethodInsn(opcode, owner, name, desc);
+			mv.visitMethodInsn(opcode, owner, name, desc, intf);
 		}
 
 		if (!context.getConfig().isReflect())
