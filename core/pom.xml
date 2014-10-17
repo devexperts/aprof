@@ -22,7 +22,7 @@
 	<parent>
 		<groupId>com.devexperts.aprof</groupId>
 		<artifactId>aprof</artifactId>
-		<version>29-SNAPSHOT</version>
+		<version>29</version>
 	</parent>
 
 	<packaging>jar</packaging>
