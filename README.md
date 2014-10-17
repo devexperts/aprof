@@ -12,9 +12,9 @@ increments wherever memory allocation is done.
 Download
 --------
 
-Download binaries of the latest release 28 here:
+Download binaries of the latest release here:
 
-http://svn-code.devexperts.com/code/aprof/releases/com/devexperts/aprof/agent/28/agent-28-bin.zip
+https://bintray.com/devexperts/Maven/aprof/_latestVersion
 
 Using Aprof
 -----------
