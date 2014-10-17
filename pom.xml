@@ -37,7 +37,7 @@
 
 	<scm>
 		<connection>scm:git:https://github.com/Devexperts/aprof.git</connection>
-		<developerConnection>scm:git:ssh://git.in.devexperts.com/aprof</developerConnection>
+		<developerConnection>scm:git:file:///${project.basedir}</developerConnection>
 	</scm>
 
 	<distributionManagement>
@@ -104,6 +104,7 @@
 				<artifactId>maven-release-plugin</artifactId>
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
+					<pushChanges>false</pushChanges>
 				</configuration>
 			</plugin>
 			<plugin>
