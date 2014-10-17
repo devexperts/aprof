@@ -14,7 +14,7 @@ Download
 
 Download binaries of the latest release here:
 
-https://bintray.com/devexperts/Maven/aprof/_latestVersion
+<a href='https://bintray.com/devexperts/Maven/aprof/_latestVersion'><img src='https://api.bintray.com/packages/devexperts/Maven/aprof/images/download.svg'></a>.
 
 Using Aprof
 -----------
