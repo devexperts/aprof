@@ -1,3 +1,11 @@
+AProf 29
+
+** Change Request
+APROF-113: Check for allocations that were eliminated by HotSpot and mark them separately in reports
+APROF-114: Migrate to ASM 5.0.3, support Java 8
+** Improvement
+APROF-112: Experimental system option to count regular object and array allocations after their "new" bytecode (not before)
+
 AProf 28
 
 ** Change Request
