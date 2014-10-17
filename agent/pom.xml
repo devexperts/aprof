@@ -94,19 +94,6 @@
 				<artifactId>maven-assembly-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>aprof-src-assembly</id>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-						<configuration>
-							<finalName>${project.build.finalName}</finalName>
-							<descriptors>
-								<descriptor>src/assembly/src.xml</descriptor>
-							</descriptors>
-						</configuration>
-					</execution>
-					<execution>
 						<id>aprof-bin-assembly</id>
 						<phase>package</phase>
 						<goals>
@@ -132,6 +119,7 @@
 							<goal>run</goal>
 						</goals>
 						<configuration>
+							<skip>${skipTests}</skip>
 							<target>
 								<!-- default configuration -->
 								<java fork="true" dir="${project.build.directory}" jar="${project.build.directory}/aprof.jar" failonerror="true">
@@ -147,26 +135,16 @@
 									<arg value="selftest" />
 									<arg value="all" />
 								</java>
-								<!-- with allocation elimination checking instrumentation -->
-								<java fork="true" dir="${project.build.directory}" jar="${project.build.directory}/aprof.jar" failonerror="true">
-									<jvmarg value="-ea" />
-									<jvmarg value="-XX:+UnlockDiagnosticVMOptions" />
-									<jvmarg value="-XX:+LogCompilation" />
-									<jvmarg value="-javaagent:aprof.jar=+check.eliminate.allocation" />
-									<arg value="selftest" />
-									<arg value="all" />
-								</java>
 							</target>
 						</configuration>
-
 					</execution>
 				</executions>
 			</plugin>
-
+			<!-- Deploy to temporary staging directory -->
 			<plugin>
 				<artifactId>maven-deploy-plugin</artifactId>
 				<configuration>
-					<skip>false</skip>
+					<skip>${deploy.skip}</skip>
 				</configuration>
 			</plugin>
 		</plugins>

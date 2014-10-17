@@ -15,7 +15,9 @@
   ~
   ~ You should have received a copy of the GNU General Public License
   ~ along with this program.  If not, see <http://www.gnu.org/licenses />.
-  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.devexperts.aprof</groupId>
@@ -24,6 +26,8 @@
 	<packaging>pom</packaging>
 
 	<name>Aprof</name>
+	<description>Java Memory Allocation Profiler</description>
+
 	<url>http://code.devexperts.com/display/Aprof</url>
 
 	<properties>
@@ -32,9 +36,17 @@
 	</properties>
 
 	<scm>
-		<connection>scm:svn:http://svn-code.devexperts.com/code/aprof/trunk</connection>
-		<developerConnection>scm:svn:http://svn-code.devexperts.com/coderw/aprof/trunk</developerConnection>
+		<connection>scm:git:https://github.com/Devexperts/aprof.git</connection>
+		<developerConnection>scm:git:ssh://git.in.devexperts.com/aprof</developerConnection>
 	</scm>
+
+	<distributionManagement>
+		<repository>
+			<id>bintray-devexperts</id>
+			<name>devexperts-maven-aprof</name>
+			<url>https://api.bintray.com/maven/devexperts/Maven/aprof</url>
+		</repository>
+	</distributionManagement>
 
 	<modules>
 		<module>transformer</module>
@@ -43,6 +55,32 @@
 		<module>agent</module>
 		<module>benchmark</module>
 	</modules>
+
+	<profiles>
+		<!-- No deployment for SNAPSHOT  -->
+		<profile>
+			<id>snapshot-profile</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<deploy.skip>true</deploy.skip>
+			</properties>
+		</profile>
+		<!-- Deployment for release only -->
+		<profile>
+			<id>release-profile</id>
+			<activation>
+				<property>
+					<name>performRelease</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<properties>
+				<deploy.skip>false</deploy.skip>
+			</properties>
+		</profile>
+	</profiles>
 
 	<dependencies>
 		<dependency>
@@ -66,38 +104,14 @@
 				<artifactId>maven-release-plugin</artifactId>
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
-					<tagBase>http://svn-code.devexperts.com/coderw/aprof/tags</tagBase>
 				</configuration>
 			</plugin>
 			<plugin>
 				<artifactId>maven-deploy-plugin</artifactId>
 				<inherited>true</inherited>
 				<configuration>
-					<skip>true</skip>
+					<skip>true</skip> <!-- will deploy only agent module and only during release -->
 				</configuration>
-				<!-- deploy to SVN does via wagon not work without explicitly declared dependencies -->
-				<dependencies>
-					<dependency>
-						<groupId>org.apache.maven.wagon</groupId>
-						<artifactId>wagon-scm</artifactId>
-						<version>2.2</version>
-					</dependency>
-					<dependency>
-						<groupId>org.apache.maven.scm</groupId>
-						<artifactId>maven-scm-manager-plexus</artifactId>
-						<version>1.8.1</version>
-					</dependency>
-					<dependency>
-						<groupId>org.apache.maven.scm</groupId>
-						<artifactId>maven-scm-api</artifactId>
-						<version>1.8.1</version>
-					</dependency>
-					<dependency>
-						<groupId>org.apache.maven.scm</groupId>
-						<artifactId>maven-scm-provider-svnexe</artifactId>
-						<version>1.8.1</version>
-					</dependency>
-				</dependencies>
 			</plugin>
 			<plugin>
 				<artifactId>maven-source-plugin</artifactId>
@@ -110,15 +124,16 @@
 				</executions>
 			</plugin>
 			<plugin>
-				<groupId>org.codehaus.plexus</groupId>
-				<artifactId>plexus-maven-plugin</artifactId>
-				<extensions>true</extensions>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
 			</plugin>
 			<plugin>
 				<artifactId>maven-enforcer-plugin</artifactId>
 				<configuration>
 					<rules>
-						<DependencyConvergence />
+						<DependencyConvergence/>
 						<requireMavenVersion>
 							<version>3.0.4</version>
 						</requireMavenVersion>
@@ -137,8 +152,8 @@
 					</execution>
 				</executions>
 			</plugin>
-
 		</plugins>
+
 		<pluginManagement>
 			<plugins>
 				<plugin>
@@ -170,6 +185,10 @@
 					<version>2.1.2</version>
 				</plugin>
 				<plugin>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>2.9.1</version>
+				</plugin>
+				<plugin>
 					<artifactId>maven-antrun-plugin</artifactId>
 					<version>1.7</version>
 				</plugin>
@@ -185,12 +204,4 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-
-	<distributionManagement>
-		<repository>
-			<id>remote-repository</id>
-			<name>Subversion Repository</name>
-			<url>scm:svn:http://svn-code.devexperts.com/coderw/aprof/releases</url>
-		</repository>
-	</distributionManagement>
 </project>
