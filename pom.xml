@@ -37,7 +37,7 @@
 
 	<scm>
 		<connection>scm:git:https://github.com/Devexperts/aprof.git</connection>
-		<developerConnection>scm:git:file:///${project.basedir}</developerConnection>
+		<developerConnection>scm:git:file:///C:\Projects\aprof</developerConnection>
 	</scm>
 
 	<distributionManagement>
