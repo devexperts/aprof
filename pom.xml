@@ -21,7 +21,7 @@
 
 	<groupId>com.devexperts.aprof</groupId>
 	<artifactId>aprof</artifactId>
-	<version>29</version>
+	<version>30-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>Aprof</name>

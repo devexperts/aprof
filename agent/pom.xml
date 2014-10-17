@@ -22,7 +22,7 @@
 	<parent>
 		<groupId>com.devexperts.aprof</groupId>
 		<artifactId>aprof</artifactId>
-		<version>29</version>
+		<version>30-SNAPSHOT</version>
 	</parent>
 
 	<packaging>jar</packaging>
@@ -34,17 +34,17 @@
 		<dependency>
 			<groupId>com.devexperts.aprof</groupId>
 			<artifactId>core</artifactId>
-			<version>29</version>
+			<version>30-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.devexperts.aprof</groupId>
 			<artifactId>transformer</artifactId>
-			<version>29</version>
+			<version>30-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.devexperts.aprof</groupId>
 			<artifactId>selftest</artifactId>
-			<version>29</version>
+			<version>30-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 
