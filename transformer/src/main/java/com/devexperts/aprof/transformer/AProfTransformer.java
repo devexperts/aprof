@@ -82,11 +82,11 @@ public class AProfTransformer implements ClassFileTransformer {
 		// start transformation
 		boolean anonymous = internalClassName == null;
 		String cname = anonymous ? null : internalClassName.replace('/', '.');
+		int classNo = AProfRegistry.incrementCount();
 		if (!anonymous && isExcluded(cname)) {
-			log(0, "Skipping transformation of excluded class", cname, loader, null);
+			log(classNo, "Skipping transformation of excluded class", cname, loader, null);
 			return null;
 		}
-		int classNo = AProfRegistry.incrementCount();
 		try {
 			ClassReader cr = new ClassReader(classFileBuffer);
 
@@ -117,8 +117,11 @@ public class AProfTransformer implements ClassFileTransformer {
 					break;
 				}
 			}
-			if (!transformationNeeded)
+			if (!transformationNeeded) {
+				if (config.isVerbose()) // Note: shall have the same message length as "Transformed"
+					log(classNo, "Analyzed   ", cname, loader, null);
 				return null; // don't transform classes that don't need transformation
+			}
 
 			// ---- 2ND PASS: TRANSFORM CLASS ----
 
@@ -135,9 +138,11 @@ public class AProfTransformer implements ClassFileTransformer {
 			// Convert transformed class to byte array, dump (if needed) and return
 			byte[] bytes = cw.toByteArray();
 			dumpClass(classNo, internalClassName, cname, loader, bytes);
+			if (config.isVerbose())
+				log(classNo, "Transformed", cname, loader, null);
 			return bytes;
 		} catch (Throwable t) {
-			log(classNo, "failed", cname, loader, t);
+			log(classNo, "Failed to process", cname, loader, t);
 			return null;
 		} finally {
 			AProfRegistry.incrementTime(System.currentTimeMillis() - start);
@@ -156,15 +161,10 @@ public class AProfTransformer implements ClassFileTransformer {
 	private void log(int classNo, String message, String cname, ClassLoader loader, Throwable error) {
 		synchronized (sharedStringBuilder) {
 			sharedStringBuilder.setLength(0);
-			if (classNo != 0) {
-				sharedStringBuilder.append("Transforming class");
-				sharedStringBuilder.append(" #");
-				sharedStringBuilder.append(classNo);
-			}
-			if (message != null) {
-				sharedStringBuilder.append(' ');
-				sharedStringBuilder.append(message);
-			}
+			sharedStringBuilder.append("#");
+			sharedStringBuilder.append(classNo);
+			sharedStringBuilder.append(' ');
+			sharedStringBuilder.append(message);
 			if (cname != null) {
 				sharedStringBuilder.append(": ");
 				sharedStringBuilder.append(cname);
@@ -194,7 +194,7 @@ public class AProfTransformer implements ClassFileTransformer {
 	            out.close();
 			}
 		} catch (IOException e) {
-			log(classNo, "failed", cname, loader, e);
+			log(classNo, "Failed to dump", cname, loader, e);
 		}
 	}
 
@@ -227,8 +227,6 @@ public class AProfTransformer implements ClassFileTransformer {
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 			if (binaryClassName == null)
 				initNames(name, name.replace('/', '.'));
-			if (config.isVerbose())
-				log(classNo, null, cname, loader, null);
 			if (!binaryClassName.equals(name))
 				log(classNo, "Name in class file is different: " + name, cname, loader, null);
 			// chain to ClassInfoVisitor if needed
