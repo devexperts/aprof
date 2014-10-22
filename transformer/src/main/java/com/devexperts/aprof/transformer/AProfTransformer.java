@@ -67,6 +67,8 @@ public class AProfTransformer implements ClassFileTransformer {
 		}
 	}
 
+	int anonCount;
+
 	private byte[] transformImpl(ClassLoader loader, String internalClassName,
 						Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classFileBuffer)
 			throws IllegalClassFormatException
@@ -78,33 +80,34 @@ public class AProfTransformer implements ClassFileTransformer {
 		ClassInfoMap classInfoMap = ciCache.getOrInitClassInfoMap(loader);
 
 		// start transformation
-		if (internalClassName == null) {
-			log(0, "Cannot transform class with no name", null, loader, null);
+		boolean anonymous = internalClassName == null;
+		String cname = anonymous ? null : internalClassName.replace('/', '.');
+		if (!anonymous && isExcluded(cname)) {
+			log(0, "Skipping transformation of excluded class", cname, loader, null);
 			return null;
 		}
-		String cname = internalClassName.replace('/', '.');
-		for (String s : config.getExcludedClasses()) {
-			if (cname.equals(s)) {
-				log(0, "Skipping transformation of excluded class", cname, loader, null);
-				return null;
-			}
-		}
 		int classNo = AProfRegistry.incrementCount();
-		if (config.isVerbose())
-			log(classNo, null, cname, loader, null);
 		try {
 			ClassReader cr = new ClassReader(classFileBuffer);
 
 			// ---- 1ST PASS: ANALYZE CLASS ----
 
 			// Also build class info if we don't have it yet in cache
-			ClassInfo classInfo = classInfoMap.get(internalClassName);
-			ClassInfoVisitor classInfoVisitor = classInfo == null ?
+			ClassInfo classInfo = anonymous ? null : classInfoMap.get(internalClassName);
+			ClassInfoVisitor classInfoVisitor = classInfo == null && !anonymous ?
 				new ClassInfoVisitor(classInfoMap.isInitTrackedClasses()) : null;
-			ClassAnalyzer classAnalyzer = new ClassAnalyzer(internalClassName, loader, cname, classInfoVisitor);
+			ClassAnalyzer classAnalyzer = new ClassAnalyzer(classNo, loader, classInfoVisitor);
+			// set & check name if it was not anonymous
+			if (!anonymous)
+				classAnalyzer.initNames(internalClassName, cname);
 			cr.accept(classAnalyzer, ClassReader.SKIP_DEBUG + ClassReader.SKIP_FRAMES);
 			if (classInfoVisitor != null)
 				classInfoMap.put(internalClassName, classInfoVisitor.result);
+			// get names from analyzer (from inside class file) if it was anonymous
+			if (anonymous) {
+				internalClassName = classAnalyzer.binaryClassName;
+				cname = classAnalyzer.cname;
+			}
 
 			// check if transformation is needed
 			boolean transformationNeeded = false;
@@ -123,7 +126,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			ClassWriter cw = computeFrames ?
 				new FrameClassWriter(cr, loader) :
 				new ClassWriter(ClassWriter.COMPUTE_MAXS);
-			ClassVisitor classTransformer = new ClassTransformer(cw, cname, classAnalyzer.contexts);
+			ClassVisitor classTransformer = new ClassTransformer(cw, classAnalyzer.contexts);
 			int transformFlags =
 				(config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) +
 				(config.isNoFrames() || computeFrames ? ClassReader.SKIP_FRAMES : 0);
@@ -131,7 +134,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 			// Convert transformed class to byte array, dump (if needed) and return
 			byte[] bytes = cw.toByteArray();
-			dumpClass(internalClassName, classNo, cname, loader, bytes);
+			dumpClass(classNo, internalClassName, cname, loader, bytes);
 			return bytes;
 		} catch (Throwable t) {
 			log(classNo, "failed", cname, loader, t);
@@ -139,6 +142,15 @@ public class AProfTransformer implements ClassFileTransformer {
 		} finally {
 			AProfRegistry.incrementTime(System.currentTimeMillis() - start);
 		}
+	}
+
+	private boolean isExcluded(String cname) {
+		for (String s : config.getExcludedClasses()) {
+			if (cname.equals(s)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void log(int classNo, String message, String cname, ClassLoader loader, Throwable error) {
@@ -168,7 +180,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		}
 	}
 
-	private void dumpClass(String binaryClassName, int classNo, String cname, ClassLoader loader, byte[] bytes) {
+	private void dumpClass(int classNo, String binaryClassName, String cname, ClassLoader loader, byte[] bytes) {
 		String dir = config.getDumpClassesDir();
 		if (dir.length() == 0)
 			return;
@@ -187,26 +199,38 @@ public class AProfTransformer implements ClassFileTransformer {
 	}
 
 	private class ClassAnalyzer extends ClassVisitor {
-		private final String binaryClassName;
+		private final int classNo;
 		private final ClassLoader loader;
-		private final String locationClass;
-		private final boolean isNormal;
-		private final String cname;
+
+		private String binaryClassName;
+		private String cname;
+		private String locationClass;
+		private boolean isNormal;
 
 		final List<Context> contexts = new ArrayList<Context>();
 		int classVersion;
 
-		public ClassAnalyzer(String binaryClassName, ClassLoader loader, String cname, ClassVisitor cv) {
+		public ClassAnalyzer(int classNo, ClassLoader loader, ClassVisitor cv) {
 			super(Opcodes.ASM4, cv);
-			this.binaryClassName = binaryClassName;
+			this.classNo = classNo;
 			this.loader = loader;
+		}
+
+		public void initNames(String binaryClassName, String cname) {
+			this.binaryClassName = binaryClassName;
+			this.cname = cname;
 			this.locationClass = AProfRegistry.normalize(cname);
 			this.isNormal = AProfRegistry.isNormal(cname);
-			this.cname = cname;
 		}
 
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+			if (binaryClassName == null)
+				initNames(name, name.replace('/', '.'));
+			if (config.isVerbose())
+				log(classNo, null, cname, loader, null);
+			if (!binaryClassName.equals(name))
+				log(classNo, "Name in class file is different: " + name, cname, loader, null);
 			// chain to ClassInfoVisitor if needed
 			super.visit(version, access, name, signature, superName, interfaces);
 			// analyze class
@@ -236,7 +260,7 @@ public class AProfTransformer implements ClassFileTransformer {
 	private class ClassTransformer extends ClassVisitor {
 		private final Iterator<Context> contextIterator;
 
-		public ClassTransformer(final ClassVisitor cv, String cname, List<Context> contexts) {
+		public ClassTransformer(ClassVisitor cv, List<Context> contexts) {
 			super(Opcodes.ASM4, cv);
 			this.contextIterator = contexts.iterator();
 		}
