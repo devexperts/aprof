@@ -35,6 +35,12 @@ Documentation
 Documentation can be found at the project's homepage:
 https://code.devexperts.com/display/AProf/
 
+How it works
+------------
+
+See presentation on Joker Conference 2014: 
+http://www.slideshare.net/elizarov/aprof-jocker-2014
+
 Feedback
 --------
 
