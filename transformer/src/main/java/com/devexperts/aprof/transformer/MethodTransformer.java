@@ -31,15 +31,17 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 class MethodTransformer extends AbstractMethodVisitor {
 	private static final boolean COUNT_ALLOCATION_AFTER = Boolean.getBoolean("com.devexperts.aprof.countAllocationAfter");
 
+	private Label startFinally;
+
 	public MethodTransformer(GeneratorAdapter mv, Context context) {
 		super(mv, context);
 	}
 
-	protected void pushAllocationPoint(String desc) {
+	private void pushAllocationPoint(String desc) {
 		mv.push(AProfRegistry.registerAllocationPoint(AProfRegistry.resolveClassName(desc), context.getLocation()));
 	}
 
-	public void pushLocationStack() {
+	private void pushLocationStack() {
 		assert context.isLocationStackNeeded() : context;
 		if (context.isInternalLocation()) {
 			mv.visitInsn(Opcodes.ACONST_NULL);
@@ -89,42 +91,69 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 * @see com.devexperts.aprof.LocationStack#addInvokedMethod(int)
 	 */
 	@Override
-	protected void visitMarkInvokedMethod() {
+	protected void visitStartInvokedMethod() {
 		assert !context.isInternalLocation() : context;
+		startFinally = new Label();
 		pushLocationStack();
 		mv.push(AProfRegistry.registerLocation(context.getLocation()));
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, TransformerUtil.LOCATION_STACK, "addInvokedMethod", TransformerUtil.INT_VOID, false);
+		mv.visitLabel(startFinally);
 	}
 
 	/**
 	 * @see com.devexperts.aprof.LocationStack#removeInvokedMethod()
 	 */
 	@Override
-	protected void visitUnmarkInvokedMethod() {
+	protected void visitReturnFromInvokedMethod() {
 		assert !context.isInternalLocation() : context;
 		pushLocationStack();
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, TransformerUtil.LOCATION_STACK, "removeInvokedMethod", TransformerUtil.NOARG_VOID, false);
 	}
 
-	/**
-	 * @see com.devexperts.aprof.LocationStack#addInvocationPoint(int)
-	 */
 	@Override
-	protected void visitMarkInvocationPoint() {
-		assert !context.isInternalLocation() : context;
+	protected void visitEndInvokedMethod() {
+		Label endFinally = new Label();
+		mv.visitTryCatchBlock(startFinally, endFinally, endFinally, null);
+		mv.visitLabel(endFinally);
+		int var = mv.newLocal(Type.getType(Object.class));
+		mv.storeLocal(var);
+		visitReturnFromInvokedMethod();
+		mv.loadLocal(var);
+		mv.throwException();
+	}
+
+	private void visitMarkInvocationPoint() {
 		pushLocationStack();
 		mv.push(AProfRegistry.registerLocation(context.getLocation()));
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, TransformerUtil.LOCATION_STACK, "addInvocationPoint", TransformerUtil.INT_VOID, false);
 	}
 
-	/**
-	 * @see com.devexperts.aprof.LocationStack#removeInvocationPoint()
-	 */
-	@Override
-	protected void visitUnmarkInvocationPoint() {
-		assert !context.isInternalLocation() : context;
+	private void visitUnmarkInvocationPoint() {
 		pushLocationStack();
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, TransformerUtil.LOCATION_STACK, "removeInvocationPoint", TransformerUtil.NOARG_VOID, false);
+	}
+
+	@Override
+	protected void visitTrackedMethodInsn(int opcode, String owner, String name, String desc, boolean intf) {
+		assert !context.isInternalLocation() : context;
+		Label start = new Label();
+		Label end = new Label();
+		Label handler = new Label();
+		Label done = new Label();
+		visitMarkInvocationPoint();
+		mv.visitTryCatchBlock(start, end, handler, null);
+		mv.visitLabel(start);
+		mv.visitMethodInsn(opcode, owner, name, desc, intf);
+		mv.visitLabel(end);
+		visitUnmarkInvocationPoint();
+		mv.goTo(done);
+		mv.visitLabel(handler);
+		int var = mv.newLocal(Type.getType(Object.class));
+		mv.storeLocal(var);
+		visitUnmarkInvocationPoint();
+		mv.loadLocal(var);
+		mv.throwException();
+		mv.visitLabel(done);
 	}
 
 	/**
@@ -148,7 +177,6 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 * @see com.devexperts.aprof.AProfOps#allocateSize(LocationStack, int, Class)
 	 */
 	private void visitAllocate(String desc) {
-		assert context.getConfig().isLocation() : context;
 		pushLocationStack();
 		pushAllocationPoint(desc);
 		if (context.getConfig().isSize()) {
@@ -174,7 +202,6 @@ class MethodTransformer extends AbstractMethodVisitor {
 	 * OPS implementation is chosen based on the class doing the allocation.
 	 */
 	protected void visitAllocateArray(String desc) {
-		assert context.getConfig().isArrays() : context;
 		if (context.getConfig().isSize()) {
 			pushLocationStack();
 			pushAllocationPoint(desc);

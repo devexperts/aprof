@@ -43,27 +43,27 @@ class MethodAnalyzer extends AbstractMethodVisitor {
 	}
 
 	@Override
-	protected void visitMarkInvokedMethod() {
+	protected void visitStartInvokedMethod() {
 		assert !context.isInternalLocation();
 		requestLocationStack();
 	}
 
 	@Override
-	protected void visitUnmarkInvokedMethod() {
+	protected void visitReturnFromInvokedMethod() {
 		assert !context.isInternalLocation();
 		requestLocationStack();
 	}
 
 	@Override
-	protected void visitMarkInvocationPoint() {
+	protected void visitEndInvokedMethod() {
 		assert !context.isInternalLocation();
 		requestLocationStack();
 	}
 
-	@Override
-	protected void visitUnmarkInvocationPoint() {
+	protected void visitTrackedMethodInsn(int opcode, String owner, String name, String desc, boolean intf) {
 		assert !context.isInternalLocation();
 		requestLocationStack();
+		mv.visitMethodInsn(opcode, owner, name, desc, intf);
 	}
 
 	@Override

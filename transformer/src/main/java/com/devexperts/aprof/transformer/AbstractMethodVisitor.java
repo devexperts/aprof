@@ -19,7 +19,6 @@
 package com.devexperts.aprof.transformer;
 
 import com.devexperts.aprof.AProfRegistry;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -41,8 +40,6 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 	protected final GeneratorAdapter mv;
 	protected final Context context;
 
-	private Label startFinally;
-
 	public AbstractMethodVisitor(GeneratorAdapter mv, Context context) {
 		super(Opcodes.ASM4, mv);
 		this.mv = mv;
@@ -51,13 +48,13 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 
 	protected abstract void visitMarkDeclareLocationStack();
 
-	protected abstract void visitMarkInvokedMethod();
+	protected abstract void visitStartInvokedMethod();
 
-	protected abstract void visitUnmarkInvokedMethod();
+	protected abstract void visitReturnFromInvokedMethod();
 
-	protected abstract void visitMarkInvocationPoint();
+	protected abstract void visitEndInvokedMethod();
 
-	protected abstract void visitUnmarkInvocationPoint();
+	protected abstract void visitTrackedMethodInsn(int opcode, String owner, String name, String desc, boolean intf);
 
 	protected abstract void visitObjectInit();
 
@@ -79,11 +76,8 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 	public void visitCode() {
 		mv.visitCode();
 		visitMarkDeclareLocationStack();
-		if (context.isMethodBodyTracked()) {
-			startFinally = new Label();
-			visitMarkInvokedMethod();
-			mv.visitLabel(startFinally);
-		}
+		if (context.isMethodBodyTracked())
+			visitStartInvokedMethod();
 	}
 
 	@Override
@@ -95,12 +89,10 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 			case Opcodes.ARETURN:
 			case Opcodes.LRETURN:
 			case Opcodes.DRETURN:
-				if (context.isObjectInit() && context.getConfig().isUnknown()) {
+				if (context.isObjectInit() && context.getConfig().isUnknown())
 					visitObjectInit();
-				}
-				if (context.isMethodBodyTracked()) {
-					visitUnmarkInvokedMethod();
-				}
+				if (context.isMethodBodyTracked())
+					visitReturnFromInvokedMethod();
 				break;
 		}
 		mv.visitInsn(opcode);
@@ -108,41 +100,37 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 
 	@Override
 	public void visitMaxs(int maxStack, int maxLocals) {
-		if (context.isMethodBodyTracked()) {
-			Label endFinally = new Label();
-			mv.visitTryCatchBlock(startFinally, endFinally, endFinally, null);
-			mv.visitLabel(endFinally);
-			int var = mv.newLocal(Type.getType(Object.class));
-			mv.storeLocal(var);
-			visitUnmarkInvokedMethod();
-			mv.loadLocal(var);
-			mv.throwException();
-		}
+		if (context.isMethodBodyTracked())
+			visitEndInvokedMethod();
 		mv.visitMaxs(maxStack, maxLocals);
 	}
 
 	@Override
 	public void visitTypeInsn(final int opcode, final String desc) {
-		String name = desc.replace('/', '.');
-		boolean allocate = opcode == Opcodes.NEW && context.getConfig().isLocation();
-		boolean allocateArray = opcode == Opcodes.ANEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf();
-		String arrayDesc = allocateArray ? name.startsWith("[") ? "[" + name : "[L" + name + ";" : null;
-		if (allocate)
-			visitAllocateBefore(desc);
-		if (allocateArray)
-			visitAllocateArrayBefore(arrayDesc);
-		mv.visitTypeInsn(opcode, desc);
-		if (allocate)
-			visitAllocateAfter(desc);
-		if (allocateArray)
-			visitAllocateArrayAfter(arrayDesc);
+		switch (opcode) {
+			case Opcodes.NEW:
+				visitAllocateBefore(desc);
+				mv.visitTypeInsn(opcode, desc);
+				visitAllocateAfter(desc);
+				break;
+			case Opcodes.ANEWARRAY:
+				if (!context.isIntrinsicArraysCopyOf()) {
+					String arrayDesc = desc.startsWith("[") ? "[" + desc : "[L" + desc + ";";
+					visitAllocateArrayBefore(arrayDesc);
+					mv.visitTypeInsn(opcode, desc);
+					visitAllocateArrayAfter(arrayDesc);
+					break;
+				}
+				// ELSE -- FALLS THROUGH !!!
+			default:
+				mv.visitTypeInsn(opcode, desc);
+		}
 	}
 
 	@Override
 	public void visitIntInsn(final int opcode, final int operand) {
-		boolean allocateArray = opcode == Opcodes.NEWARRAY && context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf();
-		String arrayDesc = null;
-		if (allocateArray) {
+		if (opcode == Opcodes.NEWARRAY && !context.isIntrinsicArraysCopyOf()) {
+			String arrayDesc;
 			switch (operand) {
 				case Opcodes.T_BOOLEAN:
 					arrayDesc = BOOLEAN_ARR_T_DESC;
@@ -172,18 +160,17 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 					assert false;  // should not happen
 					return;
 			}
-		}
-		if (allocateArray)
 			visitAllocateArrayBefore(arrayDesc);
-		mv.visitIntInsn(opcode, operand);
-		if (allocateArray)
+			mv.visitIntInsn(opcode, operand);
 			visitAllocateArrayAfter(arrayDesc);
+		} else
+			mv.visitIntInsn(opcode, operand);
 	}
 
 	@Override
 	public void visitMultiANewArrayInsn(final String desc, final int dims) {
 		mv.visitMultiANewArrayInsn(desc, dims);
-		if (context.getConfig().isArrays() && !context.isIntrinsicArraysCopyOf())
+		if (!context.isIntrinsicArraysCopyOf())
 			visitAllocateArrayMulti(desc);
 	}
 
@@ -202,27 +189,8 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 		boolean isArrayClone = isClone && owner.startsWith("[");
 		boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(cname);
 
-		boolean isMethodInvocationTracked = context.isMethodInvocationTracked(cname, opcode, owner, name, desc) ;
-
-		if (isMethodInvocationTracked) {
-			Label start = new Label();
-			Label end = new Label();
-			Label handler = new Label();
-			Label done = new Label();
-			visitMarkInvocationPoint();
-			mv.visitTryCatchBlock(start, end, handler, null);
-			mv.visitLabel(start);
-			mv.visitMethodInsn(opcode, owner, name, desc, intf);
-			mv.visitLabel(end);
-			visitUnmarkInvocationPoint();
-			mv.goTo(done);
-			mv.visitLabel(handler);
-			int var = mv.newLocal(Type.getType(Object.class));
-			mv.storeLocal(var);
-			visitUnmarkInvocationPoint();
-			mv.loadLocal(var);
-			mv.throwException();
-			mv.visitLabel(done);
+		if (context.isMethodInvocationTracked(cname, opcode, owner, name, desc)) {
+			visitTrackedMethodInsn(opcode, owner, name, desc, intf);
 		} else {
 			mv.visitMethodInsn(opcode, owner, name, desc, intf);
 		}

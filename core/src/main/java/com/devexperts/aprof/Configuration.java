@@ -22,7 +22,9 @@ import java.io.*;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -87,14 +89,8 @@ public class Configuration {
 	@Description("Omit stack frames during class transformation for 1.6+ classes.")
 	private boolean noframes = false;
 
-	@Description("Instrument array allocations via 'new' operation.")
-	private boolean arrays = true;
-
 	@Description("Instrument allocations via reflection (Array.newInstance, Object.clone).")
 	private boolean reflect = true;
-
-	@Description("Instrument object allocations via 'new' operation.")
-	private boolean location = true;
 
 	@Description("Instrument java.lang.Object constructor to track object allocations from unknown locations. Prevents stack-allocation of objects.")
 	private boolean unknown = false;
@@ -237,16 +233,8 @@ public class Configuration {
 		return noframes;
 	}
 
-	public boolean isArrays() {
-		return arrays;
-	}
-
 	public boolean isReflect() {
 		return reflect;
-	}
-
-	public boolean isLocation() {
-		return location;
 	}
 
 	public boolean isUnknown() {
@@ -337,8 +325,8 @@ public class Configuration {
 
 	public boolean showNotes(PrintWriter out, boolean all) {
 		boolean ok = true;
-		if (all || histogram.length > 0 && (!arrays || !size)) {
-			out.println("Note: 'histogram' option does not work without 'arrays' and 'size'.");
+		if (all || histogram.length > 0 && !size) {
+			out.println("Note: 'histogram' option does not work without 'size'.");
 			ok = false;
 		}
 		if (all || verbose_redefinition && !verbose) {
