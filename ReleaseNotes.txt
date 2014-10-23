@@ -1,4 +1,15 @@
-AProf 29
+Aprof 30
+	
+** Change Request
+APROF-68: Add Hashtable, Vector and xxFormat methods to default tracking configuration
+APROF-115: Lambda capture memory allocations are not tracked nor reported in any way
+APROF-116: Distinguish transformed and analyzed classes in "verbose" log
+** Defect Report
+APROF-117: Invocations to runtime classes (like collections) are not properly tracked via interfaces
+** Improvement
+APROF-118: Drop "arrays" and "location" configuration options (they are always true) and streamline analyze/transform code
+
+Aprof 29
 
 ** Change Request
 APROF-113: Check for allocations that were eliminated by HotSpot and mark them separately in reports
@@ -6,7 +17,7 @@ APROF-114: Migrate to ASM 5.0.3, support Java 8
 ** Improvement
 APROF-112: Experimental system option to count regular object and array allocations after their "new" bytecode (not before)
 
-AProf 28
+Aprof 28
 
 ** Change Request
 APROF-104: Drop support for an empty list of tracked methods with a meaning of all methods. Use "*" to track all methods.
@@ -48,7 +59,7 @@ APROF-98: Print average objects sizes in "Top allocation-inducing locations" sec
 APROF-100: Print last report with the configured threshold and set default threshold to 0.01%
 APROF-101: Run aprof selftests during "integration-test" of the project build
 
-AProf 26
+Aprof 26
 
 ** Change Request
 APROF-78: Add more methods to the default tracked list (formatting, i/o, thread)
@@ -58,7 +69,7 @@ APROF-80: Counters in <unknown> locations are incorrectly tracked (forgotten)
 ** Improvement
 APROF-79: Reduce garbage during report generation
 
-AProf 25
+Aprof 25
 
 - Updated Copyright dates to 2014
 ** Change Request
@@ -76,19 +87,19 @@ Aprof 24
 Aprof 23
 
 - Rebuild under Java 1.5.
-- Minor NullPointerException in AProfTransformed fixed.
+- Minor NullPointerException in AprofTransformed fixed.
 
-AProf 22
+Aprof 22
 
 ** Defect Reports
-[APROF-65] AProf does not work for code that is compiled with Java 7
+[APROF-65] Aprof does not work for code that is compiled with Java 7
 
 Aprof 21
 
 ** Change Request
 APROF-59: Add toString methods and other garabage-producers in standard boxing class to the default config
 APROF-63: Improve format of details configurations
-APROF-67: Analyze details of all allocations that AProf performs itself during class transformation phase
+APROF-67: Analyze details of all allocations that Aprof performs itself during class transformation phase
 ** Defect Report
 APROF-61: Unknown locations in simple code
 APROF-62: Failed to transform while tracking java.lang.Integer methods
@@ -134,7 +145,7 @@ APROF-44: Core: network dump does not flush its output
 Aprof 17
 	
 ** Change Request
-APROF-22: Add AProf sources to release bundle
+APROF-22: Add Aprof sources to release bundle
 APROF-35: Core: default configuration enhancements
 APROF-37: Mozilla Public Licence Version 2.0 header
 ** Defect Report
@@ -188,12 +199,12 @@ APROF-18: Core: add rotation to snapshots file
 ** Task
 APROF-17: Migrate to maven for release building
 
-Aprof build-9
+Aprof 9
 
 ** Change Request
 APROF-16: Core: array length histograms should be disabled by default
 
-Aprof build-8
+Aprof 8
 
 ** Change Request
 APROF-11: Core: all libraries should be loaded in a separate ClassLoader
@@ -201,7 +212,7 @@ APROF-12: Core: migrate to ASM 3.3
 APROF-14: Core: add ability to configure usage of ASM parameter COMPUTE_FRAMES
 APROF-15: Core: add array length histograms
 ** Defect Report
-APROF-13: Core: AProf does not work on Java 6
+APROF-13: Core: Aprof does not work on Java 6
 ** Improvement
 APROF-9: Existing code cleanup
 ** Task
