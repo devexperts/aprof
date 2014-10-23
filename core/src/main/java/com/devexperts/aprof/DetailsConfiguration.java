@@ -78,7 +78,7 @@ class DetailsConfiguration {
 					break;
 				if (line.length() == 0)
 					continue;
-				boolean indentedLine = Character.isSpaceChar(line.charAt(0));
+				boolean indentedLine = Character.isWhitespace(line.charAt(0));
 				line = line.trim();
 				if (line.length() == 0 || line.startsWith(Configuration.COMMENT))
 					continue;
