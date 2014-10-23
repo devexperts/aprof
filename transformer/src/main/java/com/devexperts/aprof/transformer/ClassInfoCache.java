@@ -1,11 +1,11 @@
 package com.devexperts.aprof.transformer;
 
-import java.io.InputStream;
-import java.util.*;
-
 import com.devexperts.aprof.Configuration;
 import com.devexperts.aprof.util.Log;
 import org.objectweb.asm.ClassReader;
+
+import java.io.InputStream;
+import java.util.*;
 
 /**
  * Caches class info for each class loader. Reference to class loader is never explicitly stored and is
@@ -24,7 +24,14 @@ class ClassInfoCache {
 	}
 
 	synchronized ClassInfo getClassInfo(String internalClassName, ClassLoader loader) {
-		return getOrInitClassInfoMap(loader).get(internalClassName);
+		while (true) {
+			ClassInfo classInfo = getOrInitClassInfoMap(loader).get(internalClassName);
+			if (classInfo != null)
+				return classInfo;
+			if (loader == null)
+				return null;
+			loader = loader.getParent();
+		}
 	}
 
 	// Returns null if not found or failed to load

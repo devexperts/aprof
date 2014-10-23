@@ -18,12 +18,22 @@
 
 package com.devexperts.aprof.selftest;
 
-import java.io.*;
-import java.util.*;
-
-import com.devexperts.aprof.*;
-import com.devexperts.aprof.dump.*;
+import com.devexperts.aprof.AProfAgent;
+import com.devexperts.aprof.AProfTools;
+import com.devexperts.aprof.Configuration;
+import com.devexperts.aprof.Version;
+import com.devexperts.aprof.dump.DumpFormatter;
+import com.devexperts.aprof.dump.SnapshotDeep;
+import com.devexperts.aprof.dump.SnapshotRoot;
+import com.devexperts.aprof.dump.SnapshotShallow;
 import com.devexperts.aprof.util.FastOutputStreamWriter;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * @author Dmitry Paraschenko
@@ -45,7 +55,8 @@ public class TestSuite {
 			new DeserializationTest(),
 			new ArrayNewInstanceTest(),
 			new ArraySizeTest(),
-			new ObjectArrayCopyTest()
+			new ObjectArrayCopyTest(),
+			new EnhancedForLoopTest()
 	);
 
 	public static void main(String[] args) throws IOException {
