@@ -23,13 +23,13 @@ public class ClassInfoMap {
 			wait();
 	}
 
-	public ClassInfo get(String internalClassName) {
+	public synchronized ClassInfo get(String internalClassName) {
 		return map.get(internalClassName);
 	}
 
-	public void put(String internalClassName, ClassInfo classInfo) {
-		map.put(internalClassName, classInfo);
+	public synchronized void put(String internalClassName, ClassInfo classInfo) {
+		if (!map.containsKey(internalClassName))
+			map.put(internalClassName, classInfo);
 	}
-
 }
 
