@@ -15,15 +15,15 @@ import java.util.*;
 class ClassInfoCache {
 	private final Configuration config;
 
-	// ClassLoader -> internalClassName -> ClassInfo
-	private WeakHashMap<ClassLoader, ClassInfoMap> classInfoCache =
+	// ClassLoader -> internalClassName -> ClassInfo, GuardedBy classInfoCache
+	private final WeakHashMap<ClassLoader, ClassInfoMap> classInfoCache =
 		new WeakHashMap<ClassLoader, ClassInfoMap>();
 
 	ClassInfoCache(Configuration config) {
 		this.config = config;
 	}
 
-	synchronized ClassInfo getClassInfo(String internalClassName, ClassLoader loader) {
+	ClassInfo getClassInfo(String internalClassName, ClassLoader loader) {
 		while (true) {
 			ClassInfo classInfo = getOrInitClassInfoMap(loader).get(internalClassName);
 			if (classInfo != null)
@@ -35,44 +35,61 @@ class ClassInfoCache {
 	}
 
 	// Returns null if not found or failed to load
-	synchronized ClassInfo getOrBuildClassInfo(String internalClassName, ClassLoader loader) {
-		ClassInfo classInfo = getOrInitClassInfoMap(loader).get(internalClassName);
+	ClassInfo getOrBuildClassInfo(String internalClassName, ClassLoader loader) {
+		ClassInfoMap classInfoMap = getOrInitClassInfoMap(loader);
+		ClassInfo classInfo = classInfoMap.get(internalClassName);
 		if (classInfo != null)
 			return classInfo;
-		ClassInfoMap classInfoMap = classInfoCache.get(loader);
 		classInfo = buildClassInfo(internalClassName, loader, classInfoMap.isInitTrackedClasses());
 		if (classInfo != null)
-			classInfoMap.put(internalClassName, classInfo);
-		return classInfo;
+			classInfoMap.put(internalClassName, classInfo); // put saves only first only on concurrent loads
+		return classInfoMap.get(internalClassName); // returns saved info map
 	}
 
 	// throws RuntimeException if not found or failed to load
-	synchronized ClassInfo getOrBuildRequiredClassInfo(String internalClassName, ClassLoader loader) {
+	ClassInfo getOrBuildRequiredClassInfo(String internalClassName, ClassLoader loader) {
 		ClassInfo classInfo = getOrBuildClassInfo(internalClassName, loader);
 		if (classInfo == null)
 			throw new RuntimeException("Cannot load class information for " + internalClassName.replace('/', '.'));
 		return classInfo;
 	}
 
-	synchronized ClassInfoMap getOrInitClassInfoMap(ClassLoader loader) {
-		ClassInfoMap classInfoMap = classInfoCache.get(loader);
-		if (classInfoMap == null) {
-			// make sure we have parent loader's map first
-			if (loader != null)
-				getOrInitClassInfoMap(loader.getParent());
-			// at first time when class loader is discovered, tracked classes in this class loader are cached
-			classInfoCache.put(loader, classInfoMap = new ClassInfoMap());
-			initTrackedClasses(loader);
-			classInfoMap.doneInit();
-		} else
-			try {
-				classInfoMap.waitInit();
-			} catch (InterruptedException e) {
-				StringBuilder sb = new StringBuilder("Interrupted while waiting to initialize tracking classes");
-				TransformerUtil.describeClassLoaderForLog(sb, loader);
-				Log.out.println(sb);
-				Thread.currentThread().interrupt();
-			}
+	ClassInfoMap getOrInitClassInfoMap(ClassLoader loader) {
+		ClassInfoMap classInfoMap;
+		synchronized (classInfoCache) {
+			classInfoMap = classInfoCache.get(loader);
+		}
+		if (classInfoMap != null) // ClassInfoMap was created by another thread. Wait until it is initialized
+			return waitForClassInfoMapInit(loader, classInfoMap);
+		// make sure we have parent loader's map first
+		if (loader != null)
+			getOrInitClassInfoMap(loader.getParent());
+		boolean alreadyCreated = false;
+		synchronized (classInfoCache) {
+			// double check that this info map is still not created
+			classInfoMap = classInfoCache.get(loader);
+			if (classInfoMap != null)
+				alreadyCreated = true;
+			else
+				classInfoCache.put(loader, classInfoMap = new ClassInfoMap());
+		}
+		if (alreadyCreated)
+			return waitForClassInfoMapInit(loader, classInfoMap);
+		// at first time when class loader is discovered, tracked classes in this class loader are cached
+		initTrackedClasses(loader);
+		classInfoMap.doneInit();
+		return classInfoMap;
+	}
+
+	private ClassInfoMap waitForClassInfoMapInit(ClassLoader loader, ClassInfoMap classInfoMap) {
+		try {
+			classInfoMap.waitInit();
+		} catch (InterruptedException e) {
+			StringBuilder sb = new StringBuilder("Interrupted while waiting to initialize tracking classes");
+			TransformerUtil.describeClassLoaderForLog(sb, loader);
+			Log.out.println(sb);
+			Thread.currentThread().interrupt();
+		}
 		return classInfoMap;
 	}
 
