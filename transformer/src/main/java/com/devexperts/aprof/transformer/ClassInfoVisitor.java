@@ -12,7 +12,7 @@ class ClassInfoVisitor extends ClassVisitor {
 	ClassInfo result;
 
 	public ClassInfoVisitor(boolean loadVirtualMethods) {
-		super(Opcodes.ASM4);
+		super(TransformerUtil.ASM_API);
 		this.virtualMethods = loadVirtualMethods ? new HashMap<String, Set<String>>() : null;
 	}
 

@@ -211,7 +211,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		int classVersion;
 
 		public ClassAnalyzer(int classNo, ClassLoader loader, ClassVisitor cv) {
-			super(Opcodes.ASM4, cv);
+			super(TransformerUtil.ASM_API, cv);
 			this.classNo = classNo;
 			this.loader = loader;
 		}
@@ -259,7 +259,7 @@ public class AProfTransformer implements ClassFileTransformer {
 		private final Iterator<Context> contextIterator;
 
 		public ClassTransformer(ClassVisitor cv, List<Context> contexts) {
-			super(Opcodes.ASM4, cv);
+			super(TransformerUtil.ASM_API, cv);
 			this.contextIterator = contexts.iterator();
 		}
 
@@ -291,7 +291,7 @@ public class AProfTransformer implements ClassFileTransformer {
 
 	private class EmptyMethodVisitor extends MethodVisitor {
 		public EmptyMethodVisitor() {
-			super(Opcodes.ASM5);
+			super(TransformerUtil.ASM_API);
 		}
 	}
 

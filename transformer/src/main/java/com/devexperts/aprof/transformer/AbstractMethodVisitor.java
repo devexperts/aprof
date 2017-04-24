@@ -41,7 +41,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 	protected final Context context;
 
 	public AbstractMethodVisitor(GeneratorAdapter mv, Context context) {
-		super(Opcodes.ASM4, mv);
+		super(TransformerUtil.ASM_API, mv);
 		this.mv = mv;
 		this.context = context;
 	}
