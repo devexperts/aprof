@@ -132,7 +132,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			ClassVisitor classTransformer = new ClassTransformer(cw, classAnalyzer.contexts);
 			int transformFlags =
 				(config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) +
-				(config.isNoFrames() || computeFrames ? ClassReader.SKIP_FRAMES : 0);
+				(ClassReader.EXPAND_FRAMES);
 			cr.accept(classTransformer, transformFlags);
 
 			// Convert transformed class to byte array, dump (if needed) and return
