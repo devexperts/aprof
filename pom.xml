@@ -3,7 +3,7 @@
 
 	<groupId>com.devexperts.aprof</groupId>
 	<artifactId>aprof</artifactId>
-	<version>31-SNAPSHOT</version>
+	<version>31</version>
 	<packaging>pom</packaging>
 
 	<name>Aprof</name>
@@ -249,7 +249,8 @@
 	<scm>
 		<connection>scm:git:https://github.com/Devexperts/aprof.git</connection>
 		<developerConnection>scm:git:ssh://stash.in.devexperts.com:7999/dxlab/aprof.git</developerConnection>
-	</scm>
+	  <tag>aprof-31</tag>
+  </scm>
 
 	<distributionManagement>
 		<repository>
