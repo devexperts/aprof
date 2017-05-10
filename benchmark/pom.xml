@@ -4,10 +4,10 @@
 	<parent>
 		<groupId>com.devexperts.aprof</groupId>
 		<artifactId>aprof</artifactId>
-		<version>31</version>
+		<version>32-SNAPSHOT</version>
 	</parent>
 	<artifactId>benchmark</artifactId>
-	<version>31</version>
+	<version>32-SNAPSHOT</version>
 	<name>JMH benchmarks</name>
 
 	<dependencies>
