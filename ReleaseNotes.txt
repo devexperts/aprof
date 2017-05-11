@@ -1,3 +1,9 @@
+Aprof 31
+
+** Defect Report
+APROF-120: Type annotations are not supported
+APROF-119: Deadlock with custom ClassLoader [github #3]
+
 Aprof 30
 	
 ** Change Request
