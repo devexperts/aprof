@@ -43,11 +43,13 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 
 	protected final GeneratorAdapter mv;
 	protected final Context context;
+	private final int classVersion;
 
-	public AbstractMethodVisitor(GeneratorAdapter mv, Context context) {
+	public AbstractMethodVisitor(GeneratorAdapter mv, Context context, int classVersion) {
 		super(TransformerUtil.ASM_API, mv);
 		this.mv = mv;
 		this.context = context;
+		this.classVersion = classVersion;
 	}
 
 	protected abstract void visitMarkDeclareLocationStack();
@@ -193,7 +195,7 @@ abstract class AbstractMethodVisitor extends MethodVisitor {
 		boolean isArrayClone = isClone && owner.startsWith("[");
 		boolean isObjectClone = isClone && AProfRegistry.isDirectCloneClass(cname);
 
-		if (context.isMethodInvocationTracked(cname, opcode, owner, name, desc)) {
+		if (context.isMethodInvocationTracked(cname, opcode, owner, name, desc, classVersion)) {
 			visitTrackedMethodInsn(opcode, owner, name, desc, intf);
 		} else {
 			mv.visitMethodInsn(opcode, owner, name, desc, intf);

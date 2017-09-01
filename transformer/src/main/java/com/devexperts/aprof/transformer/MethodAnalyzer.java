@@ -28,8 +28,8 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  * @author Dmitry Paraschenko
  */
 class MethodAnalyzer extends AbstractMethodVisitor {
-	public MethodAnalyzer(GeneratorAdapter mv, Context context) {
-		super(mv, context);
+	public MethodAnalyzer(GeneratorAdapter mv, Context context, int classVersion) {
+		super(mv, context, classVersion);
 	}
 
 	@Override

@@ -105,9 +105,13 @@ class Context {
 		sb.append(')');
 	}
 
-	public boolean isMethodInvocationTracked(String cname, int opcode, String owner, String name, String desc) {
+	public boolean isMethodInvocationTracked(String cname, int opcode, String owner, String name, String desc,
+		int transformedClassVersion)
+	{
 		if (owner.startsWith("["))
 			return false; // do not track array method invocations
+		if (transformedClassVersion >= Opcodes.V1_7 && TransformerUtil.INIT.equals(name))
+			return false; // <init> invocations don't pass verifier in modern JVMs
 		if (config.isMethodTracked(cname, name))
 			return true; // direct invocation of tracked method through its actual class
 		if (opcode != Opcodes.INVOKEVIRTUAL && opcode != Opcodes.INVOKEINTERFACE)

@@ -133,7 +133,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			ClassWriter cw = computeFrames ?
 				new FrameClassWriter(cr, loader) :
 				new ClassWriter(ClassWriter.COMPUTE_MAXS);
-			ClassVisitor classTransformer = new ClassTransformer(cw, classAnalyzer.contexts);
+			ClassVisitor classTransformer = new ClassTransformer(cw, classAnalyzer.contexts, classAnalyzer.classVersion);
 			int transformFlags =
 				(config.isSkipDebug() ? ClassReader.SKIP_DEBUG : 0) +
 				(config.isNoFrames() || computeFrames ? ClassReader.SKIP_FRAMES : 0);
@@ -255,16 +255,18 @@ public class AProfTransformer implements ClassFileTransformer {
 			}
 			Context context = new Context(config, ciCache, loader, binaryClassName, cname, mname, desc);
 			contexts.add(context);
-			return new MethodAnalyzer(new GeneratorAdapter(new EmptyMethodVisitor(), access, mname, desc), context);
+			return new MethodAnalyzer(new GeneratorAdapter(new EmptyMethodVisitor(), access, mname, desc), context, classVersion);
 		}
 	}
 
 	private class ClassTransformer extends ClassVisitor {
 		private final Iterator<Context> contextIterator;
+		private final int classVersion;
 
-		public ClassTransformer(ClassVisitor cv, List<Context> contexts) {
+		public ClassTransformer(ClassVisitor cv, List<Context> contexts, int classVersion) {
 			super(TransformerUtil.ASM_API, cv);
 			this.contextIterator = contexts.iterator();
+			this.classVersion = classVersion;
 		}
 
 		@Override
@@ -281,7 +283,7 @@ public class AProfTransformer implements ClassFileTransformer {
 			MethodVisitor visitor = super.visitMethod(access, mname, desc, signature, exceptions);
 			visitor = new TryCatchBlockSorter(visitor, access, mname, desc, signature, exceptions);
 			Context context = contextIterator.next();
-			visitor = new MethodTransformer(new GeneratorAdapter(visitor, access, mname, desc), context);
+			visitor = new MethodTransformer(new GeneratorAdapter(visitor, access, mname, desc), context, classVersion);
 			visitor = new JSRInlinerAdapter(visitor, access, mname, desc, signature, exceptions);
 			return visitor;
 		}

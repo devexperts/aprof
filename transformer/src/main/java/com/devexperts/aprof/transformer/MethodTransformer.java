@@ -37,8 +37,8 @@ class MethodTransformer extends AbstractMethodVisitor {
 
 	private Label startFinally;
 
-	public MethodTransformer(GeneratorAdapter mv, Context context) {
-		super(mv, context);
+	public MethodTransformer(GeneratorAdapter mv, Context context, int classVersion) {
+		super(mv, context, classVersion);
 	}
 
 	private void pushAllocationPoint(String desc) {
