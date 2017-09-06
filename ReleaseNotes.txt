@@ -1,3 +1,9 @@
+
+Aprof 32
+
+** Defect Report
+APROF-121: VerifyError on delegating constructors
+
 Aprof 31
 
 ** Defect Report
