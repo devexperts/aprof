@@ -133,7 +133,7 @@ public class Configuration {
 	@Description("Port to listen on.")
 	private int port = 0;
 
-	@Description("Dump format either folded or text")
+	@Description("Dump format either folded or text. For folded format use './flamegraph.pl --color=java' to produce flamegraphs from report file")
 	private String dump_format = "text";
 
 	private DetailsConfiguration detailsConfig;
