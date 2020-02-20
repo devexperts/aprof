@@ -133,6 +133,9 @@ public class Configuration {
 	@Description("Port to listen on.")
 	private int port = 0;
 
+	@Description("Dump format either folded or text")
+	private String dump_format = "text";
+
 	private DetailsConfiguration detailsConfig;
 	private HistogramConfiguration histogramConfig;
 
@@ -275,6 +278,10 @@ public class Configuration {
 
 	public int getPort() {
 		return port;
+	}
+
+	public String getDumpFormat() {
+		return dump_format;
 	}
 
 	public Set<String> getTrackedClasses() {

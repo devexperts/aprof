@@ -52,7 +52,8 @@ public class Dumper {
 		this.config = config;
 		this.argsStr = config.toString();
 		this.start = start;
-		this.formatter = new DumpFormatter(config);
+		this.formatter = config.getDumpFormat().equals("folded") ?
+				new FoldedStacksDumpFormatter(config) : new TextDumpFormatter(config);
 	}
 
 	public synchronized void makeOverflowSnapshot() {
@@ -137,7 +138,7 @@ public class Dumper {
 
 	private void dumpAll(PrintWriter out, boolean dumpAll) {
 		long now = System.currentTimeMillis();
-		dumpReportHeader(out, now);
+		formatter.dumpReportHeader(out, now, start, argsStr, snapshotCount, overflowCount);
 
 		if (!dumpAll) {
 			last.setTime(now - lastTime);
@@ -147,44 +148,7 @@ public class Dumper {
 
 		total.setTime(now - start);
 		formatter.dumpSnapshot(out, total, "TOTAL");
-		out.println();
 	}
 
-	private long dumpReportHeader(PrintWriter out, long now) {
-		long uptime = now - start;
-		//------ start with tear line
-		printlnTearLine(out, '#');
-		//------ Line #1
-		out.println(Version.full());
-		//------ Line #2
-		out.print("Allocation dump at ");
-		printTimeAndDate(out, System.currentTimeMillis());
-		out.print(". Uptime ");
-		printNum(out, uptime);
-		out.print(" ms (");
-		printTimePeriod(out, uptime);
-		out.println(")");
-		//------ Line #3
-		out.print("Arguments ");
-		out.println(argsStr);
-		//------ Line #4
-		out.print("Transformed ");
-		printNum(out, AProfRegistry.getCount());
-		out.print(" classes and registered ");
-		printNum(out, AProfRegistry.getLocationCount());
-		out.print(" locations in ");
-		FastFmtUtil.printNumPercent(out, AProfRegistry.getTime(), uptime);
-		out.print(" ms");
-		out.println();
-		//------ Line #4
-		out.print("Snapshot of counters was made ");
-		printNum(out, snapshotCount);
-		out.print(" times to write file and ");
-		printNum(out, overflowCount);
-		out.println(" times to prevent overflow");
-		//------ end with tear line
-		printlnTearLine(out, '#');
-		return uptime;
-	}
 
 }

@@ -26,7 +26,7 @@ import com.devexperts.aprof.AProfAgent;
 import com.devexperts.aprof.AProfTools;
 import com.devexperts.aprof.Configuration;
 import com.devexperts.aprof.Version;
-import com.devexperts.aprof.dump.DumpFormatter;
+import com.devexperts.aprof.dump.TextDumpFormatter;
 import com.devexperts.aprof.dump.SnapshotDeep;
 import com.devexperts.aprof.dump.SnapshotRoot;
 import com.devexperts.aprof.dump.SnapshotShallow;
@@ -199,7 +199,7 @@ public class TestSuite {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		PrintWriter out = new PrintWriter(bos);
 		snapshot.sortChildrenDeep(SnapshotShallow.COMPARATOR_NAME);
-		new DumpFormatter(config).dumpSnapshotByDataTypes(out, snapshot);
+		new TextDumpFormatter(config).dumpSnapshotByDataTypes(out, snapshot);
 		out.flush();
 		return new String(bos.toByteArray());
 	}

@@ -28,7 +28,7 @@ import java.net.Socket;
 import java.net.URL;
 import java.util.Locale;
 
-import com.devexperts.aprof.dump.DumpFormatter;
+import com.devexperts.aprof.dump.TextDumpFormatter;
 import com.devexperts.aprof.dump.SnapshotRoot;
 import com.devexperts.aprof.util.FastOutputStreamWriter;
 import com.devexperts.aprof.util.InnerJarClassLoader;
@@ -119,7 +119,7 @@ public class AProfTools {
 		SnapshotRoot totalSnapshot = (SnapshotRoot)ois.readObject();
 		ois.close();
 		socket.close();
-		DumpFormatter formatter = new DumpFormatter(new Configuration());
+		TextDumpFormatter formatter = new TextDumpFormatter(new Configuration());
 		PrintWriter out = new PrintWriter(System.out);
 		formatter.dumpSnapshot(out, totalSnapshot, "DUMP");
 		out.flush();
