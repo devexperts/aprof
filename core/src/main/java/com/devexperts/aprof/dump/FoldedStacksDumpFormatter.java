@@ -28,19 +28,21 @@ import java.io.PrintWriter;
 
 public class FoldedStacksDumpFormatter implements DumpFormatter {
 
-  private ThreadLocal<StringBuilder> buffer = new ThreadLocal<StringBuilder>() {
+  private final ThreadLocal<StringBuilder> buffer = new ThreadLocal<StringBuilder>() {
     @Override
     protected StringBuilder initialValue() {
       return new StringBuilder(1024);
     }
   };
 
-  private double threshold;
+  private final double threshold;
+  private final boolean collectSizes;
 
 
   public FoldedStacksDumpFormatter(Configuration config) {
 //    super(config);
     threshold = config.getThreshold();
+    collectSizes = config.isSize();
   }
 
 
@@ -56,6 +58,10 @@ public class FoldedStacksDumpFormatter implements DumpFormatter {
     return 0;
   }
 
+  private long getSize(SnapshotDeep node) {
+    return collectSizes ? node.getSize() : node.getCount();
+  }
+
   private long printNode(PrintWriter out, SnapshotDeep node, StringBuilder prefix, SnapshotRoot root, int depth) {
     if (node.isEmpty() || !node.exceedsThreshold(root, threshold))
       return 0;
@@ -69,6 +75,7 @@ public class FoldedStacksDumpFormatter implements DumpFormatter {
       if (node.isPossiblyEliminatedAllocation()) {
         suffix = "_[i]"; //todo: figure out whether it's top or last node
       }
+      //todo: make sure <unknown> is marked in red
 
       if (node.getName() != null)
         prefix.append(node.getName()).append(suffix).append(';');
@@ -80,7 +87,7 @@ public class FoldedStacksDumpFormatter implements DumpFormatter {
         childrenSize += printNode(out, child, prefix, root, depth + 1);
       }
 
-      long exclusiveSize = node.getSize() - childrenSize;
+      long exclusiveSize = getSize(node) - childrenSize;
       if (exclusiveSize > 0 && node.getName() != null) {
         prefix.setLength(prefixLen);
         out.print(prefix);
@@ -90,7 +97,7 @@ public class FoldedStacksDumpFormatter implements DumpFormatter {
         out.println(exclusiveSize);
       }
 
-      return node.getSize();
+      return getSize(node);
 
     } finally {
       prefix.setLength(prefixLen);
