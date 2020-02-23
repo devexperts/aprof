@@ -37,21 +37,24 @@ public class FoldedStacksDumpFormatter implements DumpFormatter {
 
   private final double threshold;
   private final boolean collectSizes;
+  private final boolean skipTotal;
 
 
   public FoldedStacksDumpFormatter(Configuration config) {
-//    super(config);
     threshold = config.getThreshold();
     collectSizes = config.isSize();
+    skipTotal = config.getFilecount() > 1;
   }
 
 
   public void dumpSnapshot(PrintWriter out, SnapshotRoot root, String kind) {
+    if (skipTotal && "TOTAL".equals(kind))
+      return;
+
     StringBuilder sb = buffer.get();
     sb.setLength(0);
 
-//    SnapshotDeep locations = rebuildLocations(root, SnapshotDeep.UNKNOWN);
-    printNode(out, root, sb, root, 0);
+    printNode(out, root, sb, root, 0, kind);
   }
 
   public long dumpReportHeader(PrintWriter out, long now, long start, String argsStr, int snapshotCount, int overflowCount) {
@@ -62,7 +65,7 @@ public class FoldedStacksDumpFormatter implements DumpFormatter {
     return collectSizes ? node.getSize() : node.getCount();
   }
 
-  private long printNode(PrintWriter out, SnapshotDeep node, StringBuilder prefix, SnapshotRoot root, int depth) {
+  private long printNode(PrintWriter out, SnapshotDeep node, StringBuilder prefix, SnapshotRoot root, int depth, String rootName) {
     if (node.isEmpty() || !node.exceedsThreshold(root, threshold))
       return 0;
 
@@ -77,21 +80,25 @@ public class FoldedStacksDumpFormatter implements DumpFormatter {
       }
       //todo: make sure <unknown> is marked in red
 
-      if (node.getName() != null)
-        prefix.append(node.getName()).append(suffix).append(';');
+      String nodeName = depth == 0 ? rootName : node.getName();
+      if (depth == 0 || SnapshotDeep.UNKNOWN.equals(nodeName))
+        suffix = "";
+
+      if (nodeName != null)
+        prefix.append(nodeName).append(suffix).append(';');
 
       int ccnt = node.getUsed();
       long childrenSize = 0;
       for (int i = 0; i < ccnt; i++) {
         SnapshotDeep child = node.getChild(i);
-        childrenSize += printNode(out, child, prefix, root, depth + 1);
+        childrenSize += printNode(out, child, prefix, root, depth + 1, rootName);
       }
 
       long exclusiveSize = getSize(node) - childrenSize;
-      if (exclusiveSize > 0 && node.getName() != null) {
+      if (exclusiveSize > 0 && nodeName != null) {
         prefix.setLength(prefixLen);
         out.print(prefix);
-        out.print(node.getName());
+        out.print(nodeName);
         out.print(suffix);
         out.print(' ');
         out.println(exclusiveSize);
