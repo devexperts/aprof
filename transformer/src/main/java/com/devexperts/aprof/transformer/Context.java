@@ -43,6 +43,7 @@ class Context {
 	private final boolean objectInit;
 	private final boolean intrinsicArraysCopyOf;
 	private final String aprofOpsImpl;
+	private final boolean verifierDisabled;
 
 	private String location; // lazily computed on first get
 
@@ -65,6 +66,7 @@ class Context {
 		this.objectInit = locationClass.equals(TransformerUtil.OBJECT_CLASS_NAME) && mname.equals(TransformerUtil.INIT);
 		this.intrinsicArraysCopyOf = TransformerUtil.isIntrinsicArraysCopyOf(binaryClassName, mname, desc);
 		this.aprofOpsImpl = isInternalLocation() ? TransformerUtil.APROF_OPS_INTERNAL : TransformerUtil.APROF_OPS;
+		this.verifierDisabled = config.isVerifierDisabled();
 	}
 
 	/**
@@ -110,7 +112,7 @@ class Context {
 	{
 		if (owner.startsWith("["))
 			return false; // do not track array method invocations
-		if (transformedClassVersion >= Opcodes.V1_7 && TransformerUtil.INIT.equals(name))
+		if (!verifierDisabled && transformedClassVersion >= Opcodes.V1_7 && TransformerUtil.INIT.equals(name))
 			return false; // <init> invocations don't pass verifier in modern JVMs
 		if (config.isMethodTracked(cname, name))
 			return true; // direct invocation of tracked method through its actual class

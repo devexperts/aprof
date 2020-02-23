@@ -357,6 +357,12 @@ public class Configuration {
 		return args.contains(XX_UNLOCK_DIAGNOSTIC_VM_OPTIONS) && args.contains(XX_LOG_COMPILATION);
 	}
 
+	public boolean isVerifierDisabled() {
+		List<String> args = ManagementFactory.getRuntimeMXBean().getInputArguments();
+		return args.contains("-noverify");
+
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
