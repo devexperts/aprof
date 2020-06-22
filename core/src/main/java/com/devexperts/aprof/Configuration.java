@@ -133,6 +133,9 @@ public class Configuration {
 	@Description("Port to listen on.")
 	private int port = 0;
 
+	@Description("Dump format either folded or text. For folded format use './flamegraph.pl --color=java' to produce flamegraphs from report file")
+	private String dump_format = "text";
+
 	private DetailsConfiguration detailsConfig;
 	private HistogramConfiguration histogramConfig;
 
@@ -277,6 +280,10 @@ public class Configuration {
 		return port;
 	}
 
+	public String getDumpFormat() {
+		return dump_format;
+	}
+
 	public Set<String> getTrackedClasses() {
 		return detailsConfig.getTrackedClasses();
 	}
@@ -348,6 +355,12 @@ public class Configuration {
 	private boolean isCompileLogEnabled() {
 		List<String> args = ManagementFactory.getRuntimeMXBean().getInputArguments();
 		return args.contains(XX_UNLOCK_DIAGNOSTIC_VM_OPTIONS) && args.contains(XX_LOG_COMPILATION);
+	}
+
+	public boolean isVerifierDisabled() {
+		List<String> args = ManagementFactory.getRuntimeMXBean().getInputArguments();
+		return args.contains("-noverify");
+
 	}
 
 	@Override
